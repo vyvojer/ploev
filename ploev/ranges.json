@@ -1,0 +1,18 @@
+{
+ "BOARD_MATCHING": {
+  "RAINBOW": {
+   "STRONG": "MS+,SD16_14+,(T2P+):(SD12_12+)",
+   "GOOD": "T2P+,SD12_12+,(2P+, (OP):(TP)):(SD12+, SD8_8+)",
+   "MEDIUM": "2P+, (OP):(TP),SD12+, SD8_8+,(TP+, MP):(GS+)",
+   "WEAK": "TP+, MP,GS+,(TP+, MP):(GS+)",
+   "AIR": "*"
+  },
+  "TWO_TONE": {
+   "STRONG": "MS+,(SD16_14+):(FD),(SD12_12+):(FD),(SD12+, SD8_8+):(NFD),(MS+):(FD),((T2P+):(SD12_12+)):(FD),(T2P+):(FD),((2P+, (OP):(TP)):(SD12+, SD8_8+)):(FD),(2P+, (OP):(TP)):(NFD),((TP+, MP):(GS+)):(NFD)",
+   "GOOD": "T2P+,SD16_14+,(SD12+, SD8_8+):(FD),(GS+):(NFD),(T2P+):(SD12_12+),(2P+, (OP):(TP)):(FD),((TP+, MP):(GS+)):(FD),(TP+, MP):(NFD),((TP+, MP):(GS+)):(NFD)",
+   "MEDIUM": "2P+, (OP):(TP),NFD,NFD,SD12_12+,(GS+):(FD),(2P+, (OP):(TP)):(SD12+, SD8_8+),(TP+, MP):(FD),((TP+, MP):(GS+)):(FD)",
+   "WEAK": "TP+, MP,FD,FD,SD12+, SD8_8+,GS+,(TP+, MP):(GS+),(TP+, MP):(GS+)",
+   "AIR": "*"
+  }
+ }
+}

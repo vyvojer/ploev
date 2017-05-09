@@ -1,0 +1,6 @@
+.idea
+.log
+*.pyc
+notebooks/test.ipynb
+tests/ploev.ini
+
