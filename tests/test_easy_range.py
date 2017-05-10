@@ -1412,3 +1412,6 @@ class SavedRangesTest(unittest.TestCase):
         }
         self.assertFalse(check_ranges_dict(ranges_dict))
 
+
+if __name__ == "__main__":
+    unittest.main()

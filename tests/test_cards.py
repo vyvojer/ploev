@@ -210,3 +210,6 @@ class BoardTest(unittest.TestCase):
         self.assertEqual([CardSet.from_str('Ad Kd Td')], flop.get_combinations(3))
         turn = Board.from_str('Ad Kd Td 9d')
         self.assertEqual(4, len(turn.get_combinations(3)))
+
+if __name__ == "__main__":
+    unittest.main()
