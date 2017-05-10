@@ -1359,6 +1359,23 @@ class BoardExplorerTest(unittest.TestCase):
 
 
 class SavedRangesTest(unittest.TestCase):
+
+
+
+    @classmethod
+    def setUpClass(cls):
+        os.remove('ranges.json')
+        ranges_dict = {
+            'TEST_BOARD': {
+                'NIT': {'RAISE': 'TS+', 'CALL': 'B2+'},
+                'AGRO': {'RAISE': 'T2+', 'CALL': 'TP+'},
+            }
+        }
+        with open('ranges.json', mode='w') as  ranges_file:
+            json.dump(ranges_dict, ranges_file, indent=1)
+
+
+
     def test_ranges_from_dict(self):
         ranges_dict = {
             'DRY_BOARD': {
@@ -1385,11 +1402,11 @@ class SavedRangesTest(unittest.TestCase):
 
     def test_load_ranges_from_default_file(self):
         ranges = load_ranges()
-        self.assertEqual(ranges.BOARD_MATCHING.RAINBOW.AIR, '*')
+        self.assertEqual(ranges.TEST_BOARD.NIT.RAISE, 'TS+')
 
     def test_load_ranges_from_file(self):
         ranges = load_ranges(ranges_file='ranges.json')
-        self.assertEqual(ranges.BOARD_MATCHING.RAINBOW.AIR, '*')
+        self.assertEqual(ranges.TEST_BOARD.NIT.RAISE, 'TS+')
 
     def test_check_range(self):
         self.assertTrue(check_range('TS+'))
