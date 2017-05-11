@@ -1367,34 +1367,33 @@ class SavedRangesTest(unittest.TestCase):
         os.remove('ranges.json')
         ranges_dict = {
             'TEST_BOARD': {
-                'NIT': {'RAISE': 'TS+', 'CALL': 'B2+'},
-                'AGRO': {'RAISE': 'T2+', 'CALL': 'TP+'},
+                'NIT': {'RAISE': 'TS+', 'CALL': 'TB2P+'},
+                'AGRO': {'RAISE': 'TB2P+', 'CALL': 'TP+'},
             }
         }
         with open('ranges.json', mode='w') as  ranges_file:
-            json.dump(ranges_dict, ranges_file, indent=1)
-
+            json.dump(ranges_dict, ranges_file, indent=4)
 
 
     def test_ranges_from_dict(self):
         ranges_dict = {
             'DRY_BOARD': {
-                'NIT': {'RAISE': 'TS+', 'CALL': 'B2+'},
-                'AGRO': {'RAISE': 'T2+', 'CALL': 'TP+'},
+                'NIT': {'RAISE': 'TS+', 'CALL': 'TB2P+'},
+                'AGRO': {'RAISE': 'T2P+', 'CALL': 'TP+'},
             }
         }
         ranges = _ranges_from_dict(ranges_dict)
         self.assertEqual(ranges.DRY_BOARD.NIT.RAISE, 'TS+')
-        self.assertEqual(ranges.DRY_BOARD.NIT.CALL, 'B2+')
-        self.assertEqual(ranges.DRY_BOARD.AGRO.RAISE, 'T2+')
+        self.assertEqual(ranges.DRY_BOARD.NIT.CALL, 'TB2P+')
+        self.assertEqual(ranges.DRY_BOARD.AGRO.RAISE, 'T2P+')
         self.assertEqual(ranges.DRY_BOARD.AGRO.CALL, 'TP+')
         self.assertEqual(ranges.ranges_dict, ranges_dict)
 
     def test_load_ranges_from_dict(self):
         ranges = {
             'DRY_BOARD': {
-                'NIT': {'RAISE': 'TS+', 'CALL': 'B2+'},
-                'AGRO': {'RAISE': 'T2+', 'CALL': 'TP+'},
+                'NIT': {'RAISE': 'TS+', 'CALL': 'TB2P+'},
+                'AGRO': {'RAISE': 'T2P+', 'CALL': 'TP+'},
             }
         }
         ranges = load_ranges(ranges_dict=ranges)
@@ -1415,19 +1414,41 @@ class SavedRangesTest(unittest.TestCase):
     def test_check_ranges_dict(self):
         ranges_dict = {
             'DRY_BOARD': {
-                'NIT': {'RAISE': 'TS+', 'CALL': 'TB2+'},
-                'AGRO': {'RAISE': 'TB2+', 'CALL': 'TP+'},
+                'NIT': {'RAISE': 'TS+', 'CALL': 'TB2P+'},
+                'AGRO': {'RAISE': 'TB2P+', 'CALL': 'TP+'},
             }
         }
         self.assertTrue(check_ranges_dict(ranges_dict))
 
         ranges_dict = {
             'DRY_BOARD': {
-                'NIT': {'RAISE': 'Bubu', 'CALL': 'TB2+'},
-                'AGRO': {'RAISE': 'TB2+', 'CALL': 'TuuP+'},
+                'NIT': {'RAISE': 'Bubu', 'CALL': 'TB2P+'},
+                'AGRO': {'RAISE': 'TB2P+', 'CALL': 'TuuP+'},
             }
         }
         self.assertFalse(check_ranges_dict(ranges_dict))
+
+    def test_save_ranges(self):
+        ranges_dict = {
+            'SAVED_DRY_BOARD': {
+                'NIT': {'RAISE': 'TS', 'CALL': 'TB2P+'},
+                'AGRO': {'RAISE': 'TB2P+', 'CALL': 'TP+'},
+            }
+        }
+        save_ranges(ranges_dict, 'saved.json')
+        loaded_ranges = load_ranges('saved.json')
+        self.assertEqual(loaded_ranges.ranges_dict['SAVED_DRY_BOARD'], ranges_dict['SAVED_DRY_BOARD'])
+
+    def test_load_and_check_ranges(self):
+        ranges_dict = {
+            'SAVED_DRY_BOARD': {
+                'NIT': {'RAISE': 'TS', 'CALL': 'TB2P+'},
+                'AGRO': {'RAISE': 'TB2P+', 'CALL': 'TP+'},
+            }
+        }
+        save_ranges(ranges_dict, 'saved.json')
+        ranges = load_and_check_ranges('saved.json')
+        self.assertEqual(ranges.ranges_dict, ranges_dict)
 
 
 if __name__ == "__main__":

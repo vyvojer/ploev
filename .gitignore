@@ -3,6 +3,5 @@
 *.pyc
 notebooks/test.ipynb
 tests/ploev.ini
-tests/ploev.log
-tests/ranges.json
+tests/*.json
 

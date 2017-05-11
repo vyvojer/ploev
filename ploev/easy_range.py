@@ -1021,7 +1021,7 @@ class Syntax:
         'Tr': EasyRange(MADE_HAND, MadeHand.TRIPS, MadeHand.NONE, (0,), None, None, [0, 2]),
         '2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, None, None, None, [0, 2]),
         'T2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, (1, 2), None, None, [0]),
-        'TB2': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, (1, 3), None, None, [0]),
+        'TB2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, (1, 3), None, None, [0]),
         'MP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, (2,), None, [0, 1]),
         'PB': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, None, None, [1, 2]),
         'P': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.NONE, None, None, None, [1]),
@@ -1619,3 +1619,19 @@ def check_range(range_):
         return False
     else:
         return True
+
+
+def save_ranges(ranges_dict, ranges_file):
+    with open(ranges_file, 'w') as rf:
+        json.dump(ranges_dict, rf, indent=4)
+
+
+def load_and_check_ranges(ranges_file=None):
+    ranges = load_ranges(ranges_file=ranges_file)
+    if check_ranges_dict(ranges.ranges_dict):
+        return ranges
+
+RANGES = load_and_check_ranges()
+
+
+
