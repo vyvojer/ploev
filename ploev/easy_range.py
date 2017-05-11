@@ -1552,7 +1552,7 @@ def _generate_parser():
                     pp_one_or_more = pp_one_or_more ^ pp_hand_group
 
     operator = pp.oneOf(", : ! ( )").setResultsName('operator')
-    parser = pp.OneOrMore(pp_one_or_more ^ operator)
+    parser = pp.OneOrMore(pp_one_or_more ^ operator ^ '*')
     return parser
 
 

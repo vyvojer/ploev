@@ -1336,7 +1336,7 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(be.ppt('FD2'), 'Qdd')
         self.assertEqual(be.ppt('FD3+'), '(Kdd,Qdd,Jdd)')
         self.assertEqual(be.ppt('FD'), 'dd')
-        self.assertEqual(be.ppt('TB2+:(FD)'), '(53,AA,44,22,A4,A2):(dd)')
+        self.assertEqual(be.ppt('TB2P+:(FD)'), '(53,AA,44,22,A4,A2):(dd)')
 
         be = BoardExplorer(Board.from_str('AsJcJh2s'))
         self.assertEqual(be.ppt('Q1'), 'JJ')
