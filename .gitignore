@@ -1,7 +1,10 @@
 .idea
 *.log
+*.json
+!ploev/ranges.json
+*.ini
+!ploev/ploev.ini
 *.pyc
 notebooks/test.ipynb
-tests/ploev.ini
-tests/*.json
+
 
