@@ -1,3 +1,6 @@
+"""
+Classes to encapsulate OddsOracle's PQL
+"""
 import re
 import os
 import subprocess
@@ -12,49 +15,17 @@ from ploev.settings import CONFIG
 # noinspection SqlNoDataSourceInspection
 
 
-class Pql:
-    _PQL_COMMON = "select {selectors} \n{from_clause}"
-    logger = logging.getLogger('ppt.Pql')
-
-    def __init__(self, odds_oracle):
-        self.odds_oracle = odds_oracle
-
-    def equity(self, players, board='', dead=''):
-        self.logger.debug('Started equity')
-        return self.odds_oracle.equity(players, board, dead)
-
-    def _construct_from_clause(self, board=None, dead=None, hero=None, players=None):
-        from_clause = list()
-        from_clause.append("from game='{}', syntax='{}'".format(self.odds_oracle.game, self.odds_oracle.syntax))
-        if board:
-            from_clause.append("\tboard='{}'".format(board))
-        if dead:
-            from_clause.append("\tdead='{}'".format(dead))
-        if hero:
-            from_clause.append("\thero='{}'".format(hero))
-        for number, player in enumerate(players, start=1):
-            from_clause.append("\tplayer_{}='{}'".format(number, player))
-        return ",\n".join(from_clause)
-
-    def hero_equity(self, hero, villains, board=None, dead=None):
-        self.logger.debug('Started hero_equity')
-        selector = 'avg(riverEquity(hero)) as EQ'
-        from_clause = self._construct_from_clause(board=board, dead=dead, hero=hero, players=villains)
-        pql = self._PQL_COMMON.format(selectors=selector, from_clause=from_clause)
-        pql_result = self.odds_oracle.pql(pql)
-        return pql_result.results_dict['EQ'][PqlResult.PERCENTAGE]
-
-    def count_in_range(self, main_range, sub_ranges, board, hero='', dead=''):
-        self.logger.debug('Started count_in_range')
-        selector = "count(inRange(player_{},'{}'))"
-        selectors = ",\n\t".join([selector.format(1, sub_range) for sub_range in sub_ranges])
-        from_clause = self._construct_from_clause(board=board, dead=dead, hero=hero, players=[main_range])
-        pql = self._PQL_COMMON.format(selectors=selectors, from_clause=from_clause)
-        pql_result = self.odds_oracle.pql(pql)
-        return [result[PqlResult.PERCENTAGE] for result in pql_result.results_list]
-
-
 class OddsOracle:
+    """Represent OddsOracle xmlrpc server
+
+    Attributes:
+        trials (int): max trials for query
+        seconds(int): max seconds for query
+        threads (int): number of threads
+        syntax (str): query syntax
+        game: (str): game query
+
+    """
     _CONFIG_FILE = 'odds_oracle.ini'
     _JAVA_CLASS_FOLDER = 'ui_jar'
     _JAVA_JAR = 'p2.jar'
@@ -62,18 +33,33 @@ class OddsOracle:
 
     _XMLRPC = 'http://{host}:{port}/xmlrpc'
 
-    def __init__(self, host=None, port=None, trials=None, seconds=None, threads=None,
-                 syntax=None, game=None, connect=True):
+    def __init__(self, host: str=None, port: str=None,
+                 trials: int=None, seconds: int=None, threads: int=None,
+                 syntax: str=None, game: str=None, connect: bool=True):
+        """
+        Arguments host, port, trials, secondd, threads, syntax, game takes from settings file if not provided
+
+        Args:
+            host (str): host of xmlrpc server
+            port (str): port of xmlrpc server
+            trials (int): max trials for query
+            seconds (int): max seconds for query
+            threads (int): number of threads
+            syntax (str): query syntax
+            game (str): game query
+            connect (bool): tries to run and connect OddsOracle if True
+        """
+
         self.path = CONFIG['ODDS_ORACLE']['path']
         self.server = None
         if host is not None:
-            self.host = host
+            self._host = host
         else:
-            self.host = CONFIG['SERVER']['host']
+            self._host = CONFIG['SERVER']['host']
         if port is not None:
-            self.port = port
+            self._port = port
         else:
-            self.port = CONFIG['SERVER']['port']
+            self._port = CONFIG['SERVER']['port']
         if trials is not None:
             self.trials = trials
         else:
@@ -94,18 +80,26 @@ class OddsOracle:
             self.game = game
         else:
             self.game = CONFIG['PQL']['game']
-        self.client = None
+        self._client = None
         if connect:
             self.get_client()
 
     def get_client(self):
+        """ Return xmlrpc client of OddsOracle
+
+        Returns:
+            xmlrpc.client.ServerProxy
+
+        Raises:
+            ConnectionError: if can't connect to server
+        """
         def connect():
             server.PPTServer.executePQL('', 10, 1, 1)
-            self.client = server
+            self._client = server
             print('Successfully connected to {}'.format(url))
-            return self.client
+            return self._client
 
-        url = OddsOracle._XMLRPC.format(host=self.host, port=self.port)
+        url = OddsOracle._XMLRPC.format(host=self._host, port=self._port)
         server = xmlrpc.client.ServerProxy(url)
         try:
             return connect()
@@ -120,49 +114,62 @@ class OddsOracle:
                     "Connection to {} failed: \r\n{}. \r\nIs OddsOracle server running?".format(url, exception))
 
     def run_server(self):
-        command = 'cmd /K java -cp {} {} {}'.format(self._JAVA_JAR, self._JAVA_CLASS, self.port)
+        """ Tries to run OddsOracle server """
+        command = 'cmd /K java -cp {} {} {}'.format(self._JAVA_JAR, self._JAVA_CLASS, self._port)
         cwd = os.path.join(self.path, OddsOracle._JAVA_CLASS_FOLDER)
         self.server = subprocess.Popen(command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
         time.sleep(3)
 
     def pql(self, pql: str):
-        result = self.client.PPTServer.executePQL(pql, self.trials, self.seconds, self.threads)
+        """
+        Invoke OddsOracle's executePQL
+
+        Args:
+            pql (str): PQL query
+
+        Returns:
+            PqlResult: result of query
+
+        """
+        result = self._client.PPTServer.executePQL(pql, self.trials, self.seconds, self.threads)
         logger = logging.getLogger('ppt.OddsOracle.pql')
         logger.debug('Executed PQL: \n{} \nGot result: \n{}'.format(pql, result))
         if 'ERROR' in result:
             raise ValueError("{}in PQL: \r\n{}".format(result, pql))
         return PqlResult(result)
 
-    def equity(self, hands, board='', dead=''):
+    def equity(self, hands: list, board: str='', dead: str='') -> list:
         """
-        Invoke Oracle's computeEquityAuto
+        Invoke OddsOracle's computeEquityAuto
 
         Args:
             hands(list): list of hands
             board(str): board
             dead(str): dead cards
 
+        Returns:
+            list: list of equities
+
         """
-        result = self.client.PPTServer.computeEquityAuto(self.game, board, dead, self.syntax, hands,
-                                                         self.trials, self.seconds, self.threads)
+        result = self._client.PPTServer.computeEquityAuto(self.game, board, dead, self.syntax, hands,
+                                                          self.trials, self.seconds, self.threads)
         return self._parse_equity_result(result)
 
     @staticmethod
-    def _parse_equity_result(result):
+    def _parse_equity_result(result: str) -> list:
         equities = []
         for m in re.finditer(r"(.+) = (.+?)% (.+)\n", result):
             equities.append(round(float(m.group(2)) / 100, 3))
         return equities
 
-    @staticmethod
-    def __parse_pql_result(result):
-        counts = []
-        for m in re.finditer(r"COUNT (.+) = (.+?)% \(.+\)\n", result):
-            counts.append(float(m.group(2)) / 100)
-        return counts
-
 
 class PqlResult:
+    """ Class parsing  a pql result
+
+    Attributes:
+        results_list (list): list of parsed results
+        results_dict (dict): dict of parsed results
+    """
     NAME = 'name'
     PERCENTAGE = 'percentage'
     COUNTS = 'counts'
@@ -177,17 +184,14 @@ class PqlResult:
     _TRIALS_GROUP = 'trials_group'
     _TRIALS = 'trials'
 
-    def __init__(self, result):
+    def __init__(self, result: str):
         self.results_list = []
         self.results_dict = {}
         self.trials = None
         self._parse(result)
 
     def _parse(self, pql_result: str):
-        """ parse pql result
-        Returns:
-
-        """
+        """ Parses pql result """
         name = pp.Word(pp.alphanums + "_" + " ").setResultsName(self.NAME)
         percentage = pp.Word(pp.nums + '.').setResultsName(self.PERCENTAGE) + "%"
         counts = "(" + pp.Word(pp.nums).setResultsName(self.COUNTS) + ")"
@@ -237,3 +241,89 @@ class PqlResult:
                     selector_result[self.HISTOGRAM] = elements
                 self.results_list.append(selector_result)
                 self.results_dict[name] = selector_result
+
+
+class Pql:
+    """ Class implements different usable PQL queries"""
+    _PQL_COMMON = "select {selectors} \n{from_clause}"
+    logger = logging.getLogger('ppt.Pql')
+
+    def __init__(self, odds_oracle: OddsOracle):
+        """
+        Args:
+            odds_oracle (OddsOracle): connected OddsOracle
+        """
+        self.odds_oracle = odds_oracle
+
+    def equity(self, players: list, board='', dead='') -> list:
+        """ Return equities for each players.
+
+        Args:
+            players (list): list of players ranges
+            board (str): board
+            dead (str): dead cards
+
+        Returns:
+            list: list of equities
+
+        """
+        self.logger.debug('Started equity')
+        return self.odds_oracle.equity(players, board, dead)
+
+    def _construct_from_clause(self, board=None, dead=None, hero=None, players=None):
+        from_clause = list()
+        from_clause.append("from game='{}', syntax='{}'".format(self.odds_oracle.game, self.odds_oracle.syntax))
+        if board:
+            from_clause.append("\tboard='{}'".format(board))
+        if dead:
+            from_clause.append("\tdead='{}'".format(dead))
+        if hero:
+            from_clause.append("\thero='{}'".format(hero))
+        for number, player in enumerate(players, start=1):
+            from_clause.append("\tplayer_{}='{}'".format(number, player))
+        return ",\n".join(from_clause)
+
+    def hero_equity(self, hero: str, villains: list, board: str=None, dead: str=None) -> float:
+        """ Return equity only for hero
+
+        This method is faster than Pql.equity. Use Pql.equity if you need villain's equities
+
+        Args:
+            hero (str): hero's hand
+            villains (list): list of villain's hand
+            board (str): board
+            dead (str): dead cards
+
+        Returns:
+            float: hero's equity
+        """
+        self.logger.debug('Started hero_equity')
+        selector = 'avg(riverEquity(hero)) as EQ'
+        from_clause = self._construct_from_clause(board=board, dead=dead, hero=hero, players=villains)
+        pql = self._PQL_COMMON.format(selectors=selector, from_clause=from_clause)
+        pql_result = self.odds_oracle.pql(pql)
+        return pql_result.results_dict['EQ'][PqlResult.PERCENTAGE]
+
+    def count_in_range(self, main_range: str, sub_ranges: list, board: str, hero: str='', dead: str=''):
+        """ Returns how often sub_ranges are in main_range
+
+        Args:
+            main_range (str): main range
+            sub_ranges (list): sub ranges
+            board (str): board
+            hero (str): hero
+            dead (str): dead cards
+
+        Returns:
+            list: list of percentages(float)
+
+        """
+        self.logger.debug('Started count_in_range')
+        selector = "count(inRange(player_{},'{}'))"
+        selectors = ",\n\t".join([selector.format(1, sub_range) for sub_range in sub_ranges])
+        from_clause = self._construct_from_clause(board=board, dead=dead, hero=hero, players=[main_range])
+        pql = self._PQL_COMMON.format(selectors=selectors, from_clause=from_clause)
+        pql_result = self.odds_oracle.pql(pql)
+        return [result[PqlResult.PERCENTAGE] for result in pql_result.results_list]
+
+
