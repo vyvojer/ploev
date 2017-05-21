@@ -1,4 +1,4 @@
-""" Classes implementing traditional ranges for a board. """
+""" Classes implementing 'easy' (traditional) ranges for a board. """
 
 from typing import Iterable
 from collections import Counter, namedtuple
