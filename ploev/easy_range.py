@@ -1,3 +1,6 @@
+""" Classes implementing traditional ranges for a board. """
+
+from typing import Iterable
 from collections import Counter, namedtuple
 import itertools
 import copy
@@ -17,19 +20,7 @@ def _constants_dict(hand_type):
 
 
 class MadeHand:
-    """ Class representing made hands
-        Args:
-            type_(int): hand type
-            subtype(int): hand subtype. For PAIR type_ subtypes are POCKET_PAIR and BOARD_PAIR
-            relative_rank(tuple): rank of hand
-
-                board pair (index of rank, number of pair). (2, 1) for K top pair
-
-                over pair (index of rank, , number of pair). (1, 1, 1) for AA on K22.
-                (3, 2, 1) for QQ on K32
-            hole(CardSet): hole cards for hand
-            hand(CardSet): made hand
-    """
+    """ Class representing made hands """
 
     # Hand types
     STRAIGHT_FLUSH = 9
@@ -48,7 +39,19 @@ class MadeHand:
     POCKET_PAIR = 11
     BOARD_PAIR = 12
 
-    def __init__(self, type_, subtype, absolute_rank, relative_rank, hole, hand):
+    def __init__(self, type_: int, subtype: int, absolute_rank: tuple, relative_rank: tuple,
+                 hole: CardSet, hand: CardSet):
+        """ Constructor for MadeHand
+
+        Args:
+            type_ (int): type of the hand. MadeHand.STRAIGHT_FLUSH ... MaidHand.PAIR
+            subtype (int): subtype of the hand if exist.
+                For PAIR type_ subtypes are POCKET_PAIR and BOARD_PAIR. For other types subtype is NONE
+            absolute_rank (tuple):
+            relative_rank (tuple):
+            hole (CardSet): 2 hole cards for the hand
+            hand (CardSet): made 5-cards the hand
+        """
         self.type_ = type_
         self.subtype = subtype
         self.absolute_rank = absolute_rank
@@ -77,8 +80,9 @@ class MadeHand:
 
 
 def _rank_index(rank):
-    """ Return index number of card rank
-        1 for Ace, 13 for deuce
+    """ Returns index number of card rank
+
+        Returns 1 for Ace, 13 for deuce
     """
     return 15 - rank
 
@@ -90,6 +94,14 @@ class StraightDraw:
     BACKDOOR = 0
 
     def __init__(self, type_, hole_ranks: tuple, outs: tuple, nut_outs: tuple):
+        """ Constructor for StraightDraw
+
+        Args:
+            type_ (int): NORMAL or BACKDOOR
+            hole_ranks (tuple): ranks of hole cards
+            outs (tuple): ranks of outs
+            nut_outs (tuple): ranks of nut outs
+        """
         self.type_ = type_
         self.hole_ranks = tuple(sorted(hole_ranks, reverse=True))
         self.outs = tuple(sorted(outs, reverse=True))
@@ -163,22 +175,29 @@ class StraightDraw:
 
 
 class FlushDraw:
-    """ Class representing a flush draw
-        Args:
-            subtype:
-            type_(int):  _FlushDraw.FLOPPED, _FlushDraw.TURNED
-            absolute_rank(tuple):  rank of top hole flush draw cards. (14,) for 'Add';
-                (12,) for 'Qdd' on 'Ad2d3s' board; (0,) for generic ('dd) draw
-            relative_rank(tuple): relative_rank  of draw. (1,) for 1st draw; (2,) for 2nd draw; (0,) for generic draw
-            hole(CardSet): hole cards of draw. CardSet.from_str('Add')
-    """
+    """ Class representing a flush draw """
+
+    # types
     NORMAL = 0
     BACKDOOR = 1
+
+    # subtypes
     FLOPPED = 2
     TURNED = 3
     NONE = 4
 
-    def __init__(self, type_: int, subtype, absolute_rank: tuple, relative_rank: tuple, hole: CardSet):
+    def __init__(self, type_: int, subtype: int, absolute_rank: tuple, relative_rank: tuple, hole: CardSet):
+        """ Constructor for FlushDraw
+
+        Args:
+            type_ (int): NORMAL of BACKDOOR
+            subtype (int): FLOPPED of TURNED
+            absolute_rank (tuple): rank of top hole flush draw cards. (14,) for 'Add';
+                (12,) for 'Qdd' on 'Ad2d3s' board; (0,) for generic ('dd') draw
+            relative_rank (tuple): relative_rank  of draw. (1,) for 1st draw; (2,) for 2nd draw;
+                (0,) for generic draw
+            hole (CardSet):  hole cards of draw. CardSet.from_str('Add')
+        """
         self.type_ = type_
         self.subtype = subtype
         self.absolute_rank = absolute_rank
@@ -210,11 +229,14 @@ class FlushDraw:
 
 
 class Blocker:
-    """ Class representing different blockers"""
+    """ Class representing various blockers """
+    # types
     FLUSH_BLOCKER = 0
     STRAIGHT_BLOCKER = 1
     FLUSH_DRAW_BLOCKER = 2
     STRAIGHT_DRAW_BLOCKER = 3
+
+    # sub_types
     NONE = 4
     TWO_CARD = 5
     ONE_CARD = 6
@@ -222,6 +244,15 @@ class Blocker:
     TURNED = 8
 
     def __init__(self, type_: int, subtype: int, absolute_rank: tuple, relative_rank: tuple, hole: CardSet):
+        """ Constructor for Blocker
+
+        Args:
+            type_ (int): FLUSH_BLOCKER, STRAIGHT_BLOCKER, FLUSH_DRAW_BLOCKER, STRAIGHT_DRAW_BLOCKER
+            subtype (int): FLOPPED, TURNED, ONE_CARD, TWO_CARD
+            absolute_rank (Iterable): absolute rank of the blocker
+            relative_rank (Iterable): rank of the blocker
+            hole (CardSet):
+        """
         self.type_ = type_
         self.subtype = subtype
         self.absolute_rank = absolute_rank
@@ -255,7 +286,7 @@ class Blocker:
 
 
 def _is_straight(ranks):
-    """ return max rank of straight if ranks is straight"""
+    """ Returns max rank of straight if ranks is straight"""
     if set(ranks) == {14, 5, 4, 3, 2}:
         return 5
     if (max(ranks) - min(ranks) == 4) and len(set(ranks)) == 5:
@@ -264,6 +295,8 @@ def _is_straight(ranks):
 
 
 class _StraightExplorer:
+    """ Class exploring board for straights """
+
     def __init__(self, board):
         self._board = board
         self._straights = None
@@ -349,6 +382,8 @@ class _StraightExplorer:
 
 # noinspection PyTypeChecker
 class _StraightDrawExplorer:
+    """ Class exploring board for straights draws """
+
     def __init__(self, board, straights=None):
         self._board = board
         self._remaining_ranks = None
@@ -494,6 +529,10 @@ class _StraightDrawExplorer:
             by_outs(dict): dict by number outs
 
         Returns:
+            dict: dict by hole cards
+
+        Returns:
+            dict: dcit by outs
 
         """
         if by_ranks is None:
@@ -535,6 +574,8 @@ class _StraightDrawExplorer:
 
 
 class _FlushDrawExplorer:
+    """ Class exploring board for flush draws """
+
     def __init__(self, board: CardSet):
         self._board = board
         self._is_rainbow = None
@@ -664,6 +705,8 @@ class _FlushDrawExplorer:
 
 # noinspection PyTypeChecker
 class _MadeHandExplorer:
+    """ Class exploring board for made hands """
+
     def __init__(self, board: CardSet):
         self._board = board
         self._straight_flushes = None
@@ -993,6 +1036,7 @@ class _MadeHandExplorer:
 
 
 class Syntax:
+    """ Class storing constants for easy_range syntax"""
     MADE_HAND = 'made_hand'
     STRAIGHT_DRAW = 'straight_draw'
     FLUSH_DRAW = 'flush_draw'
@@ -1046,18 +1090,19 @@ class Syntax:
 
 
 class BoardExplorer:
-    """
-    Class explorers a board for all made hands and draws.
-    Args:
-        board(Board):
-    """
+    """ Class explorers a board for all possible made hands and draws. """
 
     MADE_HAND = 'made_hand'
     STRAIGHT_DRAW = 'straight_draw'
     FLUSH_DRAW = 'flush_draw'
     BLOCKER = 'blocker'
 
-    def __init__(self, board):
+    def __init__(self, board: Board):
+        """ Constructor for BoardExplorer
+
+        Args:
+            board (Board): board
+        """
         self._board = board
         self._straight_draw_explorer = _StraightDrawExplorer(self._board)
         self._flush_draw_explorer = _FlushDrawExplorer(self._board)
@@ -1120,11 +1165,19 @@ class BoardExplorer:
         return self._straight_draw_explorer.straight_draw_blockers
 
     @staticmethod
-    def _generalize_hands(made_hands, types):
-        """ Remove non-generic hands.
-            Hands with kickers if finding for generic hands without kickers (Pairs, Trips)
-            Flushes with rank if finding for generic flushes
+    def _generalize_hands(made_hands: Iterable, types: Iterable) -> list:
+        """ Removes non-generic hands.
+
+        Args:
+            made_hands (list): list of MadeHand
+            types (list): list of MadeHand type_s: MadeHand.PAIR, MadeHand.FLUSH, MadeHand.TRIPS
+
+            Removes hands with kickers if finding for generic hands without kickers (Pairs, Trips)
+            Removes flushes with rank if finding for generic flushes
+        Returns:
+            list: list of  generalized MadeHands
         """
+
         must_generalize_pairs = False
         must_generalize_trips = False
         must_generalize_flushes = False
@@ -1158,10 +1211,20 @@ class BoardExplorer:
 
         return sorted(list(set(hands)), reverse=True)
 
-    def find_made_hands(self, type_, subtype=MadeHand.NONE, relative_rank=None, and_better=False) -> list:
-        """ Returns list ofhands (or that hands and better hands) of specified type, suptype and relative rank
+    def find_made_hands(self, type_: int, sub_type: int=MadeHand.NONE,
+                        relative_rank: tuple=None, and_better: bool=False) -> list:
+        """ Returns list of hands (or that hands and better hands) of specified type, sub_type and relative rank
+
             If appropriate hand doesn't exist returns hand one rank higher.
             If appropriate hand doesn't exist and there are not better hands returns empty list
+        Args:
+            type_ (int): MadeHand type_
+            sub_type (int): MadeHand sub_type
+            relative_rank (tuple): MadeHand relative_rank.
+            and_better (bool): if True returns not only the found hand, but all the hands better
+
+        Returns:
+            list: list of MadeHand
         """
 
         two_digit_hand_types = [MadeHand.TRIPS,
@@ -1170,10 +1233,10 @@ class BoardExplorer:
                                 MadeHand.POCKET_PAIR
                                 ]
         must_generalize = False
-        if (type_ in two_digit_hand_types or subtype in two_digit_hand_types) and relative_rank is not None and len(
+        if (type_ in two_digit_hand_types or sub_type in two_digit_hand_types) and relative_rank is not None and len(
                 relative_rank) < 2:
             must_generalize = True
-        elif type_ == MadeHand.PAIR and subtype == MadeHand.NONE:
+        elif type_ == MadeHand.PAIR and sub_type == MadeHand.NONE:
             must_generalize = True
         if relative_rank == (0,):
             must_generalize = True
@@ -1185,14 +1248,14 @@ class BoardExplorer:
         def relative_rank_condition(made_hand, condition=condition_equal_or_less):
             rank_is_none = relative_rank is None
             specified_rank = relative_rank
-            if type_ == MadeHand.PAIR and subtype == MadeHand.NONE:
+            if type_ == MadeHand.PAIR and sub_type == MadeHand.NONE:
                 specified_hand_rank = made_hand.relative_rank[:1]
-            elif type_ == MadeHand.PAIR and subtype == MadeHand.BOARD_PAIR:
+            elif type_ == MadeHand.PAIR and sub_type == MadeHand.BOARD_PAIR:
                 if must_generalize:
                     specified_hand_rank = made_hand.relative_rank[1:2]
                 else:
                     specified_hand_rank = made_hand.relative_rank[1:]
-            elif type_ == MadeHand.PAIR and subtype == MadeHand.POCKET_PAIR:
+            elif type_ == MadeHand.PAIR and sub_type == MadeHand.POCKET_PAIR:
                 if must_generalize:
                     specified_hand_rank = made_hand.relative_rank[1:2]
                 else:
@@ -1212,14 +1275,14 @@ class BoardExplorer:
 
         def only_that_hands(made_hand):
             type_matches = (made_hand.type_ == type_)
-            subtype_matches = (subtype is None or made_hand.subtype == subtype)
+            subtype_matches = (sub_type is None or made_hand.subtype == sub_type)
             relative_rank_matches = relative_rank_condition(made_hand, condition_equal)
             return type_matches and subtype_matches and relative_rank_matches
 
-        if subtype == MadeHand.BOARD_PAIR:
+        if sub_type == MadeHand.BOARD_PAIR:
             searchable = itertools.takewhile(that_hands_and_better,
                                              filter(lambda x: x.subtype != MadeHand.POCKET_PAIR, self.made_hands))
-        elif subtype == MadeHand.POCKET_PAIR:
+        elif sub_type == MadeHand.POCKET_PAIR:
             searchable = itertools.takewhile(that_hands_and_better,
                                              filter(lambda x: x.subtype != MadeHand.BOARD_PAIR, self.made_hands))
         else:
@@ -1250,13 +1313,17 @@ class BoardExplorer:
         else:
             return ungeneralized_hands
 
-    def find_straight_draws(self, type_=StraightDraw.NORMAL, relative_rank=(0, 0), and_better=False):
-        """ Return list of StraightDraw with required number of outs and nut outs
+    def find_straight_draws(self, type_: int=StraightDraw.NORMAL, relative_rank: tuple=(0, 0),
+                            and_better: bool=False) -> list:
+        """ Returns list of StraightDraw with required number of outs and nut outs
 
         Args:
-            type_: type of straight draw on of StraightDraw.NORMAL, StraightDraw.BACKDOOR
-            relative_rank: tuple (number outs, number nut outs)
-            and_better:
+            type_ (int): type of straight draw on of StraightDraw.NORMAL, StraightDraw.BACKDOOR
+            relative_rank (tuple): (number outs, number nut outs). Use 0 if number not required
+            and_better (bool): if True returns not only the found draw, but all the draw better
+
+        Returns:
+            list: list of found draws
         """
         outs = relative_rank[0]
         try:
@@ -1288,7 +1355,8 @@ class BoardExplorer:
         self._remove_excess_straight_draws(draws)
         return sorted(list(draws.values()), reverse=True)
 
-    def _get_first_suitable_straight_draw_index(self, draw_type=StraightDraw.NORMAL, outs=0, nut_outs=0):
+    def _get_first_suitable_straight_draw_index(self, draw_type: int=StraightDraw.NORMAL,
+                                                outs: int=0, nut_outs: int=0) -> int:
         if draw_type == StraightDraw.BACKDOOR:
             searchable = self.backdoor_straight_draws
         else:
@@ -1336,20 +1404,24 @@ class BoardExplorer:
         for rank in remove_it:
             del draws[rank]
 
-    def find_flush_draws(self, type_=FlushDraw.NORMAL, subtype=None, relative_rank=None, and_better=False):
+    def find_flush_draws(self, type_: int=FlushDraw.NORMAL, sub_type: int=None,
+                         relative_rank: tuple=None, and_better: bool=False):
         """ Returns list flush draws for the board
 
-            Args:
-                relative_rank(tuple): relative rank of draw. (1,) for 1st draw, (2,) for 2nd.
-                    if is None, than returns list of generic draws (1 or 2 draws, if turned flush draw possible)
-                and_better(bool): if True return draws with relative rank and better
-                type_(int): type of draw, _FlushDraw.FLOPPED or _FlushDraw.TURNED
+        Args:
+            type_ (int): type of draw, FlushDraw.FLOPPED or FlushDraw.TURNED
+            sub_type (int): sub type of draw: FlushDraw.NORMAL, FlushDraw.BACKDOOR, FlushDraw.NONE (for both sub types)
+            relative_rank (tuple):  relative rank of draw. (1,) for 1st draw, (2,) for 2nd.
+                If relative_rank is None, than returns list of generic draws
+                (1 or 2 draws, if turned flush draws are possible)
+            and_better (bool):  if True returns not only the found draw, but all the draw better
 
-            Returns:
-                list of draws
+        Returns:
+            list:  list of draws
         """
-        if subtype is None:
-            subtype = FlushDraw.NONE
+
+        if sub_type is None:
+            sub_type = FlushDraw.NONE
         if type_ == FlushDraw.NORMAL:
             searchable = self.flush_draws
         else:
@@ -1357,11 +1429,11 @@ class BoardExplorer:
 
         if relative_rank is None:  # Generics draws
             draws = []
-            if subtype == FlushDraw.NONE or subtype == FlushDraw.FLOPPED:
+            if sub_type == FlushDraw.NONE or sub_type == FlushDraw.FLOPPED:
                 flopped_draws = [draw for draw in searchable if draw.subtype == FlushDraw.FLOPPED]
                 if flopped_draws:
                     draws.append(flopped_draws[0])
-            if subtype == FlushDraw.NONE or subtype == FlushDraw.TURNED:
+            if sub_type == FlushDraw.NONE or sub_type == FlushDraw.TURNED:
                 turned_draws = [draw for draw in searchable if draw.subtype == FlushDraw.TURNED]
                 if turned_draws:
                     draws.append(turned_draws[0])
@@ -1369,19 +1441,31 @@ class BoardExplorer:
                     for draw in draws]
         else:  # Concrete draws
             if and_better:
-                if subtype == FlushDraw.NONE:
+                if sub_type == FlushDraw.NONE:
                     return [draw for draw in searchable if draw.relative_rank <= relative_rank]
                 else:
                     return [draw for draw in searchable
-                            if draw.relative_rank <= relative_rank and draw.subtype == subtype]
+                            if draw.relative_rank <= relative_rank and draw.subtype == sub_type]
             else:
-                if subtype == FlushDraw.NONE:
+                if sub_type == FlushDraw.NONE:
                     return [draw for draw in searchable if draw.relative_rank == relative_rank]
                 else:
                     return [draw for draw in searchable
-                            if draw.relative_rank == relative_rank and draw.subtype == subtype]
+                            if draw.relative_rank == relative_rank and draw.subtype == sub_type]
 
-    def find_blockers(self, type_, subtype=None, relative_rank=None, and_better=False):
+    def find_blockers(self, type_: int, subtype: int=None, relative_rank: tuple=None, and_better: bool=False) -> list:
+        """ Returns list of blockers for the board
+
+        Args:
+            type_ (int): type of blocker: Blocker.FLUSH_BLOCKER, Blocker.STRAIGHT_BLOCKER,
+                Blocker.FLUSH_DRAW_BLOCKER,  Blocker.STRAIGHT_DRAW_BLOCKER
+            subtype (int): sub type of blocker: Blocker.FLOPPED, Blocker.TURNED, Blocker.ONE_CARD, Blocker.TWO_CARD
+            relative_rank (tuple): rank of blocker
+            and_better (bool):  if True returns not only the found blocker, but all the blockers better
+
+        Returns:
+            list: list of blockers
+        """
         searchable = []
         if type_ == Blocker.FLUSH_BLOCKER:
             searchable = self.flush_blockers
@@ -1417,21 +1501,47 @@ class BoardExplorer:
                     return [blocker for blocker in searchable
                             if blocker.type_ == type_ and blocker.relative_rank == relative_rank]
 
-    def find(self, family, type_, subtype=None, relative_rank=None, and_better=False):
+    def find(self, family: int, type_: int, sub_type: int=None, relative_rank: tuple=None,
+             and_better: bool=False) -> list:
+        """ Returns found hands for one of family of hands: made hands, flush draws, straight draws, blockers
+
+        Args:
+            family (int): family of finding hands: BoardExplorer.MADE_HAND, BoardExplorer.FLUSH_DRAW,
+                BoardExplorer.STRAIGHT_DRAW, BoardExplorer.BLOCKER
+            type_ (int): type of hands
+            sub_type (int): sub_type of hands
+            relative_rank (tuple): relative rank of hands
+            and_better (bool): if True returns not only the found hands, but all the hands better
+
+        Returns:
+            list: list of found hands
+        """
         if family == BoardExplorer.MADE_HAND:
-            return self.find_made_hands(type_, subtype, relative_rank, and_better)
+            return self.find_made_hands(type_, sub_type, relative_rank, and_better)
         elif family == BoardExplorer.FLUSH_DRAW:
-            return self.find_flush_draws(type_, subtype, relative_rank, and_better)
+            return self.find_flush_draws(type_, sub_type, relative_rank, and_better)
         elif family == BoardExplorer.STRAIGHT_DRAW:
             return self.find_straight_draws(type_=type_, relative_rank=relative_rank, and_better=and_better)
         elif family == BoardExplorer.BLOCKER:
-            return self.find_blockers(type_, subtype, relative_rank, and_better)
+            return self.find_blockers(type_, sub_type, relative_rank, and_better)
 
-    def _easy_range2hands(self, family, easy_range, relative_rank=None, and_better=False):
+    def _easy_range2hands(self, family: str, easy_range: str, relative_rank: tuple=None,
+                          and_better: bool=False) -> list:
+        """ Returns found hands for easy range
 
+        Args:
+            family (int):  family of finding hands: BoardExplorer.MADE_HAND, BoardExplorer.FLUSH_DRAW,
+                BoardExplorer.STRAIGHT_DRAW, BoardExplorer.BLOCKER
+            easy_range (str): easy range
+            relative_rank (tuple): relative rank of hand
+            and_better ():  if True returns not only the found hands, but all the hands better
+
+        Returns:
+            list: list of found hands
+        """
         FAMILY = 'family'
         TYPE_ = 'type_'
-        SUBTYPE = 'subtype'
+        SUBTYPE = 'sub_type'
         RELATIVE_RANK = 'relative_rank'
         AND_BETTER = 'and_better'
 
@@ -1459,7 +1569,15 @@ class BoardExplorer:
         """ Returns ppt ranges for list of hands"""
         return ','.join([str(hand.hole) for hand in hands])
 
-    def ppt(self, easy_ranges: str):
+    def ppt(self, easy_ranges: str) -> str:
+        """ Returns PPT range for easy range
+
+        Args:
+            easy_ranges (str):
+
+        Returns:
+            str: PPT range
+        """
         """ Returns PPT range for easy_range string"""
         if easy_ranges.strip() == '*':
             return '*'
@@ -1476,7 +1594,7 @@ class BoardExplorer:
             print("Unexpected symbol at column {}: {}{}".format(column + 1, easy_ranges[:column],
                                                                 colorama.Style.DIM + colorama.Back.RED + colorama.Fore.BLACK +
                                                                 easy_ranges[column]))
-            return None
+            return ''
 
         ppt_range = ''
         for result in results:
@@ -1519,7 +1637,12 @@ class BoardExplorer:
         return "{}({!r})".format(class_name, self._board)
 
 
-def _generate_parser():
+def _generate_parser() -> pp.ParserElement:
+    """ Generates pyparsing parser for easy ranges
+
+    Returns:
+        pyparsing.ParserElement: generated parser
+    """
     digits = [0, 1, 2]
     families = [Syntax.MADE_HAND, Syntax.STRAIGHT_DRAW, Syntax.FLUSH_DRAW, Syntax.BLOCKER]
     hands_digits = {0: {}, 1: {}, 2: {}}
@@ -1583,7 +1706,16 @@ def _walk_ranges(ranges_dict):
             yield (key, value)
 
 
-def load_ranges(ranges_file=None, ranges_dict=None):
+def load_ranges(ranges_file: str=None, ranges_dict: dict=None):
+    """ Loads range from file or dict
+
+    Args:
+        ranges_file (str): path to ranges file
+        ranges_dict (dict): ranges dict
+
+    Returns:
+        Ranges: loaded Ranges
+    """
     DEFAULT_FILE = 'ranges.json'
     if ranges_dict is not None:
         return _ranges_from_dict(ranges_dict)
@@ -1596,7 +1728,18 @@ def load_ranges(ranges_file=None, ranges_dict=None):
         return _ranges_from_dict(json.load(json_file))
 
 
-def check_ranges_dict(ranges_dict, pre=None, errors=None):
+def check_ranges_dict(ranges_dict: dict, pre: list=None, errors: list=None) -> bool:
+    """ Checks ranges dict for errors
+
+    Args:
+        ranges_dict (dict): ranges dict
+        pre (list): Using only for recursion
+        errors (list): Using only for recursion
+
+    Returns:
+        bool: True if no errors was found
+
+    """
     if errors is None:
         errors = []
     if pre is None:
@@ -1613,6 +1756,14 @@ def check_ranges_dict(ranges_dict, pre=None, errors=None):
 
 
 def check_range(range_):
+    """ Checks easy range for errors
+
+    Args:
+        range_ (str): easy range
+
+    Returns:
+        bool: True if no errors was found
+    """
     try:
         _parser.parseString(range_, parseAll=True)
     except pp.ParseException:
@@ -1621,17 +1772,30 @@ def check_range(range_):
         return True
 
 
-def save_ranges(ranges_dict, ranges_file):
+def save_ranges(ranges_dict: dict, ranges_file: str):
+    """ Saves ranges dict to file
+
+    Args:
+        ranges_dict (dict): ranges dict
+        ranges_file (str): path to file
+
+    """
     with open(ranges_file, 'w') as rf:
         json.dump(ranges_dict, rf, indent=4)
 
 
-def load_and_check_ranges(ranges_file=None):
+def load_and_check_ranges(ranges_file: str=None):
+    """ Loads ranges from file and checks for errors
+
+    Args:
+        ranges_file (str): path to ranges file
+
+    Returns:
+        Ranges: loaded ranges
+    """
     ranges = load_ranges(ranges_file=ranges_file)
     if check_ranges_dict(ranges.ranges_dict):
         return ranges
 
+
 RANGES = load_and_check_ranges()
-
-
-

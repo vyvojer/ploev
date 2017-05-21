@@ -755,7 +755,7 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(made_hands[-1], MadeHand(MadeHand.PAIR, MadeHand.POCKET_PAIR,
                                                   (2,), (13, 4, 5), CardSet.from_str('22'), CardSet.from_str('22')))
 
-    def test_generalate_hands(self):
+    def test_generalize_hands(self):
         made_hands = [
             MadeHand(MadeHand.TWO_PAIR, MadeHand.NONE, (14, 13), (1, 2), CardSet.from_str('AK'),
                      CardSet.from_str('AAKK')),
@@ -780,7 +780,7 @@ class BoardExplorerTest(unittest.TestCase):
         generic_hands = BoardExplorer._generalize_hands(made_hands, [MadeHand.PAIR])
         self.assertEqual(len(generic_hands), 6)
 
-    def test_find_made_hand(self):
+    def test_find_made_hands(self):
         be = BoardExplorer(Board.from_str('AdKc7h8s3s'))
         hand = be.find_made_hands(MadeHand.SET, MadeHand.NONE, (2,))
         hand_and_better = be.find_made_hands(MadeHand.SET, MadeHand.NONE, (2,), and_better=True)
@@ -912,11 +912,11 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(len(draws), 1)
         self.assertEqual(draws[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.FLOPPED, (10,), (3,), CardSet.from_str('Tdd')))
 
-        draws = be.find_flush_draws(subtype=FlushDraw.FLOPPED, relative_rank=(3,))
+        draws = be.find_flush_draws(sub_type=FlushDraw.FLOPPED, relative_rank=(3,))
         self.assertEqual(len(draws), 1)
         self.assertEqual(draws[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.FLOPPED, (10,), (3,), CardSet.from_str('Tdd')))
 
-        draws = be.find_flush_draws(subtype=FlushDraw.TURNED, relative_rank=(3,))
+        draws = be.find_flush_draws(sub_type=FlushDraw.TURNED, relative_rank=(3,))
         self.assertEqual(len(draws), 0)
 
         draws = be.find_flush_draws(relative_rank=(3,), and_better=True)
@@ -928,7 +928,7 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(draws[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.FLOPPED, (12,), (1,), CardSet.from_str('Qdd')))
         self.assertEqual(draws[1], FlushDraw(FlushDraw.NORMAL, FlushDraw.TURNED, (14,), (1,), CardSet.from_str('Ass')))
 
-        draws = be.find_flush_draws(subtype=FlushDraw.TURNED, relative_rank=(1,))
+        draws = be.find_flush_draws(sub_type=FlushDraw.TURNED, relative_rank=(1,))
         self.assertEqual(len(draws), 1)
         self.assertEqual(draws[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.TURNED, (14,), (1,), CardSet.from_str('Ass')))
 
@@ -951,12 +951,12 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(draws[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.FLOPPED, (0,), (0,), CardSet.from_str('dd')))
 
         be = BoardExplorer(Board.from_str('7d2d3ss'))
-        draws = be.find_flush_draws(subtype=FlushDraw.FLOPPED)
+        draws = be.find_flush_draws(sub_type=FlushDraw.FLOPPED)
         self.assertEqual(len(draws), 1)
         self.assertEqual(draws[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.FLOPPED, (0,), (0,), CardSet.from_str('dd')))
 
         be = BoardExplorer(Board.from_str('7d2d3ss'))
-        draws = be.find_flush_draws(subtype=FlushDraw.TURNED)
+        draws = be.find_flush_draws(sub_type=FlushDraw.TURNED)
         self.assertEqual(len(draws), 1)
         self.assertEqual(draws[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.TURNED, (0,), (0,), CardSet.from_str('ss')))
 
