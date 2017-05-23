@@ -1,7 +1,5 @@
 import unittest
-import os
 from ploev.settings import CONFIG
-import ploev
 
 
 class SettingTest(unittest.TestCase):
