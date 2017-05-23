@@ -180,9 +180,9 @@ class CardSetTest(unittest.TestCase):
 
     def test_get_particular_cards(self):
         card_set = CardSet.from_str('As 2s d d')
-        self.assertEqual(card_set.get_particular_cards(), [Card(14, 1), Card(2, 1)])
+        self.assertEqual(card_set.get_concrete_cards(), [Card(14, 1), Card(2, 1)])
         card_set = CardSet.from_str('As 2s d 3 *')
-        self.assertEqual(card_set.get_particular_cards(), [Card(14, 1), Card(2, 1)])
+        self.assertEqual(card_set.get_concrete_cards(), [Card(14, 1), Card(2, 1)])
 
     def test_get_suit_jokers(self):
         card_set = CardSet.from_str('As 2s d d s c c')

@@ -1,7 +1,25 @@
-import numbers
+# ploev
+# Copyright (C) 2017 Alexey Londkevich <vyvojer@gmail.com>
+
+# ploev is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# ploev is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+""" Classes implementing cards """
+
 import re
 import itertools
 from collections import namedtuple
+from typing import Iterable
 
 Card = namedtuple('Card', ['rank', 'suit'])
 
@@ -13,7 +31,15 @@ STRING_TO_SUIT = dict([(v, k) for k, v in SUIT_TO_STRING.items()])
 STRING_TO_RANK = dict([(v, k) for k, v in RANK_TO_STRING.items()])
 
 
-def card_from_str(card):
+def card_from_str(card: str) -> Card:
+    """ Returns Card from string representation of card
+
+    Args:
+        card (str): string representation of card
+
+    Returns:
+        Card: card
+    """
     if not (len(card) == 2 or len(card) == 1):
         raise ValueError("card must contain two or one symbol")
 
@@ -41,24 +67,45 @@ def card_from_str(card):
     return Card(rank, suit)
 
 
-def card_to_str(card):
+def card_to_str(card: Card) -> str:
+    """ Returns string representation of card
+
+    Args:
+        card (Card): card
+
+    Returns:
+        str: string representation of the card
+    """
     if card == Card(0, 0):
         return '*'
     else:
         return RANK_TO_STRING.get(card.rank, '') + SUIT_TO_STRING.get(card.suit, '')
 
 
-def cards_to_str(cards):
+def cards_to_str(cards: Iterable) -> str:
+    """ Return string representation of cards
+
+    Args:
+        cards (Iterable): cards
+
+    Returns:
+        str: string representation of the card
+    """
     return "".join([card_to_str(card) for card in cards])
 
 
 class Deck:
+    """ Class representing a standard deck"""
 
-    def __init__(self, dead_cards=None):
+    def __init__(self, dead_cards: Iterable=None):
+        """ Constructor for Deck
+
+        Args:
+            dead_cards (Iterable): dead cards, that will be removed from the Deck
+        """
         self.cards = [Card(rank, suit) for rank in range(2, 15) for suit in range(1, 5)]
         if dead_cards:
-            for dead_card in dead_cards:
-                self.cards.remove(dead_card)
+            self.remove_cards(dead_cards)
 
     def __getitem__(self, item):
         return self.cards[item]
@@ -66,20 +113,25 @@ class Deck:
     def __len__(self):
         return len(self.cards)
 
-    def remove_cards(self, cards):
+    def remove_cards(self, cards: Iterable):
+        """ Removes cards from the Deck
+
+        Args:
+            cards (Iterable): cards to remove
+        """
         for card in cards:
             self.cards.remove(card)
 
 
 class CardSet:
-    """
-    Class representing set of card
+    """ Class representing set of card """
 
-     Attributes:
-        cards (list): list of cards
-    """
+    def __init__(self, cards: Iterable=None):
+        """ Constructor for CardSet
 
-    def __init__(self, cards=None):
+        Args:
+            cards (Iterable): cards
+        """
         if cards is None:
             self.cards = []
         else:
@@ -134,61 +186,71 @@ class CardSet:
         self.cards.pop(*args)
 
     @property
-    def ranks(self):
-        """ Return a list of the ranks"""
+    def ranks(self) -> list:
+        """ Returns a list of the ranks"""
         if self._ranks is None:
             self._ranks = [card.rank for card in self.cards]
+        # noinspection PyTypeChecker
         return self._ranks
 
     @property
-    def unique_ranks(self):
-        """ Return a list of the unique ranks. Sorted descending"""
+    def unique_ranks(self) -> list:
+        """ Returns a list of the unique ranks. Sorted descending"""
         if self._unique_ranks is None:
             self._unique_ranks = sorted(list(set(self.ranks)), reverse=True)
+        # noinspection PyTypeChecker
         return self._unique_ranks
 
     @property
-    def remaining_ranks(self):
-        """ Return remaining ranks"""
+    def remaining_ranks(self) -> list:
+        """ Returns remaining ranks"""
         if self._remaining_ranks is None:
-            self._remaining_ranks =  [rank for rank in range(2, 15) if rank not in self.unique_ranks]
+            self._remaining_ranks = [rank for rank in range(2, 15) if rank not in self.unique_ranks]
+        # noinspection PyTypeChecker
         return self._remaining_ranks
 
     @property
-    def suits(self):
-        """ Return a list of the suits"""
+    def suits(self) -> list:
+        """ Returns a list of the suits"""
         if self._suits is None:
             self._suits = [card.suit for card in self.cards]
+        # noinspection PyTypeChecker
         return self._suits
 
     @property
-    def unique_suits(self):
-        """ Return a list of the unique suits. Sorted descending"""
+    def unique_suits(self) -> list:
+        """ Return list of the unique suits. Sorted descending """
         if self._unique_suits is None:
             self._unique_suits = sorted(list(set(self.suits)), reverse=True)
+        # noinspection PyTypeChecker
         return self._unique_suits
 
-    def get_particular_cards(self):
+    def get_concrete_cards(self) -> list:
+        """ Returns list of concrete cards """
         return [card for card in self.cards if (card.suit != 0 and card.rank != 0)]
 
-    def get_rank_jokers(self):
+    def get_rank_jokers(self) -> list:
+        """ Returns list of rank jokers """
         return [card.rank for card in self.cards if (card.suit == 0 and card.rank != 0)]
 
-    def get_suit_jokers(self):
+    def get_suit_jokers(self) -> list:
+        """ Returns list of suit jokers """
         return [card.suit for card in self.cards if (card.suit != 0 and card.rank == 0)]
 
-    def count_full_jokers(self):
+    def count_full_jokers(self) -> int:
+        """ Returns list of full jokers """
         return len([card.rank for card in self.cards if (card.rank == 0 and card.suit == 0)])
 
-    def get_combinations(self, size):
+    def get_combinations(self, size: int) -> list:
         """ Return a list of all combinations of a given size """
         return [CardSet(cards) for cards in itertools.combinations(self, size)]
 
-    def get_rank_combinations(self, size):
+    def get_rank_combinations(self, size: int) -> list:
         """ Return a list of all combinations of unique ranks of a given size """
         return [list(ranks) for ranks in itertools.combinations(sorted(self.unique_ranks, reverse=True), size)]
 
-    def get_ranks_for_suit(self, suit):
+    def get_ranks_for_suit(self, suit: int) -> list:
+        """ Returns list of ranks for certain suit"""
         return [card.rank for card in self.cards if card.suit == suit]
 
     @classmethod
@@ -197,6 +259,7 @@ class CardSet:
         Create CardSet from string representation of cards.
 
         Spaces are ignored ('As Js') = ('AsJs')
+
         Args:
             card_set (str): string representation of cards.
 
@@ -213,7 +276,7 @@ class CardSet:
         return cls(card_list)
 
     @classmethod
-    def from_ranks(cls, ranks):
+    def from_ranks(cls, ranks: Iterable):
         """ Create CardSet from tuple of ranks"""
         cards = [Card(rank, 0) for rank in ranks]
         return cls(cards)
@@ -231,7 +294,7 @@ class Board(CardSet):
     Class representing board. Just CardSet with 3,4 or 5 cards
     """
 
-    def __init__(self, cards):
+    def __init__(self, cards: Iterable):
         super(Board, self).__init__(cards)
         if not (len(self) == 3 or len(self) == 4 or len(self) == 5):
             raise ValueError("Board must contains 3,4 or 5 cards, was {}".format(len(self)))
