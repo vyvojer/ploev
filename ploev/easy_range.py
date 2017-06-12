@@ -1124,6 +1124,10 @@ class BoardExplorer:
         self._flush_draw_explorer = _FlushDrawExplorer(self._board)
         self._made_hand_explorer = _MadeHandExplorer(self._board)
 
+    @classmethod
+    def from_str(cls, board):
+        return cls(Board.from_str(board))
+
     @property
     def is_paired(self):
         return self._made_hand_explorer.is_paired

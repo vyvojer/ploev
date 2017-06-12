@@ -717,6 +717,12 @@ class MadeHandsExplorerTest(unittest.TestCase):
 
 
 class BoardExplorerTest(unittest.TestCase):
+
+    def test_from_str(self):
+        be = BoardExplorer.from_str('Ad2s3h')
+        self.assertEqual(be._board, Board.from_str('Ad2s3h'))
+        self.assertTrue(be.is_straighted)
+
     def test_is_paired(self):
         be = BoardExplorer(Board.from_str('AKJ23'))
         self.assertFalse(be.is_paired)
