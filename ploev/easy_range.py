@@ -1126,6 +1126,7 @@ class BoardExplorer:
 
     @classmethod
     def from_str(cls, board):
+        """ String counstructor for BoardExlorer"""
         return cls(Board.from_str(board))
 
     @property
