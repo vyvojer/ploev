@@ -57,7 +57,7 @@ class Calc:
         self.odds_oracle = odds_oracle
         self.pql = Pql(self.odds_oracle)
 
-    def equity(self, players, board=None, dead=None, hero_only=False):
+    def equity(self, players: list, board: str=None, dead: str=None, hero_only: bool=False):
         """ Calculates equities
 
         For intensive computations set 'hero_only' to True if you need only hero equity. It's faster.
@@ -84,13 +84,13 @@ class Calc:
                 dead = ''
             return self.pql.equity(players, board, dead)
 
-    def range_distribution(self, main_range: str, sub_ranges: Iterable, board: str,
+    def range_distribution(self, main_range: str, sub_ranges: list, board: str,
                            hero: str=None, equity: bool=True, cumulative: bool=True):
         """ Calculates how often sub_ranges are in main_range and what is hero's equity vs sub_ranges
 
         Args:
             main_range (str): main range
-            sub_ranges (Iterable): sub ranges
+            sub_ranges (list): sub ranges
             board (str): board
             hero (str): hero range (optional)
             equity (bool): if True calculate equity
