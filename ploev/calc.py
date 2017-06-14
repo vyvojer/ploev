@@ -106,6 +106,8 @@ class Calc:
         sub_ranges = map(_close_parenthesis, sub_ranges)
         if cumulative:
             sub_ranges = _create_cumulative_ranges(sub_ranges)
+        else:
+            sub_ranges = [sub_range for sub_range in sub_ranges]
         fractions = self.pql.count_in_range(main_range, sub_ranges, board, hero)
         distribution = []
         for subrange, fraction in zip(sub_ranges, fractions):

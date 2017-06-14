@@ -54,6 +54,23 @@ class CalcTest(unittest.TestCase):
         self.assertAlmostEqual(rd[1].equity, 0.79, delta=0.02)
         self.assertAlmostEqual(rd[2].equity, 0.88, delta=0.02)
 
+    def test_range_distribution_no_cumulative(self):
+        main_range = '75%'
+        board = '7c Kh 4s'
+        sub_ranges = [
+            '77,KK',
+            '74,K4,K7,44,77,KK',
+            '*'
+        ]
+        hero = '8c4h6s4c'
+        rd = self.calc.range_distribution(main_range, sub_ranges, board, hero, cumulative=False)
+        self.assertAlmostEqual(rd[0].fraction, 0.041, delta= 0.01)
+        self.assertAlmostEqual(rd[1].fraction, 0.115, delta=0.01)
+        self.assertAlmostEqual(rd[2].fraction, 1, delta=0.01)
+        self.assertAlmostEqual(rd[0].equity, 0.23, delta= 0.02)
+        self.assertAlmostEqual(rd[1].equity, 0.59, delta=0.02)
+        self.assertAlmostEqual(rd[2].equity, 0.84, delta=0.02)
+
     def test_equity(self):
         players = [ '3s4s5d6d', '10%', 'AA',]
         equities = self.calc.equity(players)
