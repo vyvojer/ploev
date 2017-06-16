@@ -7,5 +7,6 @@
 *.pyc
 notebooks/test.ipynb
 notebooks/.ipynb_checkpoints
-dist/*
+dist
+ploev.egg-info
 
