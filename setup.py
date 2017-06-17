@@ -1,10 +1,5 @@
 from setuptools import setup
 
-
-def readme():
-    with open('README.md') as f:
-        return f.read()
-
 setup(name='ploev',
       version='0.1',
       description='Python library for ProPokerTools Odds Oracle',
