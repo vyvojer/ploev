@@ -1742,7 +1742,7 @@ def load_ranges(ranges_file: str=None, ranges_dict: dict=None):
         return _ranges_from_dict(ranges_dict)
     elif ranges_file is None:
         if not os.path.exists(DEFAULT_FILE):
-            package_file = os.path.join(os.path.dirname(os.path.relpath(__file__)), DEFAULT_FILE)
+            package_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), DEFAULT_FILE)
             shutil.copyfile(package_file, DEFAULT_FILE)
         ranges_file = DEFAULT_FILE
     with open(ranges_file) as json_file:
