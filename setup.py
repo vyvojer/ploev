@@ -14,5 +14,8 @@ setup(name='ploev',
       author_email='vyvojer@gmail.com',
       license='GPLv3+',
       packages=['ploev'],
+      package_data={
+          'ploev': ['ploev.ini', 'ranges.json']
+      },
       install_requires=['pyparsing', 'colorama'],
       zip_safe=False)
