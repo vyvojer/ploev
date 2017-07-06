@@ -130,10 +130,10 @@ class OddsOracle:
 
     def run_server(self):
         """ Tries to run OddsOracle server """
-        command = 'cmd /K java -cp {} {} {}'.format(self._JAVA_JAR, self._JAVA_CLASS, self._port)
+        command = 'cmd /K java  -Duser.language=en-US -cp {} {} {}'.format(self._JAVA_JAR, self._JAVA_CLASS, self._port)
         cwd = os.path.join(self.path, OddsOracle._JAVA_CLASS_FOLDER)
         self.server = subprocess.Popen(command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
-        time.sleep(3)
+        time.sleep(6)
 
     def pql(self, pql: str):
         """
