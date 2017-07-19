@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='ploev',
-      version='0.1.2',
+      version='0.1.3',
       description='Python library for ProPokerTools Odds Oracle',
       classifiers=[
           'Development Status :: 3 - Alpha',

@@ -103,6 +103,15 @@ def _rank_index(rank):
     return 15 - rank
 
 
+def _print_pyparsing_error(easy_ranges: str, pe: pp.ParseException):
+    column = pe.col - 1
+    if column > len(easy_ranges) - 1:
+        column = len(easy_ranges) - 1
+    print("Unexpected symbol at column {}: {}{}".format(column + 1, easy_ranges[:column],
+                                                        colorama.Style.DIM + colorama.Back.RED + colorama.Fore.BLACK +
+                                                        easy_ranges[column] + colorama.Style.RESET_ALL))
+
+
 class StraightDraw:
     """Representing a straight draw"""
 
@@ -1609,12 +1618,7 @@ class BoardExplorer:
         try:
             results = parser.parseString(easy_ranges, parseAll=True)
         except pp.ParseException as pe:
-            column = pe.col - 1
-            if column > len(easy_ranges) - 1:
-                column = len(easy_ranges) - 1
-            print("Unexpected symbol at column {}: {}{}".format(column + 1, easy_ranges[:column],
-                                                                colorama.Style.DIM + colorama.Back.RED + colorama.Fore.BLACK +
-                                                                easy_ranges[column]))
+            _print_pyparsing_error(easy_ranges, pe)
             return ''
 
         ppt_range = ''
@@ -1787,7 +1791,8 @@ def check_range(range_):
     """
     try:
         _parser.parseString(range_, parseAll=True)
-    except pp.ParseException:
+    except pp.ParseException as pe:
+        _print_pyparsing_error(range_, pe)
         return False
     else:
         return True
