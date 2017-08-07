@@ -1,5 +1,7 @@
 import unittest
+import json
 from ranges import PostflopRange, PostflopRanges, PostflopRanges
+from ranges import _json_default, _json_object_hook
 
 
 class TestPostflopRanges(unittest.TestCase):
@@ -80,7 +82,7 @@ class TestPostflopRanges(unittest.TestCase):
         self.assertEqual(parent1.child1, child1)
         self.assertEqual(parent1.child2, child2)
 
-    def test_to_dict(self):
+    def test_to_json(self):
         pr_dict_expected = {'name': 'parent',
                             'ranges': [
                                 {'name': 'child1',
@@ -93,10 +95,10 @@ class TestPostflopRanges(unittest.TestCase):
         pr = PostflopRanges(name="parent")
         pr.add_child(PostflopRanges(name="child1"))
         pr.add_child(PostflopRanges(name="child2"))
-        pr_dict = PostflopRanges._to_dict(pr)
+        pr_dict = json.loads(json.dumps(pr, default=_json_default))
         self.assertEqual(pr_dict, pr_dict_expected)
 
-    def test_to_dict_with_sub_ranges(self):
+    def test_to_json_with_sub_ranges(self):
         pr_dict_expected = {'name': 'parent',
                             'ranges': [
                                 {'name': 'child1',
@@ -116,10 +118,10 @@ class TestPostflopRanges(unittest.TestCase):
         child1.add_child(PostflopRange('Loose', ['TP+, BP+']))
         pr.add_child(child1)
         pr.add_child(PostflopRanges(name="child2"))
-        pr_dict = PostflopRanges._to_dict(pr)
+        pr_dict = json.loads(json.dumps(pr, default=_json_default))
         self.assertEqual(pr_dict, pr_dict_expected)
 
-    def test_to_dict_with_description(self):
+    def test_to_json_with_description(self):
         pr_dict_expected = {'name': 'parent',
                             'descriptions': ['raise', 'call'],
                             'ranges': [
@@ -140,10 +142,10 @@ class TestPostflopRanges(unittest.TestCase):
         child1.add_child(PostflopRange('Loose', ['TP+', 'BP+']))
         pr.add_child(child1)
         pr.add_child(PostflopRanges(name="child2"))
-        pr_dict = PostflopRanges._to_dict(pr)
+        pr_dict = json.loads(json.dumps(pr, default=_json_default))
         self.assertEqual(pr_dict, pr_dict_expected)
 
-    def test_dict_to_ranges(self):
+    def test_json_to_ranges(self):
         pr_dict = {'name': 'parent',
                    'descriptions': ['raise', 'call'],
                    'ranges': [
@@ -159,7 +161,7 @@ class TestPostflopRanges(unittest.TestCase):
                    ],
                    }
 
-        pr = PostflopRanges._from_dict(pr_dict)
+        pr = json.loads(json.dumps(pr_dict), object_hook=_json_object_hook)
         self.assertEqual(pr.name, 'parent')
         self.assertEqual(pr.descriptions, ['raise', 'call'])
         self.assertEqual(len(pr.children), 2)
@@ -185,10 +187,10 @@ class TestPostflopRanges(unittest.TestCase):
                         'ranges': []},
                    ],
                    }
-        pr = PostflopRanges._from_dict(pr_dict)
-        new_dict = PostflopRanges._to_dict(pr)
+        pr = json.loads(json.dumps(pr_dict), object_hook=_json_object_hook)
+        new_dict = json.loads(json.dumps(pr, default=_json_default))
         self.assertEqual(pr_dict, new_dict)
-        pr2 = PostflopRanges._from_dict(new_dict)
+        pr2 = json.loads(json.dumps(pr_dict), object_hook=_json_object_hook)
         self.assertEqual(pr, pr2)
 
     def test_save_and_load_range(self):

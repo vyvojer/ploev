@@ -19,6 +19,7 @@
 from easy_range import check_range
 import json
 
+
 class _ChildMixin:
     def __init__(self, parent):
         self._parent = None
@@ -42,10 +43,14 @@ class _ChildMixin:
 
 
 class PostflopRanges(_ChildMixin):
-    def __init__(self, name: str, parent=None, descriptions: list = None):
+    def __init__(self, name: str, parent=None, children=None, descriptions: list = None):
         self.name = name
         _ChildMixin.__init__(self, parent)
-        self.children = []
+        if children is None:
+            self.children = []
+        else:
+            self.children = children
+            self._set_descriptions_attrs()
         self._descriptions = descriptions
 
     def __repr__(self):
@@ -56,6 +61,10 @@ class PostflopRanges(_ChildMixin):
         return self.name == other.name \
                and self._descriptions == other._descriptions \
                and self.children == other.children
+
+    def _set_descriptions_attrs(self):
+        for child in self.children:
+            setattr(self, child.name, child)
 
     def add_child(self, child):
         self.children.append(child)
@@ -80,47 +89,24 @@ class PostflopRanges(_ChildMixin):
                 return self.parent.descriptions
 
     @staticmethod
-    def _to_dict(postflop_ranges):
-        pf_ranges = dict()
-        pf_ranges['name'] = postflop_ranges.name
-        if postflop_ranges._descriptions is not None:
-            pf_ranges['descriptions'] = postflop_ranges._descriptions
-        if isinstance(postflop_ranges, PostflopRanges):
-            ranges = []
-            if postflop_ranges.has_children:
-                for child in postflop_ranges.children:
-                    ranges.append(PostflopRanges._to_dict(child))
-            pf_ranges['ranges'] = ranges
-        else:  # PosflopRange
-            pf_ranges['sub_ranges'] = postflop_ranges.sub_ranges
-        return pf_ranges
-
-    @staticmethod
-    def _from_dict(ranges_dict: dict, parent=None):
-        descriptions = ranges_dict.get('descriptions')
-        if ranges_dict.get('ranges') is not None:  # PosflopRanges
-            postflop_ranges = PostflopRanges(ranges_dict['name'], parent=parent, descriptions=descriptions)
-            if ranges_dict.get('ranges'):  # has children
-                for child_dict in ranges_dict.get('ranges'):
-                    PostflopRanges._from_dict(child_dict, postflop_ranges)
-            return postflop_ranges
-        if ranges_dict.get('sub_ranges') is not None:  # PoslfopRange
-            posflop_range = PostflopRange(ranges_dict['name'],
-                                          parent=parent,
-                                          sub_ranges=ranges_dict.get('sub_ranges'),
-                                          descriptions=descriptions)
-            return posflop_range
+    def _json_default(preflop_ranges):
+        if preflop_ranges._descriptions:
+            return {'name': preflop_ranges.name,
+                    'descriptions': preflop_ranges._descriptions,
+                    'ranges': preflop_ranges.children}
+        else:
+            return {'name': preflop_ranges.name,
+                    'ranges': preflop_ranges.children}
 
     def save(self, file_name: str):
-        pr_dict = self._to_dict(self)
         with open(file_name, 'w') as file:
-            json.dump(pr_dict, file, indent=4)
+            json.dump(self, file, indent=4, default=_json_default)
 
     @staticmethod
     def load(file_name: str):
         with open(file_name) as file:
-            pr_dict = json.load(file)
-            return PostflopRanges._from_dict(pr_dict)
+            return json.load(file, object_hook=_json_object_hook)
+
 
 class PostflopRange(_ChildMixin):
     def __init__(self, name, sub_ranges: list, parent: PostflopRanges = None, descriptions: list = None):
@@ -131,8 +117,8 @@ class PostflopRange(_ChildMixin):
         self._set_descriptions_attrs()
 
     def __eq__(self, other):
-        return self.name == other.name\
-               and self.sub_ranges == other.sub_ranges\
+        return self.name == other.name \
+               and self.sub_ranges == other.sub_ranges \
                and self._descriptions == other._descriptions
 
     @property
@@ -151,3 +137,32 @@ class PostflopRange(_ChildMixin):
     def _set_descriptions_attrs(self):
         for description, sub_range in zip(self.descriptions, self.sub_ranges):
             setattr(self, description, sub_range)
+
+    @staticmethod
+    def _json_default(preflop_range):
+        if preflop_range._descriptions:
+            return {'name': preflop_range.name,
+                    'descriptions': preflop_range._descriptions,
+                    'sub_ranges': preflop_range.sub_ranges}
+        else:
+            return {'name': preflop_range.name,
+                    'sub_ranges': preflop_range.sub_ranges}
+
+
+def _json_default(object):
+    return object._json_default(object)
+
+
+def _json_object_hook(ranges_dict):
+    descriptions = ranges_dict.get('descriptions')
+    if ranges_dict.get('ranges') is not None:  # PosflopRanges
+        posflop_ranges = PostflopRanges(ranges_dict['name'],
+                              children=ranges_dict.get('ranges'),
+                              descriptions=descriptions)
+        for child in posflop_ranges.children:
+            child._parent = posflop_ranges
+        return posflop_ranges
+    if ranges_dict.get('sub_ranges') is not None:  # PoslfopRange
+        return PostflopRange(ranges_dict['name'],
+                             sub_ranges=ranges_dict.get('sub_ranges'),
+                             descriptions=descriptions)
