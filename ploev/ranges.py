@@ -55,7 +55,7 @@ class PostflopRanges(_ChildMixin):
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        return f'{cls_name}(name="{self.name}", parent={self.parent}, descriptions={self.descriptions})'
+        return f'{cls_name}(name="{self.name}", parent={self.parent}, descriptions={self._descriptions})'
 
     def __eq__(self, other):
         return self.name == other.name \
@@ -115,6 +115,10 @@ class PostflopRange(_ChildMixin):
         self._sub_ranges = sub_ranges
         self._descriptions = descriptions
         self._set_descriptions_attrs()
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return f'{cls_name}(name="{self.name}, parent={self.parent}, descriptions={self._descriptions}'
 
     def __eq__(self, other):
         return self.name == other.name \
