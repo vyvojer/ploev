@@ -20,11 +20,7 @@ from typing import Iterable
 from collections import Counter, namedtuple
 import itertools
 import copy
-import os.path
-import shutil
-import json
 import pyparsing as pp
-import colorama
 
 from ploev.cards import CardSet, Board, STRING_TO_RANK, Card
 
@@ -101,15 +97,6 @@ def _rank_index(rank):
         Returns 1 for Ace, 13 for deuce
     """
     return 15 - rank
-
-
-def _print_pyparsing_error(easy_ranges: str, pe: pp.ParseException):
-    column = pe.col - 1
-    if column > len(easy_ranges) - 1:
-        column = len(easy_ranges) - 1
-    print("Unexpected symbol at column {}: {}{}".format(column + 1, easy_ranges[:column],
-                                                        colorama.Style.DIM + colorama.Back.RED + colorama.Fore.BLACK +
-                                                        easy_ranges[column] + colorama.Style.RESET_ALL))
 
 
 class StraightDraw:
@@ -1241,8 +1228,8 @@ class BoardExplorer:
 
         return sorted(list(set(hands)), reverse=True)
 
-    def find_made_hands(self, type_: int, sub_type: int=MadeHand.NONE,
-                        relative_rank: tuple=None, and_better: bool=False) -> list:
+    def find_made_hands(self, type_: int, sub_type: int = MadeHand.NONE,
+                        relative_rank: tuple = None, and_better: bool = False) -> list:
         """ Returns list of hands (or that hands and better hands) of specified type, sub_type and relative rank
 
             If appropriate hand doesn't exist returns hand one rank higher.
@@ -1343,8 +1330,8 @@ class BoardExplorer:
         else:
             return ungeneralized_hands
 
-    def find_straight_draws(self, type_: int=StraightDraw.NORMAL, relative_rank: tuple=(0, 0),
-                            and_better: bool=False) -> list:
+    def find_straight_draws(self, type_: int = StraightDraw.NORMAL, relative_rank: tuple = (0, 0),
+                            and_better: bool = False) -> list:
         """ Returns list of StraightDraw with required number of outs and nut outs
 
         Args:
@@ -1385,8 +1372,8 @@ class BoardExplorer:
         self._remove_excess_straight_draws(draws)
         return sorted(list(draws.values()), reverse=True)
 
-    def _get_first_suitable_straight_draw_index(self, draw_type: int=StraightDraw.NORMAL,
-                                                outs: int=0, nut_outs: int=0) -> int:
+    def _get_first_suitable_straight_draw_index(self, draw_type: int = StraightDraw.NORMAL,
+                                                outs: int = 0, nut_outs: int = 0) -> int:
         if draw_type == StraightDraw.BACKDOOR:
             searchable = self.backdoor_straight_draws
         else:
@@ -1434,8 +1421,8 @@ class BoardExplorer:
         for rank in remove_it:
             del draws[rank]
 
-    def find_flush_draws(self, type_: int=FlushDraw.NORMAL, sub_type: int=None,
-                         relative_rank: tuple=None, and_better: bool=False):
+    def find_flush_draws(self, type_: int = FlushDraw.NORMAL, sub_type: int = None,
+                         relative_rank: tuple = None, and_better: bool = False):
         """ Returns list flush draws for the board
 
         Args:
@@ -1483,7 +1470,8 @@ class BoardExplorer:
                     return [draw for draw in searchable
                             if draw.relative_rank == relative_rank and draw.subtype == sub_type]
 
-    def find_blockers(self, type_: int, subtype: int=None, relative_rank: tuple=None, and_better: bool=False) -> list:
+    def find_blockers(self, type_: int, subtype: int = None, relative_rank: tuple = None,
+                      and_better: bool = False) -> list:
         """ Returns list of blockers for the board
 
         Args:
@@ -1531,8 +1519,8 @@ class BoardExplorer:
                     return [blocker for blocker in searchable
                             if blocker.type_ == type_ and blocker.relative_rank == relative_rank]
 
-    def find(self, family: int, type_: int, sub_type: int=None, relative_rank: tuple=None,
-             and_better: bool=False) -> list:
+    def find(self, family: int, type_: int, sub_type: int = None, relative_rank: tuple = None,
+             and_better: bool = False) -> list:
         """ Returns found hands for one of family of hands: made hands, flush draws, straight draws, blockers
 
         Args:
@@ -1555,8 +1543,8 @@ class BoardExplorer:
         elif family == BoardExplorer.BLOCKER:
             return self.find_blockers(type_, sub_type, relative_rank, and_better)
 
-    def _easy_range2hands(self, family: str, easy_range: str, relative_rank: tuple=None,
-                          and_better: bool=False) -> list:
+    def _easy_range2hands(self, family: str, easy_range: str, relative_rank: tuple = None,
+                          and_better: bool = False) -> list:
         """ Returns found hands for easy range
 
         Args:
@@ -1618,8 +1606,7 @@ class BoardExplorer:
         try:
             results = parser.parseString(easy_ranges, parseAll=True)
         except pp.ParseException as pe:
-            _print_pyparsing_error(easy_ranges, pe)
-            return ''
+            raise EasyRangeValueError.from_pe(pe)
 
         ppt_range = ''
         for result in results:
@@ -1707,77 +1694,17 @@ def _generate_parser() -> pp.ParserElement:
 _parser = _generate_parser()
 
 
-def _ranges_from_dict(ranges_dict, range_=None):
-    if range_ is None:
-        range_type = type('Ranges', (object,), {})
-        range_ = range_type()
-        setattr(range_, 'ranges_dict', ranges_dict)
-    for key, value in ranges_dict.items():
-        if isinstance(value, dict):
-            range_type = type(key, (object,), {})
-            new_range = range_type()
-            setattr(range_, key, new_range)
-            _ranges_from_dict(value, new_range)
-        else:
-            setattr(range_, key, value)
-    return range_
+class EasyRangeValueError(Exception):
+    def __init__(self, *args, easy_range, column):
+        self.easy_range = easy_range
+        self.column = column
 
-
-def _walk_ranges(ranges_dict):
-    for key, value in ranges_dict.items():
-        if isinstance(value, dict):
-            _walk_ranges(value)
-        else:
-            yield (key, value)
-
-
-def load_ranges(ranges_file: str=None, ranges_dict: dict=None):
-    """ Loads range from file or dict
-
-    Args:
-        ranges_file (str): path to ranges file
-        ranges_dict (dict): ranges dict
-
-    Returns:
-        Ranges: loaded Ranges
-    """
-    DEFAULT_FILE = 'ranges.json'
-    if ranges_dict is not None:
-        return _ranges_from_dict(ranges_dict)
-    elif ranges_file is None:
-        if not os.path.exists(DEFAULT_FILE):
-            package_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), DEFAULT_FILE)
-            shutil.copyfile(package_file, DEFAULT_FILE)
-        ranges_file = DEFAULT_FILE
-    with open(ranges_file) as json_file:
-        return _ranges_from_dict(json.load(json_file))
-
-
-def check_ranges_dict(ranges_dict: dict, pre: list=None, errors: list=None) -> bool:
-    """ Checks ranges dict for errors
-
-    Args:
-        ranges_dict (dict): ranges dict
-        pre (list): Using only for recursion
-        errors (list): Using only for recursion
-
-    Returns:
-        bool: True if no errors was found
-
-    """
-    if errors is None:
-        errors = []
-    if pre is None:
-        pre = []
-    for key, value in ranges_dict.items():
-        if isinstance(value, dict):
-            pre.append(key)
-            check_ranges_dict(value, pre, errors)
-        else:
-            if not check_range(value):
-                errors.append(value)
-                print('Wrong range: {}: {}'.format(" > ".join(pre), value))
-    return not errors
+    @classmethod
+    def from_pe(cls, pe: pp.ParseException):
+        message = "Unexpected symbol '{}' at column {}: {}"
+        return cls(message.format(pe.line[pe.col - 1], pe.col, pe.line),
+                   easy_range=pe.line,
+                   column=pe.col)
 
 
 def check_range(range_):
@@ -1792,36 +1719,6 @@ def check_range(range_):
     try:
         _parser.parseString(range_, parseAll=True)
     except pp.ParseException as pe:
-        _print_pyparsing_error(range_, pe)
-        return False
+        raise EasyRangeValueError.from_pe(pe) from None
     else:
         return True
-
-
-def save_ranges(ranges_dict: dict, ranges_file: str):
-    """ Saves ranges dict to file
-
-    Args:
-        ranges_dict (dict): ranges dict
-        ranges_file (str): path to file
-
-    """
-    with open(ranges_file, 'w') as rf:
-        json.dump(ranges_dict, rf, indent=4)
-
-
-def load_and_check_ranges(ranges_file: str=None):
-    """ Loads ranges from file and checks for errors
-
-    Args:
-        ranges_file (str): path to ranges file
-
-    Returns:
-        Ranges: loaded ranges
-    """
-    ranges = load_ranges(ranges_file=ranges_file)
-    if check_ranges_dict(ranges.ranges_dict):
-        return ranges
-
-
-RANGES = load_and_check_ranges()
