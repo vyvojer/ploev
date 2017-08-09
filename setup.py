@@ -17,5 +17,5 @@ setup(name='ploev',
       package_data={
           'ploev': ['ploev.ini', 'ranges.json']
       },
-      install_requires=['pyparsing', 'colorama'],
+      install_requires=['pyparsing'],
       zip_safe=False)
