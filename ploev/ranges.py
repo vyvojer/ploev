@@ -17,10 +17,12 @@
 """ Classes implementing ranges. """
 
 from easy_range import check_range
+from abc import ABCMeta
 import json
 
 
-class _ChildMixin:
+class _ChildMixin(metaclass=ABCMeta):
+    """ Abstract mixin implementing class having parent """
     def __init__(self, parent):
         self._parent = None
         self.parent = parent
@@ -62,9 +64,15 @@ class PostflopRanges(_ChildMixin):
                and self._descriptions == other._descriptions \
                and self.children == other.children
 
+    def str_ancestors(self):
+        if self.parent is not None:
+            return f'{self.parent.str_ancestors()} > {self.name}'
+        else:
+            return f'{self.name}'
+
     def _set_descriptions_attrs(self):
         for child in self.children:
-            setattr(self, child.name, child)
+            setattr(self, _name_to_attr(child.name), child)
 
     def add_child(self, child):
         self.children.append(child)
@@ -140,7 +148,8 @@ class PostflopRange(_ChildMixin):
 
     def _set_descriptions_attrs(self):
         for description, sub_range in zip(self.descriptions, self.sub_ranges):
-            setattr(self, description, sub_range)
+            setattr(self, _name_to_attr(description), sub_range)
+
 
     @staticmethod
     def _json_default(preflop_range):
@@ -170,3 +179,7 @@ def _json_object_hook(ranges_dict):
         return PostflopRange(ranges_dict['name'],
                              sub_ranges=ranges_dict.get('sub_ranges'),
                              descriptions=descriptions)
+
+
+def _name_to_attr(name: str):
+    return name.replace(' ', '_')

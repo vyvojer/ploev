@@ -1,7 +1,14 @@
 import unittest
 import json
 from ranges import PostflopRange, PostflopRanges, PostflopRanges
-from ranges import _json_default, _json_object_hook
+from ranges import _json_default, _json_object_hook, _name_to_attr
+
+
+class TestRanges(unittest.TestCase):
+
+    def test_name_to_attr(self):
+        self.assertEqual(_name_to_attr('tight range'), 'tight_range')
+        self.assertEqual(_name_to_attr('tight range'), 'tight_range')
 
 
 class TestPostflopRanges(unittest.TestCase):
@@ -72,6 +79,19 @@ class TestPostflopRanges(unittest.TestCase):
         child3 = PostflopRanges(name="child3", parent=parent3)
         self.assertEqual(child3.parent, parent3)
         self.assertEqual(child3.parent.children, [child3])
+
+    def test_str_ancestors(self):
+        grand_pa = PostflopRanges(name="grand_pa")
+        parent = PostflopRanges(name="parent")
+        child = PostflopRanges(name="child")
+        self.assertEqual(grand_pa.str_ancestors(), 'grand_pa')
+        self.assertEqual(parent.str_ancestors(), 'parent')
+        self.assertEqual(child.str_ancestors(), 'child')
+        child.parent = parent
+        parent.parent = grand_pa
+        self.assertEqual(grand_pa.str_ancestors(), 'grand_pa')
+        self.assertEqual(parent.str_ancestors(), 'parent')
+        self.assertEqual(child.str_ancestors(), 'child')
 
     def test_children_as_attr(self):
         parent1 = PostflopRanges(name="parent")
@@ -241,5 +261,8 @@ class TestPostflopRange(unittest.TestCase):
         self.assertEqual(pf_range.sub_ranges[1], '2P+')
         self.assertEqual(pf_range.descriptions, ['pum', 'bum'])
         self.assertEqual(pf_range.bum, '2P+')
+
+    def test_check_posflop_range(self):
+        pass
 
 
