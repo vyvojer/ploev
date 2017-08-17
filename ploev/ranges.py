@@ -236,15 +236,16 @@ class PostflopRange(_ChildMixin):
         self._errors = []
         self._has_error = False
         for description, sub_range in zip(self.descriptions, self.sub_ranges):
-            try:
-                check_range(sub_range)
-            except EasyRangeValueError as error:
-                self._errors.append(error)
-                self._has_error = True
-                if print_error:
-                    print(f'{self.str_ancestors()}\n {description} = {sub_range}\n {error}')
-            else:
-                self._errors.append(None)
+            if sub_range is not None:
+                try:
+                    check_range(sub_range)
+                except EasyRangeValueError as error:
+                    self._errors.append(error)
+                    self._has_error = True
+                    if print_error:
+                        print(f'{self.str_ancestors()}\n {description} = {sub_range}\n {error}')
+                else:
+                    self._errors.append(None)
 
     @staticmethod
     def _json_default(preflop_range):

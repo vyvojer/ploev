@@ -336,6 +336,8 @@ class TestPostflopRange(unittest.TestCase):
         pf_range = PostflopRange("With None", sub_ranges)
         self.assertEqual(pf_range.r_3, 'BS+')
         self.assertEqual(pf_range.r_2, None)
+        pf_range.check_sub_ranges()
+        self.assertEqual(pf_range.has_error, False)
 
 
 
