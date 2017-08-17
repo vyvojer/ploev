@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='ploev',
-      version='0.1.3',
+      version='0.2.0',
       description='Python library for ProPokerTools Odds Oracle',
       classifiers=[
           'Development Status :: 3 - Alpha',
@@ -15,7 +15,7 @@ setup(name='ploev',
       license='GPLv3+',
       packages=['ploev'],
       package_data={
-          'ploev': ['ploev.ini', 'ranges.json']
+          'ploev': ['ploev.ini',]
       },
       install_requires=['pyparsing'],
       zip_safe=False)

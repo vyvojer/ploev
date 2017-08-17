@@ -1,7 +1,6 @@
 .idea
 *.log
 *.json
-!ploev/ranges.json
 *.ini
 !ploev/ploev.ini
 *.pyc

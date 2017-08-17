@@ -17,7 +17,7 @@
 """ Classes implementing ranges. """
 
 from typing import Iterable
-from easy_range import check_range, EasyRangeValueError
+from ploev.easy_range import check_range, EasyRangeValueError
 from abc import ABC
 import json
 
