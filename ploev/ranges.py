@@ -63,7 +63,6 @@ class RangeGroup(_ChildMixin):
             self.children = []
         else:
             self.children = list(children)
-#            self._set_descriptions_attrs()
         self._descriptions = descriptions
         self._has_error = False
 
@@ -95,7 +94,6 @@ class RangeGroup(_ChildMixin):
         """ Add child """
         self.children.append(child)
         child._parent = self
-        setattr(self, _name_to_attr(child.name), child)
 
     def remove_child(self, child):
         """ Remove child """
