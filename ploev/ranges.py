@@ -263,17 +263,34 @@ def _json_default(object):
 
 
 def _json_object_hook(ranges_dict):
+    if not isinstance(ranges_dict, dict):
+        raise ValueError("JSON file must contain dictionary")
     descriptions = ranges_dict.get('descriptions')
-    if ranges_dict.get('ranges') is not None:  # PosflopRanges
-        posflop_ranges = RangeGroup(ranges_dict['name'],
-                                    children=ranges_dict.get('ranges'),
+    name = ranges_dict.get('name')
+    if name is None:
+        raise ValueError("JSON dictionary must have key 'name'", ranges_dict)
+    if not isinstance(name, str):
+        raise ValueError("JSON 'name' value must be str", name)
+
+    ranges = ranges_dict.get('ranges')
+    sub_ranges = ranges_dict.get('sub_ranges')
+    if ranges is None and sub_ranges is None:
+        raise ValueError("JSON dictionary must have one of keys 'ranges' or 'sub_ranges'", ranges_dict)
+    if ranges is not None and not isinstance(ranges, list):
+        raise ValueError("JSON 'ranges' value must be list", ranges)
+    if sub_ranges is not None and not isinstance(sub_ranges, list):
+        raise ValueError("JSON 'sub_ranges' value must be list", sub_ranges)
+
+    if ranges is not None:  # PosflopRanges
+        posflop_ranges = RangeGroup(name=name,
+                                    children=ranges,
                                     descriptions=descriptions)
         for child in posflop_ranges.children:
             child._parent = posflop_ranges
         return posflop_ranges
-    if ranges_dict.get('sub_ranges') is not None:  # PoslfopRange
-        return PostflopRange(ranges_dict['name'],
-                             sub_ranges=ranges_dict.get('sub_ranges'),
+    if sub_ranges is not None:  # PoslfopRange
+        return PostflopRange(name=name,
+                             sub_ranges=sub_ranges,
                              descriptions=descriptions)
 
 

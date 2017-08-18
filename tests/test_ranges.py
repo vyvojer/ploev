@@ -227,6 +227,36 @@ class TestRangeGroup(unittest.TestCase):
         pr2 = RangeGroup.load('pr.json')
         self.assertEqual(pr, pr2)
 
+    def test_wrong_json_file(self):
+        wrong = {'a': 'b'}
+        with self.assertRaises(ValueError) as raised:
+            pr = json.loads(json.dumps(wrong), object_hook=_json_object_hook)
+        self.assertEqual(raised.exception.args[0], "JSON dictionary must have key 'name'")
+
+        wrong = {'a': 'b', 'name': []}
+        with self.assertRaises(ValueError) as raised:
+            pr = json.loads(json.dumps(wrong), object_hook=_json_object_hook)
+        self.assertEqual(raised.exception.args[0], "JSON 'name' value must be str")
+        self.assertEqual(raised.exception.args[1], [])
+
+        wrong = {'a': 'b', 'name': 'pupa'}
+        with self.assertRaises(ValueError) as raised:
+            pr = json.loads(json.dumps(wrong), object_hook=_json_object_hook)
+        self.assertEqual(raised.exception.args[0], "JSON dictionary must have one of keys 'ranges' or 'sub_ranges'")
+
+        wrong = {'name': 'pupa', 'ranges': 'pypa'}
+        with self.assertRaises(ValueError) as raised:
+            pr = json.loads(json.dumps(wrong), object_hook=_json_object_hook)
+        self.assertEqual(raised.exception.args[0], "JSON 'ranges' value must be list")
+        self.assertEqual(raised.exception.args[1], 'pypa')
+
+        wrong = {'name': 'pupa', 'sub_ranges': 'pipa'}
+        with self.assertRaises(ValueError) as raised:
+            pr = json.loads(json.dumps(wrong), object_hook=_json_object_hook)
+        self.assertEqual(raised.exception.args[0], "JSON 'sub_ranges' value must be list")
+        self.assertEqual(raised.exception.args[1], 'pipa')
+
+
     def test_check_sub_ranges(self):
         descriptions = [
             'raise',
