@@ -83,6 +83,14 @@ class TestRangeGroup(unittest.TestCase):
         self.assertEqual(child3.parent, parent3)
         self.assertEqual(child3.parent.children, [child3])
 
+    def test_children_set_in_parent(self):
+        child1 = RangeGroup(name="child1")
+        child2 = RangeGroup(name="child2")
+        parent = RangeGroup(name="parent1", children=[child1, child2])
+        self.assertEqual(child1.parent, parent)
+
+
+
     def test_str_ancestors(self):
         grand_pa = RangeGroup(name="grand_pa")
         parent1 = RangeGroup(name="parent1")

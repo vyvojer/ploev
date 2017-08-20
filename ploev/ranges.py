@@ -64,6 +64,7 @@ class RangeGroup(_ChildMixin):
             self.children = []
         else:
             self.children = list(children)
+            self._set_descriptions_attrs()
         self._descriptions = descriptions
         self._has_error = False
 
@@ -87,6 +88,10 @@ class RangeGroup(_ChildMixin):
                and self._descriptions == other._descriptions \
                and self.children == other.children
 
+    def _set_descriptions_attrs(self):
+        for child in self.children:
+            setattr(self, _name_to_attr(child.name), child)
+
     def str_ancestors(self):
         """ Return str of all ancestors"""
         if self.parent is not None:
@@ -94,18 +99,11 @@ class RangeGroup(_ChildMixin):
         else:
             return f'{self.name}'
 
-    def __getattr__(self, attr):
-        children_by_name = {child.name: child for child in self.children}
-        child = children_by_name.get(attr)
-        if child:
-            return child
-        else:
-            raise AttributeError(attr)
-
     def add_child(self, child):
         """ Add child """
         self.children.append(child)
         child._parent = self
+        setattr(self, child.name, child)
 
     def remove_child(self, child):
         """ Remove child """
@@ -189,6 +187,7 @@ class PostflopRange(_ChildMixin):
         _ChildMixin.__init__(self, parent)
         self._sub_ranges = sub_ranges
         self._descriptions = descriptions
+        self._set_descriptions_attrs()
         self._has_error = False
         self._errors = []
 
@@ -240,13 +239,9 @@ class PostflopRange(_ChildMixin):
         """ Appropriate List of EasyRangeValueError for the sub_ranges"""
         return self._errors
 
-    def __getattr__(self, attr):
-        try:
-            index = self.descriptions.index(attr)
-        except ValueError:
-            raise AttributeError(attr)
-        else:
-            return self.sub_ranges[index]
+    def _set_descriptions_attrs(self):
+        for description, sub_range in zip(self.descriptions, self.sub_ranges):
+            setattr(self, _name_to_attr(description), sub_range)
 
     def str_ancestors(self):
         if self.parent is not None:
