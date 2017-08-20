@@ -20,6 +20,7 @@ from typing import Iterable
 from ploev.easy_range import check_range, EasyRangeValueError
 from abc import ABC
 import json
+import os
 
 
 class _ChildMixin(ABC):
@@ -69,6 +70,17 @@ class RangeGroup(_ChildMixin):
     def __repr__(self):
         cls_name = self.__class__.__name__
         return f'{cls_name}(name="{self.name}", parent={self.parent}, descriptions={self._descriptions})'
+
+    def __str__(self):
+        s = f'{self.name}:{os.linesep}'
+        for child in self.children:
+            s += f'{str(child)}'
+        return s
+
+    def _repr_html_(self):
+        html = str(self).replace(os.linesep, '<br/>')
+        html = html.replace(" ", "&nbsp;")
+        return html
 
     def __eq__(self, other):
         return self.name == other.name \
@@ -182,7 +194,23 @@ class PostflopRange(_ChildMixin):
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        return f'{cls_name}(name="{self.name}, parent={self.parent}, descriptions={self._descriptions}'
+        r = '{cls_name}(name="{name}", sub_ranges={sub_ranges}, parent={parent}, descriptions={descriptions}'
+        return r.format(cls_name=cls_name,
+                        name=self.name,
+                        sub_ranges=self.sub_ranges,
+                        parent=self.parent,
+                        descriptions=self._descriptions)
+
+    def __str__(self):
+        s = f'{self.name}:{os.linesep}'
+        for description, sub_range in zip(self.descriptions, self.sub_ranges):
+            s += f'  {description} = "{sub_range}"{os.linesep}'
+        return s
+
+    def _repr_html_(self):
+        html = str(self).replace(os.linesep, '<br/>')
+        html = html.replace(" ", "&nbsp;")
+        return html
 
     def __eq__(self, other):
         return self.name == other.name \
