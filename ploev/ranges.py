@@ -60,11 +60,11 @@ class RangeGroup(_ChildMixin):
         """
         self.name = name
         _ChildMixin.__init__(self, parent)
-        if children is None:
+        self.children = []
+        if children is not None:
             self.children = []
-        else:
-            self.children = list(children)
-            self._set_descriptions_attrs()
+            for child in children:
+                self.add_child(child)
         self._descriptions = descriptions
         self._has_error = False
 
@@ -88,10 +88,6 @@ class RangeGroup(_ChildMixin):
                and self._descriptions == other._descriptions \
                and self.children == other.children
 
-    def _set_descriptions_attrs(self):
-        for child in self.children:
-            setattr(self, _name_to_attr(child.name), child)
-
     def str_ancestors(self):
         """ Return str of all ancestors"""
         if self.parent is not None:
@@ -103,11 +99,12 @@ class RangeGroup(_ChildMixin):
         """ Add child """
         self.children.append(child)
         child._parent = self
-        setattr(self, child.name, child)
+        setattr(self, _name_to_attr(child.name), child)
 
     def remove_child(self, child):
         """ Remove child """
         self.children.remove(child)
+        delattr(self, _name_to_attr(child.name))
 
     @property
     def has_children(self):

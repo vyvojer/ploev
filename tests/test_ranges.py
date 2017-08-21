@@ -89,6 +89,15 @@ class TestRangeGroup(unittest.TestCase):
         parent = RangeGroup(name="parent1", children=[child1, child2])
         self.assertEqual(child1.parent, parent)
 
+    def test_removed_child_attr(self):
+        child1 = RangeGroup(name="child1")
+        child2 = RangeGroup(name="child2")
+        parent = RangeGroup(name="parent1", children=[child1, child2])
+        self.assertEqual(parent.child1, child1)
+        parent.remove_child(child1)
+        self.assertEqual(len(parent.children), 1)
+        with self.assertRaises(AttributeError) as raised:
+            self.assertEqual(parent.child1, child1)
 
 
     def test_str_ancestors(self):
