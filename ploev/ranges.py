@@ -70,7 +70,7 @@ class RangeGroup(_ChildMixin):
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        return f'{cls_name}(name="{self.name}", parent={self.parent}, descriptions={self._descriptions})'
+        return f'{cls_name}(name="{self.name}", parent={self.parent!r}, descriptions={self._descriptions})'
 
     def __str__(self):
         s = f'{self.name}:{os.linesep}'
@@ -190,7 +190,7 @@ class PostflopRange(_ChildMixin):
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        r = '{cls_name}(name="{name}", sub_ranges={sub_ranges}, parent={parent}, descriptions={descriptions}'
+        r = '{cls_name}(name="{name}", sub_ranges={sub_ranges!r}, parent={parent!r}, descriptions={descriptions}'
         return r.format(cls_name=cls_name,
                         name=self.name,
                         sub_ranges=self.sub_ranges,
