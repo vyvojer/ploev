@@ -16,6 +16,7 @@
 
 from enum import Enum
 import copy
+from typing import Iterable
 
 
 class SubRange:
@@ -104,12 +105,12 @@ class PlayerLines:
 
 
 class Position(Enum):
-    utg = 0
-    mp = 1
-    co = 2
-    btn = 3
-    sb = 4
-    bb = 5
+    bb = 0
+    sb = 1
+    btn = 2
+    co = 3
+    hj = 4
+    utg = 5
 
 
 class Player:
@@ -121,15 +122,6 @@ class Player:
         self.hero = hero
         self.villain = villain
         self.active = active
-
-
-class Pot:
-
-    def __init__(self, size):
-        self.size = size
-
-    def add(self, chips):
-        self.size =+ chips
 
 
 class PlayerActionType(Enum):
@@ -147,12 +139,59 @@ class PlayerAction:
         self.size = size
 
 
+class GameState:
+
+    def __init__(self, pot):
+        self.pot = pot
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return f'{cls_name}(pot={self.pot})'
+
+
 class Game:
 
-    def __init__(self, players, pot):
+    def __init__(self, players: Iterable, pot):
         self.players = list(players)
         self.pot = pot
 
+    def save_state(self):
+        game_state = GameState(pot=self.pot)
+        return game_state
+
+    def restore_state(self, state: GameState):
+        self.pot = state.pot
+
+
+class GameFlow:
+
+    def __init__(self, states: Iterable):
+        self.states = list(states)
+        self._pointer = 0
+        self.pointer = 0
+
     @property
-    def spr(self):
-        return 0
+    def pointer(self):
+        return self._pointer
+
+    @pointer.setter
+    def pointer(self, value):
+        min_value = 0
+        max_value = len(self.states) - 1
+        if value < 0:
+            self._pointer = 0
+        elif value > max_value:
+            self._pointer = max_value
+        else:
+            self._pointer = value
+
+    def get_state(self):
+        return self.states[self.pointer]
+
+    def next(self):
+        self.pointer += 1
+        return self.get_state()
+
+    def previous(self):
+        self.pointer -= 1
+        return self.get_state()
