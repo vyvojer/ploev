@@ -28,7 +28,7 @@ class RangesTest(unittest.TestCase):
 class PlayerTest(unittest.TestCase):
 
     def test_villain_and_hero(self):
-        player = Player(Position.bb, 100, "John")
+        player = Player(Position.bb, 100, "John", is_hero=True)
         self.assertEqual(player.is_hero, True)
         self.assertEqual(player.is_villain, False)
         player.is_villain = True
@@ -36,37 +36,48 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(player.is_villain, True)
 
 
-class PlayerListTest(unittest.TestCase):
+class GameTest(unittest.TestCase):
 
     def setUp(self):
         self.hero = Player(Position.bb, 100, "Hero")
         self.villain1 = Player(Position.sb, 100, "Villain 1")
         self.villain2 = Player(Position.btn, 100, "Villain 2")
-        players = [self.hero, self.villain1, self.villain2]
-        self.player_list = PlayerList(players = players)
+        self.players = [self.hero, self.villain1, self.villain2]
+        self.game = Game(players = self.players)
 
     def test__init__(self):
-        self.assertEqual(self.player_list.players[Position.bb], self.hero)
-        self.assertEqual(self.player_list.players[Position.sb], self.villain1)
+        self.assertEqual(self.game.players[Position.bb], self.hero)
+        self.assertEqual(self.game.players[Position.sb], self.villain1)
 
     def test__init__with_same_position(self):
         hero = Player(position=Position.bb, name="Hero", stack=100)
         villain = Player(position=Position.bb, name="Villain", stack=100)
         with self.assertRaises(ValueError) as raised:
-            player_list = PlayerList(players=[hero, villain])
+            game = Game(players=[hero, villain])
 
     def test_get_player(self):
-        self.assertEqual(self.player_list.get_player(Position.btn), self.villain2)
+        self.assertEqual(self.game.get_player(Position.btn), self.villain2)
 
     def test_positions_and_active_positions(self):
-        position = self.player_list.positions
+        position = self.game.positions
         self.assertEqual(position, [Position.bb, Position.sb, Position.btn])
 
+    def test_set_hero(self):
+        game = self.game
+        game.set_hero(Position.sb)
+        self.assertEqual(game.get_player(Position.bb).is_hero, False)
+        self.assertEqual(game.get_player(Position.sb).is_hero, True)
+        self.assertEqual(game.get_player(Position.btn).is_hero, False)
 
-class GameTest(unittest.TestCase):
+    def test_set_in_action(self):
+        game = self.game
+        game.set_in_action(Position.btn)
+        self.assertEqual(game.get_player(Position.bb).in_action, False)
+        self.assertEqual(game.get_player(Position.sb).in_action, False)
+        self.assertEqual(game.get_player(Position.btn).in_action, True)
 
     def test_game_state(self):
-        game = Game(players=[1, 2], pot=100)
+        game = Game(players=self.players, pot=100)
         game_state = game.save_state()
         self.assertEqual(game_state.pot, 100)
         game.pot = 200

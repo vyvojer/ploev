@@ -115,15 +115,18 @@ class Position(Enum):
 
 class Player:
 
-    def __init__(self, position: Position, stack: float, name: str=None, is_hero=True):
-        self.name = name
+    def __init__(self, position: Position, stack: float, name: str=None, is_hero=False):
         self.position = position
+        if name is not None:
+            self.name = name
+        else:
+            self.name = position.name
         self.stack = stack
         self._is_hero = True
         self._is_villain = True
         self.is_hero = is_hero
         self.is_active = True
-        self.players = None
+        self.in_action = False
 
     @property
     def is_hero(self):
@@ -145,36 +148,10 @@ class Player:
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        repr = f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
-        return repr
-
-
-class PlayerList:
-
-    def __init__(self, players: Iterable):
-        self.players = {player.position: player for player in players}
-        if len(list(players)) != len(self.players):
-            raise ValueError("More than one player with same position")
-
-    def get_player(self, position: Position):
-        return self.players[position]
-
-    @property
-    def positions(self):
-        return sorted([player.position for player in self.players.values()],
-                      key=lambda position: position.value)
-
-    @property
-    def active_positions(self):
-        return sorted([player.position for player in self.players.values() if player.is_active],
-                      key=lambda position: position.value)
+        return f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
 
 
 class PlayerState:
-    pass
-
-
-class PlayersState:
     pass
 
 
@@ -184,11 +161,12 @@ class PlayerActionType(Enum):
     check = 2
     call = 3
     fold = 4
+    post_blind = 5
 
 
 class PlayerAction:
 
-    def __init__(self, type, size):
+    def __init__(self, type: PlayerActionType, size: float=None):
         self.type = type
         self.size = size
 
@@ -205,9 +183,34 @@ class GameState:
 
 class Game:
 
-    def __init__(self, players: Iterable, pot):
-        self.players = list(players)
+    def __init__(self, players: Iterable, pot=0):
+        self.players = {player.position: player for player in players}
+        if len(list(players)) != len(self.players):
+            raise ValueError("More than one player with same position")
         self.pot = pot
+
+    def get_player(self, position: Position):
+        return self.players[position]
+
+    @property
+    def positions(self):
+        return sorted([player.position for player in self.players.values()],
+                      key=lambda position: position.value)
+
+    @property
+    def active_positions(self):
+        return sorted([player.position for player in self.players.values() if player.is_active],
+                      key=lambda position: position.value)
+
+    def set_hero(self, position: Position):
+        for player in self.players.values():
+            player.is_hero = False
+        self.get_player(position).is_hero = True
+
+    def set_in_action(self, position: Position):
+        for player in self.players.values():
+            player.in_action = False
+        self.get_player(position).in_action = True
 
     def save_state(self):
         game_state = GameState(pot=self.pot)
