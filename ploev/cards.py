@@ -296,5 +296,5 @@ class Board(CardSet):
 
     def __init__(self, cards: Iterable):
         super(Board, self).__init__(cards)
-        if not (len(self) == 3 or len(self) == 4 or len(self) == 5):
-            raise ValueError("Board must contains 3,4 or 5 cards, was {}".format(len(self)))
+        if not (len(self) in [0, 3, 4, 5]):
+            raise ValueError("Board must contains 0, 3, 4 or 5 cards, was {}".format(len(self)))
