@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from enum import Enum
+from ploev.cards import Board
 import copy
 from typing import Iterable
 
@@ -105,17 +106,16 @@ class PlayerLines:
 
 
 class Position(Enum):
-    bb = 0
-    sb = 1
-    btn = 2
-    co = 3
-    hj = 4
-    utg = 5
+    bb = 8
+    sb = 9
+    btn = 0
+    co = 1
+    hj = 2
+    utg = 3
 
 
 class Player:
-
-    def __init__(self, position: Position, stack: float, name: str=None, is_hero=False):
+    def __init__(self, position: Position, stack: float, name: str = None, is_hero=False):
         self.position = position
         if name is not None:
             self.name = name
@@ -127,6 +127,7 @@ class Player:
         self.is_hero = is_hero
         self.is_active = True
         self.in_action = False
+        self.action = None
 
     @property
     def is_hero(self):
@@ -155,24 +156,57 @@ class PlayerState:
     pass
 
 
-class PlayerActionType(Enum):
-    bet = 0
-    raise_ = 1
-    check = 2
-    call = 3
-    fold = 4
-    post_blind = 5
+class ActionType(Enum):
+    bet = 'Bet'
+    raise_ = 'Raise'
+    check = 'Check'
+    call = 'Call'
+    fold = 'Fold'
+    post_blind = 'Post'
 
 
-class PlayerAction:
-
-    def __init__(self, type: PlayerActionType, size: float=None):
-        self.type = type
+class Action:
+    def __init__(self, type_: ActionType, size: float = None, min_size: float = None, max_size: float = None):
+        self.type_ = type_
         self.size = size
+        self._is_sizable = False
+        self._is_different_sizes_possible = False
+        self.min_size = min_size
+        self.max_size = max_size
+        self._set_sizable()
+        self._set_different_size_possible()
+
+    @property
+    def is_sizable(self):
+        return self._is_sizable
+
+    def _set_sizable(self):
+        if self.type_ in [ActionType.check, ActionType.fold]:
+            self._is_sizable = False
+        else:
+            self._is_sizable = True
+
+    def _set_different_size_possible(self):
+        if self.type_ in [ActionType.bet, ActionType.raise_]:
+            self._is_different_sizes_possible = True
+        else:
+            self._is_different_sizes_possible = False
+
+    def __str__(self):
+        if self._is_sizable:
+            return f'{self.type_.value} {self.size}'
+        else:
+            return f'{self.type_.value}'
+
+
+class _Street(Enum):
+    preflop = 0
+    flop = 1
+    turn = 2
+    river = 3
 
 
 class GameState:
-
     def __init__(self, pot):
         self.pot = pot
 
@@ -182,35 +216,140 @@ class GameState:
 
 
 class Game:
-
-    def __init__(self, players: Iterable, pot=0):
+    def __init__(self, players: Iterable, pot=0, board: Board = None):
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
             raise ValueError("More than one player with same position")
         self.pot = pot
+        self._possible_actions = None
+        self._in_action_position = None
+        self._board = list()
+        self._street = None
+        self._flop = None
+        self._turn = None
+        self._river = None
+        if board is None:
+            board = Board()
+        self.board = board
+        self._in_action_position = max(self.active_positions, key=lambda position: position.value)
+        self._round_closed = False
+        self._last_aggressor = None
 
-    def get_player(self, position: Position):
-        return self.players[position]
+    @property
+    def board(self):
+        return self._board
+
+    @board.setter
+    def board(self, board: Board):
+        if len(board) not in [0, 3, 4, 5]:
+            raise ValueError("Wrong board", board)
+        self._board = board
+        self._flop = None
+        self._turn = None
+        self._river = None
+        if len(board) == 0:
+            self._street = _Street.preflop
+        elif len(board) == 3:
+            self._street = _Street.flop
+            self._flop = board
+        elif len(board) == 4:
+            self._street = _Street.turn
+            self._flop = board[0:3]
+            self._turn = board
+        elif len(board) == 5:
+            self._street = _Street.river
+            self._flop = board[0:3]
+            self._turn = board[0:4]
+            self._river = board
 
     @property
     def positions(self):
         return sorted([player.position for player in self.players.values()],
-                      key=lambda position: position.value)
+                      key=lambda position: position.value, reverse=True)
 
     @property
     def active_positions(self):
         return sorted([player.position for player in self.players.values() if player.is_active],
-                      key=lambda position: position.value)
+                      key=lambda position: position.value, reverse=True)
+
+    @property
+    def last_position(self):
+        return self.active_positions[-1]
+
+    @property
+    def player_in_action(self):
+        """ Return the player in action"""
+        return self.get_player(self._in_action_position)
+
+    @property
+    def possible_actions(self) -> list:
+        return self._possible_actions
+
+    @staticmethod
+    def _count_pot_bet(call_size: float, pot: float) -> float:
+        return call_size * 2 + pot
+
+    def _determine_possible_actions(self):
+        self._possible_actions = []
+        previous_player = self.get_previous_action_player()
+        if previous_player.action is None:
+            return
+        prev_action = previous_player.action.type_
+        prev_size = previous_player.action.size
+        if prev_action == ActionType.post_blind and prev_size == 0.5:
+            self._possible_actions.append(Action(ActionType.post_blind, size=1))
+        if prev_action == ActionType.check:
+            self._possible_actions.append(Action(ActionType.bet, min_size=1, max_size=self.pot))
+            self._possible_actions.append(Action(ActionType.check))
+        if (prev_action in [ActionType.raise_, ActionType.bet, ActionType.call]) or \
+                (prev_action == ActionType.post_blind and prev_size == 1):
+            pot_bet = self._count_pot_bet(prev_size, self.pot)
+            self._possible_actions.append(Action(ActionType.raise_,
+                                                 size=pot_bet,
+                                                 min_size=prev_size * 2,
+                                                 max_size=pot_bet))
+            self._possible_actions.append(Action(ActionType.call, size=prev_size))
+
+    def get_next_action_player(self):
+        """ Return the player who is next in action"""
+        current_index = self.active_positions.index(self.player_in_action.position)
+        if current_index < len(self.active_positions) - 1:
+            next_position = self.active_positions[current_index + 1]
+        else:
+            next_position = self.active_positions[0]
+        return self.get_player(next_position)
+
+    def get_previous_action_player(self) -> Player:
+        current_index = self.active_positions.index(self.player_in_action.position)
+        if current_index > 0:
+            previous_position = self.active_positions[current_index - 1]
+        else:
+            previous_position = self.active_positions[-1]
+        return self.get_player(previous_position)
+
+    def get_player(self, position: Position) -> Player:
+        return self.players[position]
 
     def set_hero(self, position: Position):
         for player in self.players.values():
             player.is_hero = False
         self.get_player(position).is_hero = True
 
-    def set_in_action(self, position: Position):
-        for player in self.players.values():
-            player.in_action = False
-        self.get_player(position).in_action = True
+    def set_player_in_action(self, player: Player):
+        for pl in self.players.values():
+            pl.in_action = False
+        player.in_action = True
+        self._in_action_position = player.position
+        self._determine_possible_actions()
+
+    def make_action(self, action: Action):
+        if self.possible_actions and action not in self.possible_actions:
+            raise ValueError("Action is not possible", action)
+        self.player_in_action.action = action
+        self.pot += action.size
+        if action.type_ in [ActionType.raise_, ActionType.bet, ActionType.post_blind]:
+            self._last_aggressor = self.player_in_action
+        self.set_player_in_action(self.get_next_action_player())
 
     def save_state(self):
         game_state = GameState(pot=self.pot)
@@ -221,7 +360,6 @@ class Game:
 
 
 class GameFlow:
-
     def __init__(self, states: Iterable):
         self.states = list(states)
         self._pointer = 0
