@@ -334,7 +334,7 @@ class Game:
                                   min_size=self._previous_action.size * 2,
                                   max_size=pot_raise)
             action_call = Action(ActionType.CALL, size=self._previous_action.size - player_in_action.invested_in_bank)
-        action_bet = Action(ActionType.BET, min_size=1, max_size=self.pot)
+        action_bet = Action(ActionType.BET, size=self.pot, min_size=1, max_size=self.pot)
         action_check = Action(ActionType.CHECK)
         action_fold = Action(ActionType.FOLD)
         action_post_bb = Action(ActionType.POST_BLIND, size=1)
