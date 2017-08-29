@@ -106,12 +106,12 @@ class PlayerLines:
 
 
 class Position(Enum):
-    bb = 8
-    sb = 9
-    btn = 0
-    co = 1
-    hj = 2
-    utg = 3
+    BB = 8
+    SB = 9
+    BTN = 0
+    CO = 1
+    HJ = 2
+    UTG = 3
 
 
 class Player:
@@ -158,12 +158,12 @@ class PlayerState:
 
 
 class ActionType(Enum):
-    bet = 'Bet'
-    raise_ = 'Raise'
-    check = 'Check'
-    call = 'Call'
-    fold = 'Fold'
-    post_blind = 'Post'
+    BET = 'Bet'
+    RAISE = 'Raise'
+    CHECK = 'Check'
+    CALL = 'Call'
+    FOLD = 'Fold'
+    POST_BLIND = 'Post'
 
 
 class Action:
@@ -186,16 +186,20 @@ class Action:
         return self._is_sizable
 
     def _set_sizable(self):
-        if self.type_ in [ActionType.check, ActionType.fold]:
+        if self.type_ in [ActionType.CHECK, ActionType.FOLD]:
             self._is_sizable = False
         else:
             self._is_sizable = True
 
     def _set_different_size_possible(self):
-        if self.type_ in [ActionType.bet, ActionType.raise_]:
+        if self.type_ in [ActionType.BET, ActionType.RAISE]:
             self._is_different_sizes_possible = True
         else:
             self._is_different_sizes_possible = False
+
+    def __eq__(self, other):
+        return self.type_ == other.type_ and self.size == other.size \
+               and self.min_size == other.min_size and self.max_size == other.max_size
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -209,11 +213,11 @@ class Action:
 
 
 class Street(Enum):
-    preflop = 0
-    flop = 1
-    turn = 2
-    river = 3
-    showdown = 4
+    PREFLOP = 0
+    FLOP = 1
+    TURN = 2
+    RIVER = 3
+    SHOWDOWN = 4
 
 
 class GameState:
@@ -264,16 +268,16 @@ class Game:
         self._turn = None
         self._river = None
         if len(board) == 0:
-            self.street = Street.preflop
+            self.street = Street.PREFLOP
         elif len(board) == 3:
-            self.street = Street.flop
+            self.street = Street.FLOP
             self._flop = board
         elif len(board) == 4:
-            self.street = Street.turn
+            self.street = Street.TURN
             self._flop = board[0:3]
             self._turn = board
         elif len(board) == 5:
-            self.street = Street.river
+            self.street = Street.RIVER
             self._flop = board[0:3]
             self._turn = board[0:4]
             self._river = board
@@ -323,33 +327,33 @@ class Game:
 
         action_raise = None
         action_call = None
-        if self._previous_action.type_ in [ActionType.raise_, ActionType.call, ActionType.bet, ActionType.post_blind]:
+        if self._previous_action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
             pot_raise = self._count_pot_raise(self._previous_action.size, self.pot)
-            action_raise = Action(ActionType.raise_,
+            action_raise = Action(ActionType.RAISE,
                                   size=pot_raise,
                                   min_size=self._previous_action.size * 2,
                                   max_size=pot_raise)
-            action_call = Action(ActionType.call, size=self._previous_action.size - player_in_action.invested_in_bank)
-        action_bet = Action(ActionType.bet, min_size=1, max_size=self.pot)
-        action_check = Action(ActionType.check)
-        action_fold = Action(ActionType.fold)
-        action_post_bb = Action(ActionType.post_blind, size=1)
+            action_call = Action(ActionType.CALL, size=self._previous_action.size - player_in_action.invested_in_bank)
+        action_bet = Action(ActionType.BET, min_size=1, max_size=self.pot)
+        action_check = Action(ActionType.CHECK)
+        action_fold = Action(ActionType.FOLD)
+        action_post_bb = Action(ActionType.POST_BLIND, size=1)
 
-        if self.street == Street.preflop and player_in_action.position == Position.bb:
+        if self.street == Street.PREFLOP and player_in_action.position == Position.BB:
             # Special situations with BB
-            if player_in_action.position == Position.bb:
+            if player_in_action.position == Position.BB:
                 # SB posted small blind, BB must post big blind
-                if self._previous_action.type_ == ActionType.post_blind:
+                if self._previous_action.type_ == ActionType.POST_BLIND:
                     self._possible_actions.append(action_post_bb)
                 # SB completed, BB can check and close round or reopen round by raise
-                elif self._previous_action.type_ == ActionType.call and self._previous_action.size == 1:
+                elif self._previous_action.type_ == ActionType.CALL and self._previous_action.size == 1:
                     self._possible_actions.append(action_check)
         else:
-            if self._previous_action.type_ == ActionType.check or self._is_round_closed:
+            if self._previous_action.type_ == ActionType.CHECK or self._is_round_closed:
                 self._possible_actions.append(action_bet)
                 self._possible_actions.append(action_check)
-            elif self._previous_action.type_ in [ActionType.raise_, ActionType.bet, ActionType.call,
-                                                 ActionType.post_blind]:
+            elif self._previous_action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
+                                                 ActionType.POST_BLIND]:
                 self._possible_actions.append(action_raise)
                 self._possible_actions.append(action_call)
                 self._possible_actions.append(action_fold)
@@ -396,19 +400,19 @@ class Game:
         if action.is_sizable:
             self.pot += action.size
             self.player_in_action.invested_in_bank = action.size
-        if action.type_ != ActionType.fold:
+        if action.type_ != ActionType.FOLD:
             self._previous_action = action
-        if action.type_ in [ActionType.raise_, ActionType.bet]:
+        if action.type_ in [ActionType.RAISE, ActionType.BET]:
             self._last_aggressor = self.player_in_action
-        if action.type_ == ActionType.post_blind:
+        if action.type_ == ActionType.POST_BLIND:
             self._last_aggressor = self.get_next_action_player()
-        if action.type_ in [ActionType.call, ActionType.fold] and self.get_next_action_player() == self._last_aggressor:
+        if action.type_ in [ActionType.CALL, ActionType.FOLD] and self.get_next_action_player() == self._last_aggressor:
             self._is_round_closed = True
-        elif action.type_ == ActionType.check:
+        elif action.type_ == ActionType.CHECK:
             if self.player_in_action == self.last_position_player:
                 self._is_round_closed = True
             # Special situation: BB close preflop round after SB completing
-            elif self.player_in_action.position == Position.bb and self.street == Street.preflop:
+            elif self.player_in_action.position == Position.BB and self.street == Street.PREFLOP:
                 self._is_round_closed = True
         if self._is_round_closed:
             for player in self.players.values():
