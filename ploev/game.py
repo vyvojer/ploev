@@ -114,49 +114,6 @@ class Position(Enum):
     UTG = 3
 
 
-class Player:
-    def __init__(self, position: Position, stack: float, name: str = None, is_hero=False):
-        self.position = position
-        if name is not None:
-            self.name = name
-        else:
-            self.name = position.name
-        self.stack = stack
-        self._is_hero = True
-        self._is_villain = True
-        self.is_hero = is_hero
-        self.is_active = True
-        self.in_action = False
-        self.action = None
-        self.invested_in_bank = 0
-
-    @property
-    def is_hero(self):
-        return self._is_hero
-
-    @is_hero.setter
-    def is_hero(self, value: bool):
-        self._is_hero = value
-        self._is_villain = not value
-
-    @property
-    def is_villain(self):
-        return self._is_villain
-
-    @is_villain.setter
-    def is_villain(self, value: bool):
-        self._is_villain = value
-        self._is_hero = not value
-
-    def __repr__(self):
-        cls_name = self.__class__.__name__
-        return f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
-
-
-class PlayerState:
-    pass
-
-
 class ActionType(Enum):
     BET = 'Bet'
     RAISE = 'Raise'
@@ -212,6 +169,86 @@ class Action:
             return f'{self.type_.value}'
 
 
+class PlayerState:
+    def __init__(self, position: Position,
+                 stack: float,
+                 name: str,
+                 is_hero: bool,
+                 is_active: bool,
+                 in_action: bool,
+                 action: Action,
+                 invested_in_bank: float
+                 ):
+        self.position = position
+        self.stack = stack
+        self.name = name
+        self.is_hero = is_hero
+        self.is_active = is_active
+        self.in_action = in_action
+        self.action = action
+        self.invested_in_bank = invested_in_bank
+
+
+class Player:
+    def __init__(self, position: Position, stack: float, name: str = None, is_hero: bool = False):
+        self.position = position
+        if name is not None:
+            self.name = name
+        else:
+            self.name = position.name
+        self.stack = stack
+        self._is_hero = True
+        self._is_villain = True
+        self.is_hero = is_hero
+        self.is_active = True
+        self.in_action = False
+        self.action = None
+        self.invested_in_bank = 0
+
+    @property
+    def is_hero(self):
+        return self._is_hero
+
+    @is_hero.setter
+    def is_hero(self, value: bool):
+        self._is_hero = value
+        self._is_villain = not value
+
+    @property
+    def is_villain(self):
+        return self._is_villain
+
+    @is_villain.setter
+    def is_villain(self, value: bool):
+        self._is_villain = value
+        self._is_hero = not value
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
+
+    def save_state(self) -> PlayerState:
+        return PlayerState(position=self.position,
+                           stack=self.stack,
+                           name=self.name,
+                           is_hero=self.is_hero,
+                           is_active=self.is_active,
+                           in_action=self.in_action,
+                           action=self.action,
+                           invested_in_bank=self.invested_in_bank,
+                           )
+
+    def restore_state(self, state: PlayerState):
+        self.position = state.position
+        self.stack = state.stack
+        self.name = state.name
+        self.is_hero = state.is_hero
+        self.is_active = state.is_active
+        self.in_action = state.in_action
+        self.action = state.action
+        self.invested_in_bank = state.invested_in_bank
+
+
 class Street(Enum):
     PREFLOP = 0
     FLOP = 1
@@ -221,8 +258,22 @@ class Street(Enum):
 
 
 class GameState:
-    def __init__(self, pot):
+    def __init__(self, player_states,
+                 pot,
+                 board,
+                 possible_actions,
+                 in_action_position,
+                 is_round_closed,
+                 last_aggressor,
+                 previous_action):
+        self.player_states = player_states
         self.pot = pot
+        self.board = board
+        self.possible_actions = possible_actions
+        self.in_action_position = in_action_position
+        self.is_round_closed = is_round_closed
+        self.last_aggressor = last_aggressor
+        self.previous_action = previous_action
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -230,14 +281,14 @@ class GameState:
 
 
 class Game:
-    def __init__(self, players: Iterable, pot=0, board: Board = None):
+    def __init__(self, players: Iterable, pot: float = 0, board: Board = None):
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
             raise ValueError("More than one player with same position")
         self.pot = pot
         self._possible_actions = None
-        self._in_action_position = None
-        self._board = list()
+        self.in_action_position = None
+        self._board = None
         self.street = None
         self._flop = None
         self._turn = None
@@ -245,7 +296,7 @@ class Game:
         if board is None:
             board = Board()
         self.board = board
-        self._in_action_position = max(self.active_positions, key=lambda position: position.value)
+        self.in_action_position = max(self.active_positions, key=lambda position: position.value)
         self._is_round_closed = False
         self._last_aggressor = None
         self._previous_action = None
@@ -256,7 +307,7 @@ class Game:
         return f'{cls_name}(players={players}, pot={self.pot}, board={self.board!r})'
 
     @property
-    def board(self):
+    def board(self) -> Board:
         return self._board
 
     @board.setter
@@ -303,7 +354,7 @@ class Game:
     @property
     def player_in_action(self):
         """ Return the player in action"""
-        return self.get_player(self._in_action_position)
+        return self.get_player(self.in_action_position)
 
     @property
     def possible_actions(self) -> list:
@@ -379,7 +430,7 @@ class Game:
         for pl in self.players.values():
             pl.in_action = False
         player.in_action = True
-        self._in_action_position = player.position
+        self.in_action_position = player.position
         self._determine_possible_actions()
 
     def make_action(self, action: Action):
@@ -388,7 +439,7 @@ class Game:
                 if action.type_ == possible_action.type_:
                     break
             else:
-                raise ValueError(f"Action is not possible, only {self.possible_actions} are possilbe", action)
+                raise ValueError(f"Action is not possible, only {self.possible_actions} are possible", action)
             if action.is_sizable and (action.size < possible_action.min_size or action.size > possible_action.max_size):
                 message = "Action size is not possible, size must be between {} and {}"
                 raise ValueError(message.format(possible_action.min_size, possible_action.max_size), action.size)
@@ -399,6 +450,7 @@ class Game:
 
         if action.is_sizable:
             self.pot += action.size
+            self.player_in_action.stack -= action.size
             self.player_in_action.invested_in_bank = action.size
         if action.type_ != ActionType.FOLD:
             self._previous_action = action
@@ -424,11 +476,27 @@ class Game:
             self.set_player_in_action(self.get_next_action_player())
 
     def save_state(self):
-        game_state = GameState(pot=self.pot)
+        player_states = {position: player.save_state() for position, player in self.players.items()}
+        game_state = GameState(player_states=player_states,
+                               pot=self.pot,
+                               board=self.board,
+                               possible_actions=self.possible_actions,
+                               in_action_position=self.in_action_position,
+                               is_round_closed=self._is_round_closed,
+                               last_aggressor=self._last_aggressor,
+                               previous_action=self._previous_action)
         return game_state
 
     def restore_state(self, state: GameState):
+        for position, player in self.players.items():
+            self.players[position].restore_state(state.player_states[position])
         self.pot = state.pot
+        self.board = state.board
+        self._possible_actions = state.possible_actions
+        self.in_action_position = state.in_action_position
+        self._is_round_closed = state.is_round_closed
+        self._last_aggressor = state.last_aggressor
+        self._previous_action = state.previous_action
 
 
 class GameFlow:

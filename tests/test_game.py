@@ -35,6 +35,22 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(player.is_villain, True)
 
 
+class PlayerStateTest(unittest.TestCase):
+
+    def test_save_state(self):
+        player = Player(Position.BB, 100, "John", is_hero=True)
+        player.action = Action(ActionType.BET, 10)
+        state = player.save_state()
+        player.name = "Pupa"
+        player.stack = 200
+        player.position = Position.SB
+        player.action = None
+        player.restore_state(state)
+        self.assertEqual(player.name, "John")
+        self.assertEqual(player.position, Position.BB)
+        self.assertEqual(player.stack, 100)
+
+
 class ActionTest(unittest.TestCase):
     def test__init__(self):
         action = Action(ActionType.BET, 100)
@@ -62,7 +78,7 @@ class GameTest(unittest.TestCase):
         game = self.game
         self.assertEqual(game.players[Position.BB], self.bb)
         self.assertEqual(game.players[Position.SB], self.sb)
-        self.assertEqual(game._in_action_position, Position.SB)
+        self.assertEqual(game.in_action_position, Position.SB)
 
     def test__init__with_same_position(self):
         hero = Player(position=Position.BB, name="Hero", stack=100)
@@ -266,34 +282,37 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.player_in_action, hero)
         self.assertEqual(game.possible_actions, [Action(ActionType.BET, 4.5, 1, 4.5),
                                                  Action(ActionType.CHECK)])
+        game.make_action(Action(ActionType.BET, 4.5, 1, 4.5))
+        self.assertEqual(game.player_in_action, villain)
+        self.assertEqual(game.possible_actions, [Action(ActionType.RAISE, 18, 9, 18),
+                                                 Action(ActionType.CALL, 4.5),
+                                                 Action(ActionType.FOLD)])
+        self.assertEqual(game._last_aggressor, hero)
+        self.assertEqual(game._is_round_closed, False)
 
     def test_game_state(self):
-        game = Game(players=self.players, pot=100)
-        game_state = game.save_state()
-        self.assertEqual(game_state.pot, 100)
-        game.pot = 200
-        self.assertEqual(game.pot, 200)
-        game.restore_state(game_state)
-        self.assertEqual(game.pot, 100)
+        hero = Player(Position.BTN, 98, is_hero=True)
+        villain = Player(Position.BB, 98)
+        game = Game([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
+        self.assertEqual(game.player_in_action, villain)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(villain.stack, 98)
+        self.assertEqual(game.pot, 4.5)
+        state_in_the_begin = game.save_state()
+        game.make_action(Action(ActionType.BET, size=4.5))
+        self.assertEqual(game.player_in_action, hero)
+        self.assertEqual(villain.stack, 93.5)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(game.pot, 9)
+        state_after_villain_action = game.save_state()
+        game.restore_state(state_in_the_begin)
+        self.assertEqual(game.player_in_action, villain)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(villain.stack, 98)
+        self.assertEqual(game.pot, 4.5)
+        game.restore_state(state_after_villain_action)
+        self.assertEqual(game.player_in_action, hero)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(villain.stack, 93.5)
+        self.assertEqual(game.pot, 9)
 
-
-class GameFlowTest(unittest.TestCase):
-    def test_next_and_previous(self):
-        state0 = GameState(pot=0)
-        state1 = GameState(pot=100)
-        state2 = GameState(pot=200)
-        flow = GameFlow(states=[state0, state1, state2])
-        self.assertEqual(flow.pointer, 0)
-        self.assertEqual(flow.get_state(), state0)
-        self.assertEqual(flow.pointer, 0)
-        self.assertEqual(flow.next(), state1)
-        self.assertEqual(flow.pointer, 1)
-        self.assertEqual(flow.next(), state2)
-        self.assertEqual(flow.pointer, 2)
-        self.assertEqual(flow.next(), state2)
-        self.assertEqual(flow.previous(), state1)
-        self.assertEqual(flow.pointer, 1)
-        self.assertEqual(flow.previous(), state0)
-        self.assertEqual(flow.pointer, 0)
-        self.assertEqual(flow.previous(), state0)
-        self.assertEqual(flow.pointer, 0)
