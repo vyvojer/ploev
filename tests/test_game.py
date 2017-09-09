@@ -316,3 +316,24 @@ class GameTest(unittest.TestCase):
         self.assertEqual(villain.stack, 93.5)
         self.assertEqual(game.pot, 9)
 
+
+class GameFlowTest(unittest.TestCase):
+    def test_next_and_previous(self):
+        state0 = GameState(pot=0)
+        state1 = GameState(pot=100)
+        state2 = GameState(pot=200)
+        flow = GameFlow(states=[state0, state1, state2])
+        self.assertEqual(flow.pointer, 0)
+        self.assertEqual(flow.get_state(), state0)
+        self.assertEqual(flow.pointer, 0)
+        self.assertEqual(flow.next(), state1)
+        self.assertEqual(flow.pointer, 1)
+        self.assertEqual(flow.next(), state2)
+        self.assertEqual(flow.pointer, 2)
+        self.assertEqual(flow.next(), state2)
+        self.assertEqual(flow.previous(), state1)
+        self.assertEqual(flow.pointer, 1)
+        self.assertEqual(flow.previous(), state0)
+        self.assertEqual(flow.pointer, 0)
+        self.assertEqual(flow.previous(), state0)
+        self.assertEqual(flow.pointer, 0)
