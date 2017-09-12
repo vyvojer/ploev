@@ -468,7 +468,14 @@ class GameFlow:
         return self.get_state()
 
 
+class GameNode:
+
+    def __init__(self, state):
+        self.game_state = state
+
+
 class GameTree:
+
     def __init__(self, game: GameState):
         self.game = game
 

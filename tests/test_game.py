@@ -63,7 +63,7 @@ class ActionTest(unittest.TestCase):
         self.assertEqual(action._is_different_sizes_possible, False)
 
 
-class GameTest(unittest.TestCase):
+class GameStateTest(unittest.TestCase):
     def setUp(self):
         self.bb = Player(Position.BB, 100, "Hero")
         self.sb = Player(Position.SB, 100, "SB")
@@ -323,7 +323,7 @@ class GameFlowTest(unittest.TestCase):
         self.game = GameState(players=self.players)
 
 
-class GameNodeTest(unittest.TestCase):
+class GameTreeTest(unittest.TestCase):
 
     def setUp(self):
         self.button = Player(Position.BTN, 98)
