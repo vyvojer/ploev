@@ -34,18 +34,15 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(player.is_hero, False)
         self.assertEqual(player.is_villain, True)
 
-
-class PlayerStateTest(unittest.TestCase):
-
     def test_save_state(self):
         player = Player(Position.BB, 100, "John", is_hero=True)
         player.action = Action(ActionType.BET, 10)
-        state = player.save_state()
+        state = player.clone()
         player.name = "Pupa"
         player.stack = 200
         player.position = Position.SB
         player.action = None
-        player.restore_state(state)
+        player.restore(state)
         self.assertEqual(player.name, "John")
         self.assertEqual(player.position, Position.BB)
         self.assertEqual(player.stack, 100)
@@ -298,13 +295,13 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.street, Street.FLOP)
         self.assertEqual(villain.stack, 98)
         self.assertEqual(game.pot, 4.5)
-        state_in_the_begin = game.save_state()
+        state_in_the_begin = game.clone()
         game.make_action(Action(ActionType.BET, size=4.5))
         self.assertEqual(game.player_in_action, hero)
         self.assertEqual(villain.stack, 93.5)
         self.assertEqual(game.street, Street.FLOP)
         self.assertEqual(game.pot, 9)
-        state_after_villain_action = game.save_state()
+        state_after_villain_action = game.clone()
         game.restore_state(state_in_the_begin)
         self.assertEqual(game.player_in_action, villain)
         self.assertEqual(game.street, Street.FLOP)
@@ -319,21 +316,21 @@ class GameTest(unittest.TestCase):
 
 class GameFlowTest(unittest.TestCase):
     def test_next_and_previous(self):
-        state0 = GameState(pot=0)
-        state1 = GameState(pot=100)
-        state2 = GameState(pot=200)
-        flow = GameFlow(states=[state0, state1, state2])
-        self.assertEqual(flow.pointer, 0)
-        self.assertEqual(flow.get_state(), state0)
-        self.assertEqual(flow.pointer, 0)
-        self.assertEqual(flow.next(), state1)
-        self.assertEqual(flow.pointer, 1)
-        self.assertEqual(flow.next(), state2)
-        self.assertEqual(flow.pointer, 2)
-        self.assertEqual(flow.next(), state2)
-        self.assertEqual(flow.previous(), state1)
-        self.assertEqual(flow.pointer, 1)
-        self.assertEqual(flow.previous(), state0)
-        self.assertEqual(flow.pointer, 0)
-        self.assertEqual(flow.previous(), state0)
-        self.assertEqual(flow.pointer, 0)
+        self.bb = Player(Position.BB, 100, "Hero")
+        self.sb = Player(Position.SB, 100, "SB")
+        self.btn = Player(Position.BTN, 100, "BTN")
+        self.players = [self.bb, self.sb, self.btn]
+        self.game = Game(players=self.players)
+
+
+class GameNodeTest(unittest.TestCase):
+
+    def setUp(self):
+        self.button = Player(Position.BTN, 98)
+        self.bb = Player(Position.BB, 98)
+        self.game = Game(players=[self.bb, self.button], pot=4.5, board=Board.from_str('AcKd8s'))
+        self.game.make_action(Action(ActionType.CHECK))
+
+    def test__init__(self):
+        game_tree = GameTree(self.game)
+        self.assertEqual(game_tree.game.player_in_action, self.button)

@@ -169,26 +169,6 @@ class Action:
             return f'{self.type_.value}'
 
 
-class PlayerState:
-    def __init__(self, position: Position,
-                 stack: float,
-                 name: str,
-                 is_hero: bool,
-                 is_active: bool,
-                 in_action: bool,
-                 action: Action,
-                 invested_in_bank: float
-                 ):
-        self.position = position
-        self.stack = stack
-        self.name = name
-        self.is_hero = is_hero
-        self.is_active = is_active
-        self.in_action = in_action
-        self.action = action
-        self.invested_in_bank = invested_in_bank
-
-
 class Player:
     def __init__(self, position: Position, stack: float, name: str = None, is_hero: bool = False):
         self.position = position
@@ -227,26 +207,14 @@ class Player:
         cls_name = self.__class__.__name__
         return f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
 
-    def save_state(self) -> PlayerState:
-        return PlayerState(position=self.position,
-                           stack=self.stack,
-                           name=self.name,
-                           is_hero=self.is_hero,
-                           is_active=self.is_active,
-                           in_action=self.in_action,
-                           action=self.action,
-                           invested_in_bank=self.invested_in_bank,
-                           )
+    def clone(self):
+        return copy.deepcopy(self)
 
-    def restore_state(self, state: PlayerState):
-        self.position = state.position
-        self.stack = state.stack
-        self.name = state.name
-        self.is_hero = state.is_hero
-        self.is_active = state.is_active
-        self.in_action = state.in_action
-        self.action = state.action
-        self.invested_in_bank = state.invested_in_bank
+    def restore(self, state):
+        """ Restore state of Player from cloned Player"""
+        for key, value in vars(state).items():
+            if not key.startswith('_'):
+                setattr(self, key, value)
 
 
 class Street(Enum):
@@ -255,29 +223,6 @@ class Street(Enum):
     TURN = 2
     RIVER = 3
     SHOWDOWN = 4
-
-
-class GameState:
-    def __init__(self, player_states,
-                 pot,
-                 board,
-                 possible_actions,
-                 in_action_position,
-                 is_round_closed,
-                 last_aggressor,
-                 previous_action):
-        self.player_states = player_states
-        self.pot = pot
-        self.board = board
-        self.possible_actions = possible_actions
-        self.in_action_position = in_action_position
-        self.is_round_closed = is_round_closed
-        self.last_aggressor = last_aggressor
-        self.previous_action = previous_action
-
-    def __repr__(self):
-        cls_name = self.__class__.__name__
-        return f'{cls_name}(pot={self.pot})'
 
 
 class Game:
@@ -475,28 +420,19 @@ class Game:
         else:
             self.set_player_in_action(self.get_next_action_player())
 
-    def save_state(self):
-        player_states = {position: player.save_state() for position, player in self.players.items()}
-        game_state = GameState(player_states=player_states,
-                               pot=self.pot,
-                               board=self.board,
-                               possible_actions=self.possible_actions,
-                               in_action_position=self.in_action_position,
-                               is_round_closed=self._is_round_closed,
-                               last_aggressor=self._last_aggressor,
-                               previous_action=self._previous_action)
-        return game_state
+    def clone(self):
+        return copy.deepcopy(self)
 
-    def restore_state(self, state: GameState):
+    def restore_state(self, state):
         for position, player in self.players.items():
-            self.players[position].restore_state(state.player_states[position])
+            self.players[position].restore(state.players[position])
         self.pot = state.pot
         self.board = state.board
         self._possible_actions = state.possible_actions
         self.in_action_position = state.in_action_position
-        self._is_round_closed = state.is_round_closed
-        self._last_aggressor = state.last_aggressor
-        self._previous_action = state.previous_action
+        self._is_round_closed = state._is_round_closed
+        self._last_aggressor = state._last_aggressor
+        self._previous_action = state._previous_action
 
 
 class GameFlow:
@@ -530,3 +466,9 @@ class GameFlow:
     def previous(self):
         self.pointer -= 1
         return self.get_state()
+
+
+class GameTree:
+    def __init__(self, game: Game):
+        self.game = game
+
