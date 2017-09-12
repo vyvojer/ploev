@@ -69,7 +69,7 @@ class GameTest(unittest.TestCase):
         self.sb = Player(Position.SB, 100, "SB")
         self.btn = Player(Position.BTN, 100, "BTN")
         self.players = [self.bb, self.sb, self.btn]
-        self.game = Game(players=self.players)
+        self.game = GameState(players=self.players)
 
     def test__init__(self):
         game = self.game
@@ -81,7 +81,7 @@ class GameTest(unittest.TestCase):
         hero = Player(position=Position.BB, name="Hero", stack=100)
         villain = Player(position=Position.BB, name="Villain", stack=100)
         with self.assertRaises(ValueError) as raised:
-            game = Game(players=[hero, villain])
+            game = GameState(players=[hero, villain])
 
     def test_get_player(self):
         self.assertEqual(self.game.get_player(Position.BTN), self.btn)
@@ -173,8 +173,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.pot, 5)
 
     def test_count_pot_bet(self):
-        self.assertEqual(Game._count_pot_raise(call_size=1, pot=1.5), 3.5)
-        self.assertEqual(Game._count_pot_raise(call_size=1, pot=2.5), 4.5)
+        self.assertEqual(GameState._count_pot_raise(call_size=1, pot=1.5), 3.5)
+        self.assertEqual(GameState._count_pot_raise(call_size=1, pot=2.5), 4.5)
 
     def test_make_action(self):
         game = self.game
@@ -272,7 +272,7 @@ class GameTest(unittest.TestCase):
     def test_posflop_situation(self):
         hero = Player(Position.BTN, 98, is_hero=True)
         villain = Player(Position.BB, 98, is_hero=True)
-        game = Game([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
+        game = GameState([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
         self.assertEqual(game.player_in_action, villain)
         self.assertEqual(game.street, Street.FLOP)
         game.make_action(Action(ActionType.CHECK))
@@ -290,7 +290,7 @@ class GameTest(unittest.TestCase):
     def test_game_state(self):
         hero = Player(Position.BTN, 98, is_hero=True)
         villain = Player(Position.BB, 98)
-        game = Game([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
+        game = GameState([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
         self.assertEqual(game.player_in_action, villain)
         self.assertEqual(game.street, Street.FLOP)
         self.assertEqual(villain.stack, 98)
@@ -320,7 +320,7 @@ class GameFlowTest(unittest.TestCase):
         self.sb = Player(Position.SB, 100, "SB")
         self.btn = Player(Position.BTN, 100, "BTN")
         self.players = [self.bb, self.sb, self.btn]
-        self.game = Game(players=self.players)
+        self.game = GameState(players=self.players)
 
 
 class GameNodeTest(unittest.TestCase):
@@ -328,7 +328,7 @@ class GameNodeTest(unittest.TestCase):
     def setUp(self):
         self.button = Player(Position.BTN, 98)
         self.bb = Player(Position.BB, 98)
-        self.game = Game(players=[self.bb, self.button], pot=4.5, board=Board.from_str('AcKd8s'))
+        self.game = GameState(players=[self.bb, self.button], pot=4.5, board=Board.from_str('AcKd8s'))
         self.game.make_action(Action(ActionType.CHECK))
 
     def test__init__(self):

@@ -225,7 +225,7 @@ class Street(Enum):
     SHOWDOWN = 4
 
 
-class Game:
+class GameState:
     def __init__(self, players: Iterable, pot: float = 0, board: Board = None):
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
@@ -469,6 +469,6 @@ class GameFlow:
 
 
 class GameTree:
-    def __init__(self, game: Game):
+    def __init__(self, game: GameState):
         self.game = game
 
