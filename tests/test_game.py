@@ -314,6 +314,9 @@ class GameStateTest(unittest.TestCase):
         self.assertEqual(game.pot, 9)
 
 
+class GameTest(unittest.TestCase):
+    pass
+
 class GameFlowTest(unittest.TestCase):
     def test_next_and_previous(self):
         self.bb = Player(Position.BB, 100, "Hero")

@@ -439,6 +439,10 @@ class GameState:
         self._previous_action = state._previous_action
 
 
+class Game:
+    pass
+
+
 class GameFlow:
 
     def __init__(self, states: Iterable):
