@@ -323,14 +323,56 @@ class GameFlowTest(unittest.TestCase):
         self.game = GameState(players=self.players)
 
 
-class GameTreeTest(unittest.TestCase):
+class GameNodeTest(unittest.TestCase):
 
     def setUp(self):
-        self.button = Player(Position.BTN, 98)
-        self.bb = Player(Position.BB, 98)
-        self.game = GameState(players=[self.bb, self.button], pot=4.5, board=Board.from_str('AcKd8s'))
+        self.btn = Player(Position.BTN, 100)
+        self.bb = Player(Position.BB, 100)
+        self.game = GameState(players=[self.bb, self.btn], pot=6, board=Board.from_str('2cKd8s'))
         self.game.make_action(Action(ActionType.CHECK))
 
     def test__init__(self):
-        game_tree = GameTree(self.game)
-        self.assertEqual(game_tree.game.player_in_action, self.button)
+        game_node = GameNode(self.game)
+        self.assertEqual(game_node.parent, None)
+        self.assertEqual(game_node.lines, [])
+
+    def test_add_line(self):
+        root = GameNode(self.game)
+        self.assertEqual(root.game_state.player_in_action.position, Position.BTN)
+        self.assertEqual(root.game_state.player_in_action.stack, 100)
+
+        line_check = root.add_line(Action(ActionType.CHECK))
+        self.assertEqual(root.game_state.player_in_action.position, Position.BTN)
+        self.assertEqual(line_check.game_state.player_in_action.position, Position.BB)
+        self.assertEqual(line_check.game_state.get_player(Position.BTN).stack, 100)
+        self.assertEqual(line_check.parent, root)
+
+        line_bet = root.add_line(Action(ActionType.BET, 6))
+        self.assertEqual(root.game_state.player_in_action.position, Position.BTN)
+        self.assertEqual(line_check.game_state.player_in_action.position, Position.BB)
+        self.assertEqual(line_check.game_state.get_player(Position.BTN).stack, 100)
+        self.assertEqual(line_bet.game_state.player_in_action.position, Position.BB)
+        self.assertEqual(line_bet.game_state.get_player(Position.BTN).stack, 94)
+        self.assertEqual(line_bet.game_state.player_in_action.stack, 100)
+
+        self.assertEqual(root.lines, [line_check, line_bet])
+
+    def test_add_standard_lines(self):
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        self.assertEqual(len(root.lines), 2)
+        self.assertEqual(root.lines[0].game_state.previous_action.type_, ActionType.BET)
+        self.assertEqual(root.lines[1].game_state.previous_action.type_, ActionType.CHECK)
+
+
+class GameTreeTest(unittest.TestCase):
+
+    def setUp(self):
+        self.button = Player(Position.BTN, 100)
+        self.bb = Player(Position.BB, 100)
+        self.game = GameState(players=[self.bb, self.button], pot=100, board=Board.from_str('2cKd8s'))
+        self.game.make_action(Action(ActionType.CHECK))
+
+    def test__init__(self):
+        game_tree = GameTree(root=GameNode(self.game))
+        self.assertEqual(game_tree.root.game_state.player_in_action, self.button)

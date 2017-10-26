@@ -124,7 +124,7 @@ class ActionType(Enum):
 
 
 class Action:
-    def __init__(self, type_: ActionType, size: float = None, min_size: float = None, max_size: float = None):
+    def __init__(self, type_: ActionType, size: float=None, min_size: float=None, max_size: float=None):
         self.type_ = type_
         self.size = size
         self._is_sizable = False
@@ -302,6 +302,10 @@ class GameState:
         return self.get_player(self.in_action_position)
 
     @property
+    def previous_action(self):
+        return self._previous_action
+
+    @property
     def possible_actions(self) -> list:
         return self._possible_actions
 
@@ -436,6 +440,7 @@ class GameState:
 
 
 class GameFlow:
+
     def __init__(self, states: Iterable):
         self.states = list(states)
         self._pointer = 0
@@ -470,12 +475,31 @@ class GameFlow:
 
 class GameNode:
 
-    def __init__(self, state):
+    def __init__(self, state: GameState, parent=None, lines=None):
+        self.parent = parent
         self.game_state = state
+        self._lines = []
+
+    @property
+    def lines(self):
+        return self._lines
+
+    def add_line(self, action: Action):
+        line_node = GameNode(state=self.game_state.clone())
+        line_node.game_state.make_action(action)
+        line_node.parent = self
+        self.lines.append(line_node)
+        return line_node
+
+    def add_standard_lines(self):
+        """ Add all posible lines  """
+        for possible_action in self.game_state.possible_actions:
+            self.add_line(copy.copy(possible_action))
 
 
 class GameTree:
 
-    def __init__(self, game: GameState):
-        self.game = game
+    def __init__(self, root: GameNode):
+        self.root = root
+        self.game_state = root.game_state
 
