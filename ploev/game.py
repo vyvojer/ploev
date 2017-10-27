@@ -225,7 +225,7 @@ class Street(Enum):
     SHOWDOWN = 4
 
 
-class GameState:
+class Game:
     def __init__(self, players: Iterable, pot: float = 0, board: Board = None):
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
@@ -437,10 +437,6 @@ class GameState:
         self._is_round_closed = state._is_round_closed
         self._last_aggressor = state._last_aggressor
         self._previous_action = state._previous_action
-
-
-class Game:
-    pass
 
 
 class GameFlow:

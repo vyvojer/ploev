@@ -105,34 +105,6 @@ class GameStateTest(unittest.TestCase):
         self.assertEqual(game.get_player(Position.BTN).in_action, True)
         self.assertEqual(game.player_in_action, self.btn)
 
-    def test_board(self):
-        game = self.game
-        game.board = Board()
-        self.assertEqual(game._board, Board())
-        self.assertEqual(game.street, Street.PREFLOP)
-        self.assertEqual(game._flop, None)
-        self.assertEqual(game._turn, None)
-        self.assertEqual(game._river, None)
-
-        game.board = Board.from_str('AsKd8h')
-        self.assertEqual(game._board, Board.from_str('AsKd8h'))
-        self.assertEqual(game.street, Street.FLOP)
-        self.assertEqual(game._flop, Board.from_str('AsKd8h'))
-        self.assertEqual(game._turn, None)
-        self.assertEqual(game._river, None)
-
-        game.board = Board.from_str('AsKd8h2h')
-        self.assertEqual(game.street, Street.TURN)
-        self.assertEqual(game._flop, Board.from_str('AsKd8h'))
-        self.assertEqual(game._turn, Board.from_str('AsKd8h2h'))
-        self.assertEqual(game._river, None)
-
-        game.board = Board.from_str('AsKd8h2hQc')
-        self.assertEqual(game.street, Street.RIVER)
-        self.assertEqual(game._flop, Board.from_str('AsKd8h'))
-        self.assertEqual(game._turn, Board.from_str('AsKd8h2h'))
-        self.assertEqual(game._river, Board.from_str('AsKd8h2hQc'))
-
     def test_next_street(self):
         game = self.game
         self.assertEqual(game.street, Street.PREFLOP)
@@ -315,6 +287,7 @@ class GameStateTest(unittest.TestCase):
 
 
 class GameTest(unittest.TestCase):
+
     pass
 
 class GameFlowTest(unittest.TestCase):
