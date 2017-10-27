@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from abc import ABC, abstractmethod
 from enum import Enum
 from ploev.cards import Board
 import copy
@@ -102,6 +103,17 @@ class PlayerLines:
         self.main_range = main_range
 
     def normalize_lines(self):
+        pass
+
+
+class AbstractRange(ABC):
+
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def ppt(self):
         pass
 
 
@@ -260,23 +272,45 @@ class Game:
         if len(board) not in [0, 3, 4, 5]:
             raise ValueError("Wrong board", board)
         self._board = board
-        self._flop = None
-        self._turn = None
-        self._river = None
+
         if len(board) == 0:
             self.street = Street.PREFLOP
         elif len(board) == 3:
             self.street = Street.FLOP
-            self._flop = board
+            self.flop = board
         elif len(board) == 4:
             self.street = Street.TURN
-            self._flop = board[0:3]
-            self._turn = board
+            self.flop = board[0:3]
+            self.turn = board
         elif len(board) == 5:
             self.street = Street.RIVER
-            self._flop = board[0:3]
-            self._turn = board[0:4]
-            self._river = board
+            self.flop = board[0:3]
+            self.turn = board[0:4]
+            self.river = board
+
+    @property
+    def flop(self):
+        return self._flop
+
+    @flop.setter
+    def flop(self, flop: Board):
+        self._flop = flop
+
+    @property
+    def turn(self):
+        return self._turn
+
+    @turn.setter
+    def turn(self, turn: Board):
+        self._turn = turn
+
+    @property
+    def river(self):
+        return self._river
+
+    @river.setter
+    def river(self, river: Board):
+        self.river = river
 
     @property
     def positions(self):
@@ -436,7 +470,7 @@ class Game:
         self.in_action_position = state.in_action_position
         self._is_round_closed = state._is_round_closed
         self._last_aggressor = state._last_aggressor
-        self._previous_action = state._previous_action
+        self._previous_action = state.previous_action
 
 
 class GameFlow:
@@ -475,7 +509,7 @@ class GameFlow:
 
 class GameNode:
 
-    def __init__(self, state: GameState, parent=None, lines=None):
+    def __init__(self, state: Game, parent=None, lines=None):
         self.parent = parent
         self.game_state = state
         self._lines = []

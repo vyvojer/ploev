@@ -63,13 +63,13 @@ class ActionTest(unittest.TestCase):
         self.assertEqual(action._is_different_sizes_possible, False)
 
 
-class GameStateTest(unittest.TestCase):
+class GameTest(unittest.TestCase):
     def setUp(self):
         self.bb = Player(Position.BB, 100, "Hero")
         self.sb = Player(Position.SB, 100, "SB")
         self.btn = Player(Position.BTN, 100, "BTN")
         self.players = [self.bb, self.sb, self.btn]
-        self.game = GameState(players=self.players)
+        self.game = Game(players=self.players)
 
     def test__init__(self):
         game = self.game
@@ -81,7 +81,7 @@ class GameStateTest(unittest.TestCase):
         hero = Player(position=Position.BB, name="Hero", stack=100)
         villain = Player(position=Position.BB, name="Villain", stack=100)
         with self.assertRaises(ValueError) as raised:
-            game = GameState(players=[hero, villain])
+            game = Game(players=[hero, villain])
 
     def test_get_player(self):
         self.assertEqual(self.game.get_player(Position.BTN), self.btn)
@@ -145,8 +145,8 @@ class GameStateTest(unittest.TestCase):
         self.assertEqual(game.pot, 5)
 
     def test_count_pot_bet(self):
-        self.assertEqual(GameState._count_pot_raise(call_size=1, pot=1.5), 3.5)
-        self.assertEqual(GameState._count_pot_raise(call_size=1, pot=2.5), 4.5)
+        self.assertEqual(Game._count_pot_raise(call_size=1, pot=1.5), 3.5)
+        self.assertEqual(Game._count_pot_raise(call_size=1, pot=2.5), 4.5)
 
     def test_make_action(self):
         game = self.game
@@ -244,7 +244,7 @@ class GameStateTest(unittest.TestCase):
     def test_posflop_situation(self):
         hero = Player(Position.BTN, 98, is_hero=True)
         villain = Player(Position.BB, 98, is_hero=True)
-        game = GameState([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
+        game = Game([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
         self.assertEqual(game.player_in_action, villain)
         self.assertEqual(game.street, Street.FLOP)
         game.make_action(Action(ActionType.CHECK))
@@ -262,7 +262,7 @@ class GameStateTest(unittest.TestCase):
     def test_game_state(self):
         hero = Player(Position.BTN, 98, is_hero=True)
         villain = Player(Position.BB, 98)
-        game = GameState([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
+        game = Game([hero, villain], pot=4.5, board=Board.from_str('Td4s3s'))
         self.assertEqual(game.player_in_action, villain)
         self.assertEqual(game.street, Street.FLOP)
         self.assertEqual(villain.stack, 98)
@@ -286,17 +286,13 @@ class GameStateTest(unittest.TestCase):
         self.assertEqual(game.pot, 9)
 
 
-class GameTest(unittest.TestCase):
-
-    pass
-
 class GameFlowTest(unittest.TestCase):
     def test_next_and_previous(self):
         self.bb = Player(Position.BB, 100, "Hero")
         self.sb = Player(Position.SB, 100, "SB")
         self.btn = Player(Position.BTN, 100, "BTN")
         self.players = [self.bb, self.sb, self.btn]
-        self.game = GameState(players=self.players)
+        self.game = Game(players=self.players)
 
 
 class GameNodeTest(unittest.TestCase):
@@ -304,7 +300,7 @@ class GameNodeTest(unittest.TestCase):
     def setUp(self):
         self.btn = Player(Position.BTN, 100)
         self.bb = Player(Position.BB, 100)
-        self.game = GameState(players=[self.bb, self.btn], pot=6, board=Board.from_str('2cKd8s'))
+        self.game = Game(players=[self.bb, self.btn], pot=6, board=Board.from_str('2cKd8s'))
         self.game.make_action(Action(ActionType.CHECK))
 
     def test__init__(self):
@@ -346,7 +342,7 @@ class GameTreeTest(unittest.TestCase):
     def setUp(self):
         self.button = Player(Position.BTN, 100)
         self.bb = Player(Position.BB, 100)
-        self.game = GameState(players=[self.bb, self.button], pot=100, board=Board.from_str('2cKd8s'))
+        self.game = Game(players=[self.bb, self.button], pot=100, board=Board.from_str('2cKd8s'))
         self.game.make_action(Action(ActionType.CHECK))
 
     def test__init__(self):
