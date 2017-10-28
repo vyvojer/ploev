@@ -353,14 +353,13 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(root.lines[1].game_state.previous_action.type_, ActionType.CHECK)
 
 
-class GameTreeTest(unittest.TestCase):
+class TypicalGameSituationTest(unittest.TestCase):
 
-    def setUp(self):
-        self.button = Player(Position.BTN, 100)
-        self.bb = Player(Position.BB, 100)
-        self.game = Game(players=[self.bb, self.button], pot=100, board=Board.from_str('2cKd8s'))
-        self.game.make_action(Action(ActionType.CHECK))
+    def test_SPR1_pot_bet(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True)
+        bb = Player(Position.BB, stack=33)
+        game = Game(players=[bb, btn], pot=6, board=Board.from_str('2c Kd 8s'))
+        game.make_action(Action(ActionType.BET, size=33))
 
-    def test__init__(self):
-        game_tree = GameTree(root=GameNode(self.game))
-        self.assertEqual(game_tree.root.game_state.player_in_action, self.button)
+
+

@@ -544,9 +544,13 @@ class GameFlow:
 
 class GameNode:
 
-    def __init__(self, state: Game, parent=None, lines=None):
+    def __init__(self, game: Game, game_state: Game=None, parent=None, lines=None):
+        self.game = game
+        if game_state is not None:
+            self.game_state = game_state
+        else:
+            self.game_state = game.clone()
         self.parent = parent
-        self.game_state = state
         self._lines = []
 
     @property
@@ -554,7 +558,7 @@ class GameNode:
         return self._lines
 
     def add_line(self, action: Action):
-        line_node = GameNode(state=self.game_state.clone())
+        line_node = GameNode(game=self.game, game_state=self.game_state.clone())
         line_node.game_state.make_action(action)
         line_node.parent = self
         self.lines.append(line_node)
@@ -565,10 +569,4 @@ class GameNode:
         for possible_action in self.game_state.possible_actions:
             self.add_line(copy.copy(possible_action))
 
-
-class GameTree:
-
-    def __init__(self, root: GameNode):
-        self.root = root
-        self.game_state = root.game_state
 
