@@ -1,6 +1,7 @@
 import unittest
+
+from ploev.easy_range import BoardExplorer
 from ploev.game import *
-from ploev.game import Street
 
 
 class RangesTest(unittest.TestCase):
@@ -25,9 +26,17 @@ class RangesTest(unittest.TestCase):
         self.assertEqual(sub_ranges[1].sub_range, 'K4')
 
 
+class EasyRangeTest(unittest.TestCase):
+    def test_ppt(self):
+        board_explorer = BoardExplorer(Board.from_str('AsKdTh'))
+        easy_range = EasyRange('TS+')
+        easy_range.board_explorer = board_explorer
+        self.assertEqual(easy_range.ppt(), '(QJ,AA)')
+
+
 class PlayerTest(unittest.TestCase):
     def test_villain_and_hero(self):
-        player = Player(Position.BB, 100, "John", is_hero=True)
+        player = Player(Position.BB, 100, name="John", is_hero=True)
         self.assertEqual(player.is_hero, True)
         self.assertEqual(player.is_villain, False)
         player.is_villain = True
@@ -35,7 +44,7 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(player.is_villain, True)
 
     def test_save_state(self):
-        player = Player(Position.BB, 100, "John", is_hero=True)
+        player = Player(Position.BB, 100, name="John", is_hero=True)
         player.action = Action(ActionType.BET, 10)
         state = player.clone()
         player.name = "Pupa"
@@ -46,6 +55,13 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(player.name, "John")
         self.assertEqual(player.position, Position.BB)
         self.assertEqual(player.stack, 100)
+
+    def test_add_range(self):
+        player = Player(Position.BB, 100, name="John", is_hero=True)
+        self.assertEqual(player.ranges, [])
+        player.narrow_range(PptRange('70%'))
+        self.assertEqual(len(player.ranges), 1)
+        self.assertEqual(player.ranges[0].range_, '70%')
 
 
 class ActionTest(unittest.TestCase):

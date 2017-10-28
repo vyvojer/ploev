@@ -109,12 +109,21 @@ class PlayerLines:
 class AbstractRange(ABC):
 
     @abstractmethod
-    def __init__(self):
-        pass
-
-    @abstractmethod
     def ppt(self):
         pass
+
+
+class PptRange(AbstractRange):
+
+    def __init__(self, range_: str):
+        self.range_ = range_
+
+    def ppt(self):
+        return self.range_
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return "{}({})".format(cls_name, self.range_)
 
 
 class Position(Enum):
@@ -182,13 +191,17 @@ class Action:
 
 
 class Player:
-    def __init__(self, position: Position, stack: float, name: str = None, is_hero: bool = False):
+    def __init__(self, position: Position, stack: float, ranges: Iterable=None, name: str=None, is_hero: bool=False):
         self.position = position
+        self.stack = stack
+        if ranges is not None:
+            self.ranges = list(ranges)
+        else:
+            self.ranges = []
         if name is not None:
             self.name = name
         else:
             self.name = position.name
-        self.stack = stack
         self._is_hero = True
         self._is_villain = True
         self.is_hero = is_hero
@@ -215,6 +228,9 @@ class Player:
         self._is_villain = value
         self._is_hero = not value
 
+    def narrow_range(self, range_: AbstractRange):
+        self.ranges.append(range_)
+
     def __repr__(self):
         cls_name = self.__class__.__name__
         return f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
@@ -235,6 +251,23 @@ class Street(Enum):
     TURN = 2
     RIVER = 3
     SHOWDOWN = 4
+
+
+class EasyRange(AbstractRange):
+
+    def __init__(self, range_: str, cumulative: bool=True, street: Street=None):
+        self.range_ = range_
+        self.cumulative = cumulative
+        self.street = street
+        self.board_explorer = None
+
+    def ppt(self):
+        return self.board_explorer.ppt(self.range_)
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        repr_str = "{}({}, cumulative={}, street={})"
+        return repr_str.format(cls_name, self.range_, self.cumulative, self.street)
 
 
 class Game:
@@ -416,7 +449,7 @@ class Game:
         self.in_action_position = player.position
         self._determine_possible_actions()
 
-    def make_action(self, action: Action):
+    def make_action(self, action: Action, player_range=None):
         if self.possible_actions:
             for possible_action in self.possible_actions:
                 if action.type_ == possible_action.type_:
@@ -430,6 +463,8 @@ class Game:
             player.action = None
         self.player_in_action.action = action
         self._is_round_closed = False
+        if player_range is not None:
+            self.player_in_action.narrow_range(player_range)
 
         if action.is_sizable:
             self.pot += action.size
