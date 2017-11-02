@@ -271,11 +271,12 @@ class EasyRange(AbstractRange):
 
 
 class Game:
-    def __init__(self, players: Iterable, pot: float = 0, board: Board = None):
+    def __init__(self, players: Iterable, pot: float = 0, board: Board = None, allin_allowed: bool=False):
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
             raise ValueError("More than one player with same position")
         self.pot = pot
+        self.allin_allowed = allin_allowed
         self._possible_actions = None
         self.in_action_position = None
         self._board = None
@@ -289,7 +290,9 @@ class Game:
         self.in_action_position = max(self.active_positions, key=lambda position: position.value)
         self._is_round_closed = False
         self._last_aggressor = None
-        self._previous_action = None
+        self._made_action_player = None
+        self._made_action = None
+        self.next_raise_possible = True
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -369,8 +372,12 @@ class Game:
         return self.get_player(self.in_action_position)
 
     @property
-    def previous_action(self):
-        return self._previous_action
+    def made_action(self):
+        return self._made_action
+
+    @property
+    def made_action_player(self):
+        return self._made_action_player
 
     @property
     def possible_actions(self) -> list:
@@ -389,18 +396,31 @@ class Game:
     def _determine_possible_actions(self):
         self._possible_actions = []
         player_in_action = self.player_in_action
-        if self._previous_action is None:
+        if self._made_action is None:
             return
 
         action_raise = None
         action_call = None
-        if self._previous_action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
-            pot_raise = self._count_pot_raise(self._previous_action.size, self.pot)
-            action_raise = Action(ActionType.RAISE,
-                                  size=pot_raise,
-                                  min_size=self._previous_action.size * 2,
-                                  max_size=pot_raise)
-            action_call = Action(ActionType.CALL, size=self._previous_action.size - player_in_action.invested_in_bank)
+        raise_possible = True
+        if self._made_action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
+            pot_raise = self._count_pot_raise(self._made_action.size, self.pot)
+            call_size = self._made_action.size - player_in_action.invested_in_bank
+            if player_in_action.stack <= call_size:
+                raise_possible = False
+                call_size = player_in_action.stack
+            if raise_possible:
+                min_raise_size = self._made_action.size * 2
+                if self.allin_allowed:
+                    max_raise_size = player_in_action.stack
+                else:
+                    max_raise_size = pot_raise
+                if player_in_action.stack < min_raise_size:  # All-in
+                    min_raise_size = max_raise_size = player_in_action.stack
+                if player_in_action.stack < max_raise_size:  # All-n
+                    max_raise_size = player_in_action.stack
+                action_raise = Action(ActionType.RAISE, size=pot_raise, min_size=min_raise_size, max_size=max_raise_size)
+            action_call = Action(ActionType.CALL, size=call_size)
+
         action_bet = Action(ActionType.BET, size=self.pot, min_size=1, max_size=self.pot)
         action_check = Action(ActionType.CHECK)
         action_fold = Action(ActionType.FOLD)
@@ -410,18 +430,19 @@ class Game:
             # Special situations with BB
             if player_in_action.position == Position.BB:
                 # SB posted small blind, BB must post big blind
-                if self._previous_action.type_ == ActionType.POST_BLIND:
+                if self._made_action.type_ == ActionType.POST_BLIND:
                     self._possible_actions.append(action_post_bb)
                 # SB completed, BB can check and close round or reopen round by raise
-                elif self._previous_action.type_ == ActionType.CALL and self._previous_action.size == 1:
+                elif self._made_action.type_ == ActionType.CALL and self._made_action.size == 1:
                     self._possible_actions.append(action_check)
         else:
-            if self._previous_action.type_ == ActionType.CHECK or self._is_round_closed:
+            if self._made_action.type_ == ActionType.CHECK or self._is_round_closed:
                 self._possible_actions.append(action_bet)
                 self._possible_actions.append(action_check)
-            elif self._previous_action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
-                                                 ActionType.POST_BLIND]:
-                self._possible_actions.append(action_raise)
+            elif self._made_action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
+                                             ActionType.POST_BLIND]:
+                if raise_possible:
+                    self._possible_actions.append(action_raise)
                 self._possible_actions.append(action_call)
                 self._possible_actions.append(action_fold)
 
@@ -466,12 +487,12 @@ class Game:
         if player_range is not None:
             self.player_in_action.narrow_range(player_range)
 
+        self._made_action = action
+        self._made_action_player = self.player_in_action
         if action.is_sizable:
             self.pot += action.size
             self.player_in_action.stack -= action.size
             self.player_in_action.invested_in_bank = action.size
-        if action.type_ != ActionType.FOLD:
-            self._previous_action = action
         if action.type_ in [ActionType.RAISE, ActionType.BET]:
             self._last_aggressor = self.player_in_action
         if action.type_ == ActionType.POST_BLIND:
@@ -505,7 +526,7 @@ class Game:
         self.in_action_position = state.in_action_position
         self._is_round_closed = state._is_round_closed
         self._last_aggressor = state._last_aggressor
-        self._previous_action = state.previous_action
+        self._made_action = state.made_action
 
 
 class GameFlow:
@@ -565,8 +586,13 @@ class GameNode:
         return line_node
 
     def add_standard_lines(self):
-        """ Add all posible lines  """
+        """ Add all possible lines  """
         for possible_action in self.game_state.possible_actions:
             self.add_line(copy.copy(possible_action))
+
+    def __repr__(self):
+        player = self.game_state.made_action_player.name
+        action = self.game_state.made_action
+        return "{} {}".format(player, action)
 
 

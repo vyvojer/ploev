@@ -160,6 +160,60 @@ class GameTest(unittest.TestCase):
         game.make_action(game.possible_actions[0])
         self.assertEqual(game.pot, 5)
 
+    def test_possible_action_when_raise_not_possible(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game(players=[bb, btn], pot=33, board=Board.from_str('2c Kd 8s'))
+        game.make_action(Action(ActionType.BET, size=33))
+        self.assertEqual(len(game.possible_actions), 2)
+        self.assertEqual(game.possible_actions[0].type_, ActionType.CALL)
+        self.assertEqual(game.possible_actions[1].type_, ActionType.FOLD)
+
+        btn = Player(Position.BTN, stack=30, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game(players=[bb, btn], pot=33, board=Board.from_str('2c Kd 8s'))
+        game.make_action(Action(ActionType.BET, size=33))
+        self.assertEqual(len(game.possible_actions), 2)
+        self.assertEqual(game.possible_actions[0].type_, ActionType.CALL)
+        self.assertEqual(game.possible_actions[0].min_size, 30)
+        self.assertEqual(game.possible_actions[0].max_size, 30)
+        self.assertEqual(game.possible_actions[1].type_, ActionType.FOLD)
+
+    def test_possible_action_when_only_allin_possible(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game(players=[bb, btn], pot=33, board=Board.from_str('2c Kd 8s'))
+        game.make_action(Action(ActionType.BET, size=10))
+        self.assertEqual(len(game.possible_actions), 3)
+        self.assertEqual(game.possible_actions[0].type_, ActionType.RAISE)
+        self.assertEqual(game.possible_actions[0].min_size, 20)
+        self.assertEqual(game.possible_actions[0].max_size, 33)
+        self.assertEqual(game.possible_actions[1].type_, ActionType.CALL)
+        self.assertEqual(game.possible_actions[2].type_, ActionType.FOLD)
+
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game(players=[bb, btn], pot=33, board=Board.from_str('2c Kd 8s'))
+        game.make_action(Action(ActionType.BET, size=20))
+        self.assertEqual(len(game.possible_actions), 3)
+        self.assertEqual(game.possible_actions[0].type_, ActionType.RAISE)
+        self.assertEqual(game.possible_actions[0].min_size, 33)
+        self.assertEqual(game.possible_actions[0].max_size, 33)
+        self.assertEqual(game.possible_actions[1].type_, ActionType.CALL)
+        self.assertEqual(game.possible_actions[2].type_, ActionType.FOLD)
+
+    def test_possible_action_when_allin_allowed(self):
+        btn = Player(Position.BTN, stack=330, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=400, name='Villain')
+        game = Game(players=[bb, btn], pot=33, board=Board.from_str('2c Kd 8s'), allin_allowed=True)
+        game.make_action(Action(ActionType.BET, size=10))
+        self.assertEqual(len(game.possible_actions), 3)
+        self.assertEqual(game.possible_actions[0].type_, ActionType.RAISE)
+        self.assertEqual(game.possible_actions[0].min_size, 20)
+        self.assertEqual(game.possible_actions[0].max_size, 330)
+        self.assertEqual(game.possible_actions[1].type_, ActionType.CALL)
+        self.assertEqual(game.possible_actions[2].type_, ActionType.FOLD)
+
     def test_count_pot_bet(self):
         self.assertEqual(Game._count_pot_raise(call_size=1, pot=1.5), 3.5)
         self.assertEqual(Game._count_pot_raise(call_size=1, pot=2.5), 4.5)
@@ -349,17 +403,23 @@ class GameNodeTest(unittest.TestCase):
         root = GameNode(self.game)
         root.add_standard_lines()
         self.assertEqual(len(root.lines), 2)
-        self.assertEqual(root.lines[0].game_state.previous_action.type_, ActionType.BET)
-        self.assertEqual(root.lines[1].game_state.previous_action.type_, ActionType.CHECK)
+        self.assertEqual(root.lines[0].game_state.made_action.type_, ActionType.BET)
+        self.assertEqual(root.lines[1].game_state.made_action.type_, ActionType.CHECK)
 
 
 class TypicalGameSituationTest(unittest.TestCase):
 
-    def test_SPR1_pot_bet(self):
-        btn = Player(Position.BTN, stack=33, is_hero=True)
-        bb = Player(Position.BB, stack=33)
-        game = Game(players=[bb, btn], pot=6, board=Board.from_str('2c Kd 8s'))
+    def test_SPR1_call_pot_bet(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game(players=[bb, btn], pot=33, board=Board.from_str('2c Kd 8s'))
+        bb.narrow_range(PptRange('AA'))
+        btn.narrow_range(PptRange('8h 9h Tc Js'))
         game.make_action(Action(ActionType.BET, size=33))
+        game_tree = GameNode(game)
+        game_tree.add_standard_lines()
+        print(game_tree.lines)
+
 
 
 
