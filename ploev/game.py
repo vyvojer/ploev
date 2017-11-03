@@ -558,12 +558,7 @@ class GameNode:
     def __iter__(self):
         yield self
         for child in self.lines:
-            yield from child.__iter__()
-
-    def _walk(self, game_node):
-        yield game_node
-        for child in game_node.lines:
-            self._walk(child)
+            yield from child
 
     @property
     def id(self):
@@ -593,7 +588,22 @@ class GameNode:
         for possible_action in self.game_state.possible_actions:
             self.add_line(copy.copy(possible_action))
 
-    def calculate(self):
+    def calculate_equity(self):
         pass
 
 
+class GameTree:
+
+    def __init__(self, root: GameNode):
+        self.root = root
+
+    def __iter__(self):
+        yield from self.root
+
+    def _walk(self, game_node):
+        yield game_node
+        for child in game_node.lines:
+            yield from self._walk(child)
+
+    def calculate(self):
+        pass

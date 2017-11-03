@@ -372,7 +372,6 @@ class GameFlowTest(unittest.TestCase):
 
 
 class GameNodeTest(unittest.TestCase):
-
     def setUp(self):
         self.btn = Player(Position.BTN, 100)
         self.bb = Player(Position.BB, 100)
@@ -412,6 +411,14 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(root.lines[0].game_state.made_action.type_, ActionType.BET)
         self.assertEqual(root.lines[1].game_state.made_action.type_, ActionType.CHECK)
 
+    def test__iter__(self):
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        all_nodes = [game_node for game_node in root]
+        self.assertEqual(all_nodes[0], root)
+        self.assertEqual(all_nodes[1], root.lines[0])
+        self.assertEqual(all_nodes[2], root.lines[1])
+
     def test_game(self):
         root = GameNode(self.game)
         root.add_standard_lines()
@@ -421,14 +428,6 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(line_bet.game.get_player(Position.BTN).stack, 94)
         self.assertEqual(self.btn.stack, 94)
 
-    def test__iter__(self):
-        game_tree = GameNode(self.game)
-        game_tree.add_standard_lines()
-        all_nodes = [game_node for game_node in game_tree]
-        self.assertEqual(all_nodes[0], game_tree)
-        self.assertEqual(all_nodes[1], game_tree.lines[0])
-        self.assertEqual(all_nodes[2], game_tree.lines[1])
-
     def test_id(self):
         root = GameNode(self.game)
         root.add_standard_lines()
@@ -437,6 +436,24 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(root.id, (1, 1))
         self.assertEqual(line_bet.id, (2, 1))
         self.assertEqual(line_check.id, (2, 2))
+
+
+class GameTreeTest(unittest.TestCase):
+    def setUp(self):
+        self.btn = Player(Position.BTN, 100)
+        self.bb = Player(Position.BB, 100)
+        self.game = Game(players=[self.bb, self.btn], pot=6, board=Board.from_str('2cKd8s'))
+        self.game.make_action(Action(ActionType.CHECK))
+
+
+    def test__iter__(self):
+        root = GameNode(self.game)
+        game_tree = GameTree(root)
+        root.add_standard_lines()
+        all_nodes = [game_node for game_node in game_tree]
+        self.assertEqual(all_nodes[0], game_tree.root)
+        self.assertEqual(all_nodes[1], root.lines[0])
+        self.assertEqual(all_nodes[2], root.lines[1])
 
     def test_calculate_equity(self):
         self.game.board = Board.from_str('As2dKs')
@@ -450,9 +467,7 @@ class GameNodeTest(unittest.TestCase):
         line_check = root.lines[1]
 
 
-
 class TypicalGameSituationTest(unittest.TestCase):
-
     def test_SPR1_call_pot_bet(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
@@ -460,15 +475,10 @@ class TypicalGameSituationTest(unittest.TestCase):
         bb.add_range(PptRange('AA'))
         btn.add_range(PptRange('8h 9h Tc Js'))
         game.make_action(Action(ActionType.BET, size=33))
-        game_tree = GameNode(game)
-        game_tree.add_standard_lines()
-        call_line = game_tree.lines[0]
-        fold_line = game_tree.lines[1]
+        root = GameNode(game)
+        game_tree = GameTree(root)
+        root.add_standard_lines()
+        call_line = root.lines[0]
+        fold_line = root.lines[1]
         game_tree.calculate()
         self.assertAlmostEqual(call_line.equity, 35.4, delta=0.5)
-
-
-
-
-
-
