@@ -59,9 +59,15 @@ class PlayerTest(unittest.TestCase):
     def test_add_range(self):
         player = Player(Position.BB, 100, name="John", is_hero=True)
         self.assertEqual(player.ranges, [])
-        player.narrow_range(PptRange('70%'))
+        player.add_range(PptRange('70%'))
         self.assertEqual(len(player.ranges), 1)
         self.assertEqual(player.ranges[0].range_, '70%')
+
+    def test_ppt(self):
+        player = Player(Position.BB, 100, name="John", is_hero=True)
+        player.add_range(PptRange('70%'))
+        player.add_range(PptRange('A,K2'))
+        self.assertEqual(player.ppt_range(), '(70%):(A,K2)')
 
 
 class ActionTest(unittest.TestCase):
@@ -406,6 +412,44 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(root.lines[0].game_state.made_action.type_, ActionType.BET)
         self.assertEqual(root.lines[1].game_state.made_action.type_, ActionType.CHECK)
 
+    def test_game(self):
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[1]
+        self.assertEqual(line_bet.game.get_player(Position.BTN), self.btn)
+        self.assertEqual(line_bet.game.get_player(Position.BTN).stack, 94)
+        self.assertEqual(self.btn.stack, 94)
+
+    def test__iter__(self):
+        game_tree = GameNode(self.game)
+        game_tree.add_standard_lines()
+        all_nodes = [game_node for game_node in game_tree]
+        self.assertEqual(all_nodes[0], game_tree)
+        self.assertEqual(all_nodes[1], game_tree.lines[0])
+        self.assertEqual(all_nodes[2], game_tree.lines[1])
+
+    def test_id(self):
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[1]
+        self.assertEqual(root.id, (1, 1))
+        self.assertEqual(line_bet.id, (2, 1))
+        self.assertEqual(line_check.id, (2, 2))
+
+    def test_calculate_equity(self):
+        self.game.board = Board.from_str('As2dKs')
+        self.bb.add_range(PptRange('20%'))
+        self.btn.add_range(PptRange('2hKh7d8d'))
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_bet.calculate_equity()
+        self.assertAlmostEqual(line_bet.equity, 0.45, delta=0.1)
+        line_check = root.lines[1]
+
+
 
 class TypicalGameSituationTest(unittest.TestCase):
 
@@ -413,12 +457,17 @@ class TypicalGameSituationTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board=Board.from_str('2c Kd 8s'))
-        bb.narrow_range(PptRange('AA'))
-        btn.narrow_range(PptRange('8h 9h Tc Js'))
+        bb.add_range(PptRange('AA'))
+        btn.add_range(PptRange('8h 9h Tc Js'))
         game.make_action(Action(ActionType.BET, size=33))
         game_tree = GameNode(game)
         game_tree.add_standard_lines()
-        print(game_tree.lines)
+        call_line = game_tree.lines[0]
+        fold_line = game_tree.lines[1]
+        game_tree.calculate()
+        self.assertAlmostEqual(call_line.equity, 35.4, delta=0.5)
+
+
 
 
 

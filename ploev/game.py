@@ -16,9 +16,11 @@
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from ploev.cards import Board
 import copy
 from typing import Iterable
+
+from ploev.cards import Board
+from ploev.calc import close_parenthesis, create_cumulative_ranges
 
 
 class SubRange:
@@ -72,38 +74,6 @@ class Ranges:
             repr(self.name),
             repr(self.cumulative)
         )
-
-
-class LineType(Enum):
-    unknown = 0
-    check_call = 1
-    check_fold = 2
-    check_raise = 3
-
-
-class Line:
-    def __init__(self, sub_range, name='', line=LineType.unknown, equity=0, percentage=0):
-        self.sub_range = sub_range
-        self.line = line
-        self.name = name
-        self.equity = equity
-        self.percentage = percentage
-
-    def __repr__(self):
-        class_name = type(self).__name__
-        return '{class_name}(sub_range={sr}, name={n}, line={l}, equity={e}, percentage={p})'.format(
-            class_name=class_name,
-            sr=repr(self.sub_range), n=repr(self.name), l=self.line, e=self.equity, p=self.percentage
-        )
-
-
-class PlayerLines:
-    def __init__(self, ranges, main_range=None):
-        self.ranges = list(ranges)
-        self.main_range = main_range
-
-    def normalize_lines(self):
-        pass
 
 
 class AbstractRange(ABC):
@@ -210,6 +180,10 @@ class Player:
         self.action = None
         self.invested_in_bank = 0
 
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
+
     @property
     def is_hero(self):
         return self._is_hero
@@ -228,12 +202,11 @@ class Player:
         self._is_villain = value
         self._is_hero = not value
 
-    def narrow_range(self, range_: AbstractRange):
+    def add_range(self, range_: AbstractRange):
         self.ranges.append(range_)
 
-    def __repr__(self):
-        cls_name = self.__class__.__name__
-        return f"{cls_name}(position={self.position}, stack={self.stack}, name='{self.name}')"
+    def ppt_range(self):
+        return ":".join([close_parenthesis(range_.ppt()) for range_ in self.ranges])
 
     def clone(self):
         return copy.deepcopy(self)
@@ -485,7 +458,7 @@ class Game:
         self.player_in_action.action = action
         self._is_round_closed = False
         if player_range is not None:
-            self.player_in_action.narrow_range(player_range)
+            self.player_in_action.add_range(player_range)
 
         self._made_action = action
         self._made_action_player = self.player_in_action
@@ -565,23 +538,53 @@ class GameFlow:
 
 class GameNode:
 
-    def __init__(self, game: Game, game_state: Game=None, parent=None, lines=None):
-        self.game = game
+    def __init__(self, game: Game, game_state: Game=None, parent=None, level_id=1, action_id=1):
+        self._game = game
         if game_state is not None:
             self.game_state = game_state
         else:
             self.game_state = game.clone()
+        self.level_id = level_id
+        self.action_id = action_id
         self.parent = parent
         self._lines = []
+        self.equity = None
+
+    def __repr__(self):
+        player = self.game_state.made_action_player.name
+        action = self.game_state.made_action
+        return "{} {}".format(player, action)
+
+    def __iter__(self):
+        yield self
+        for child in self.lines:
+            yield from child.__iter__()
+
+    def _walk(self, game_node):
+        yield game_node
+        for child in game_node.lines:
+            self._walk(child)
+
+    @property
+    def id(self):
+        return self.level_id, self.action_id
 
     @property
     def lines(self):
         return self._lines
 
+    @property
+    def game(self):
+        self._game.restore_state(self.game_state)
+        return self._game
+
     def add_line(self, action: Action):
-        line_node = GameNode(game=self.game, game_state=self.game_state.clone())
+        line_node = GameNode(game=self._game,
+                             game_state=self.game_state.clone(),
+                             parent=self,
+                             level_id=self.level_id + 1,
+                             action_id=len(self.lines) + 1)
         line_node.game_state.make_action(action)
-        line_node.parent = self
         self.lines.append(line_node)
         return line_node
 
@@ -590,9 +593,7 @@ class GameNode:
         for possible_action in self.game_state.possible_actions:
             self.add_line(copy.copy(possible_action))
 
-    def __repr__(self):
-        player = self.game_state.made_action_player.name
-        action = self.game_state.made_action
-        return "{} {}".format(player, action)
+    def calculate(self):
+        pass
 
 
