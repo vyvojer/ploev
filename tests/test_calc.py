@@ -8,9 +8,9 @@ from ploev.ppt import OddsOracle
 class CalcModuleTest(unittest.TestCase):
 
     def test_close_parenthesis(self):
-        self.assertEqual(calc._close_parenthesis('77,KK'), '(77,KK)')
-        self.assertEqual(calc._close_parenthesis('(77,KK)'), '(77,KK)')
-        self.assertEqual(calc._close_parenthesis('(77,KK):(ss)'), '((77,KK):(ss))')
+        self.assertEqual(calc.close_parenthesis('77,KK'), '(77,KK)')
+        self.assertEqual(calc.close_parenthesis('(77,KK)'), '(77,KK)')
+        self.assertEqual(calc.close_parenthesis('(77,KK):(ss)'), '((77,KK):(ss))')
 
     def test_create_cumulative_ranges(self):
         ranges = [
@@ -23,7 +23,7 @@ class CalcModuleTest(unittest.TestCase):
             '(74,K4,K7,44,77,KK)!(77,KK)',
             '*!(74,K4,K7,44,77,KK)!(77,KK)',
         ]
-        cumulative_ranges = calc._create_cumulative_ranges(ranges)
+        cumulative_ranges = calc.create_cumulative_ranges(ranges)
         self.assertEqual(cumulative_ranges, expected)
 
 

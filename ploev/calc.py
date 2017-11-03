@@ -24,12 +24,18 @@ from typing import Iterable
 SubRange = namedtuple("SubRange", "range fraction equity")
 
 
-def _create_cumulative_ranges(sub_ranges: Iterable) -> list:
+def create_cumulative_ranges(sub_ranges: Iterable) -> list:
     """ Creates cumulative ranges from ranges """
     return list(itertools.accumulate(sub_ranges, lambda sr1, sr2: sr2 + '!' + sr1))
 
 
-def _close_parenthesis(range_: str) -> str:
+def close_parenthesis(range_: str) -> str:
+    """ Close parenthesis for a range
+
+        '(7,8):20%' -> '((7,8):20%)'
+        '(7,8)' -> '(7,8)'
+        '70%' -> '(70%)
+    """
     if range_[0] != '(' and range_[-1] != ')':
         return '(' + range_ + ')'
     else:
@@ -103,9 +109,9 @@ class Calc:
             'range' - sub range.
 
         """
-        sub_ranges = map(_close_parenthesis, sub_ranges)
+        sub_ranges = map(close_parenthesis, sub_ranges)
         if cumulative:
-            sub_ranges = _create_cumulative_ranges(sub_ranges)
+            sub_ranges = create_cumulative_ranges(sub_ranges)
         else:
             sub_ranges = [sub_range for sub_range in sub_ranges]
         fractions = self.pql.count_in_range(main_range, sub_ranges, board, hero)
