@@ -66,7 +66,7 @@ class Calc:
     def equity(self, players: list, board: str=None, dead: str=None, hero_only: bool=False):
         """ Calculates equities
 
-        For intensive computations set 'hero_only' to True if you need only hero equity. It's faster.
+        For intensive computations set 'hero_only' to True if you need only hero (first player in list) equity. It's faster.
         If hero_only is True return float (hero_equity), otherwise returns list of equities.
 
         Args:
