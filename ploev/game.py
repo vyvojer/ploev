@@ -19,8 +19,9 @@ from enum import Enum
 import copy
 from typing import Iterable
 
+from ploev.ppt import OddsOracle
 from ploev.cards import Board
-from ploev.calc import close_parenthesis, create_cumulative_ranges
+from ploev.calc import close_parenthesis, create_cumulative_ranges, Calc
 
 
 class SubRange:
@@ -77,14 +78,12 @@ class Ranges:
 
 
 class AbstractRange(ABC):
-
     @abstractmethod
     def ppt(self):
         pass
 
 
 class PptRange(AbstractRange):
-
     def __init__(self, range_: str):
         self.range_ = range_
 
@@ -115,7 +114,7 @@ class ActionType(Enum):
 
 
 class Action:
-    def __init__(self, type_: ActionType, size: float=None, min_size: float=None, max_size: float=None):
+    def __init__(self, type_: ActionType, size: float = None, min_size: float = None, max_size: float = None):
         self.type_ = type_
         self.size = size
         self._is_sizable = False
@@ -161,7 +160,8 @@ class Action:
 
 
 class Player:
-    def __init__(self, position: Position, stack: float, ranges: Iterable=None, name: str=None, is_hero: bool=False):
+    def __init__(self, position: Position, stack: float, ranges: Iterable = None, name: str = None,
+                 is_hero: bool = False):
         self.position = position
         self.stack = stack
         if ranges is not None:
@@ -205,7 +205,7 @@ class Player:
     def add_range(self, range_: AbstractRange):
         self.ranges.append(range_)
 
-    def ppt_range(self):
+    def ppt(self):
         return ":".join([close_parenthesis(range_.ppt()) for range_ in self.ranges])
 
     def clone(self):
@@ -227,8 +227,7 @@ class Street(Enum):
 
 
 class EasyRange(AbstractRange):
-
-    def __init__(self, range_: str, cumulative: bool=True, street: Street=None):
+    def __init__(self, range_: str, cumulative: bool = True, street: Street = None):
         self.range_ = range_
         self.cumulative = cumulative
         self.street = street
@@ -243,8 +242,16 @@ class EasyRange(AbstractRange):
         return repr_str.format(cls_name, self.range_, self.cumulative, self.street)
 
 
+class GameLeaf(Enum):
+    NONE = 0
+    ROUND_CLOSED = 1
+    FOLD = 2
+    SHOWDOWN = 3
+
+
 class Game:
-    def __init__(self, players: Iterable, pot: float = 0, board: Board = None, allin_allowed: bool=False):
+
+    def __init__(self, players: Iterable, pot: float = 0, board: str = None, allin_allowed: bool = False):
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
             raise ValueError("More than one player with same position")
@@ -259,13 +266,16 @@ class Game:
         self._river = None
         if board is None:
             board = Board()
+        else:
+            board = Board.from_str(board)
         self.board = board
         self.in_action_position = max(self.active_positions, key=lambda position: position.value)
         self._is_round_closed = False
         self._last_aggressor = None
-        self._made_action_player = None
-        self._made_action = None
+        self._previous_player = None
+        self._previous_action = None
         self.next_raise_possible = True
+        self.leaf = GameLeaf.NONE
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -319,7 +329,7 @@ class Game:
 
     @river.setter
     def river(self, river: Board):
-        self.river = river
+        self._river = river
 
     @property
     def positions(self):
@@ -345,12 +355,12 @@ class Game:
         return self.get_player(self.in_action_position)
 
     @property
-    def made_action(self):
-        return self._made_action
+    def previous_action(self):
+        return self._previous_action
 
     @property
-    def made_action_player(self):
-        return self._made_action_player
+    def previous_player(self):
+        return self._previous_player
 
     @property
     def possible_actions(self) -> list:
@@ -369,20 +379,20 @@ class Game:
     def _determine_possible_actions(self):
         self._possible_actions = []
         player_in_action = self.player_in_action
-        if self._made_action is None:
+        if self._previous_action is None:
             return
 
         action_raise = None
         action_call = None
         raise_possible = True
-        if self._made_action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
-            pot_raise = self._count_pot_raise(self._made_action.size, self.pot)
-            call_size = self._made_action.size - player_in_action.invested_in_bank
+        if self._previous_action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
+            pot_raise = self._count_pot_raise(self._previous_action.size, self.pot)
+            call_size = self._previous_action.size - player_in_action.invested_in_bank
             if player_in_action.stack <= call_size:
                 raise_possible = False
                 call_size = player_in_action.stack
             if raise_possible:
-                min_raise_size = self._made_action.size * 2
+                min_raise_size = self._previous_action.size * 2
                 if self.allin_allowed:
                     max_raise_size = player_in_action.stack
                 else:
@@ -391,7 +401,8 @@ class Game:
                     min_raise_size = max_raise_size = player_in_action.stack
                 if player_in_action.stack < max_raise_size:  # All-n
                     max_raise_size = player_in_action.stack
-                action_raise = Action(ActionType.RAISE, size=pot_raise, min_size=min_raise_size, max_size=max_raise_size)
+                action_raise = Action(ActionType.RAISE, size=pot_raise, min_size=min_raise_size,
+                                      max_size=max_raise_size)
             action_call = Action(ActionType.CALL, size=call_size)
 
         action_bet = Action(ActionType.BET, size=self.pot, min_size=1, max_size=self.pot)
@@ -403,17 +414,17 @@ class Game:
             # Special situations with BB
             if player_in_action.position == Position.BB:
                 # SB posted small blind, BB must post big blind
-                if self._made_action.type_ == ActionType.POST_BLIND:
+                if self._previous_action.type_ == ActionType.POST_BLIND:
                     self._possible_actions.append(action_post_bb)
                 # SB completed, BB can check and close round or reopen round by raise
-                elif self._made_action.type_ == ActionType.CALL and self._made_action.size == 1:
+                elif self._previous_action.type_ == ActionType.CALL and self._previous_action.size == 1:
                     self._possible_actions.append(action_check)
         else:
-            if self._made_action.type_ == ActionType.CHECK or self._is_round_closed:
+            if self._previous_action.type_ == ActionType.CHECK or self._is_round_closed:
                 self._possible_actions.append(action_bet)
                 self._possible_actions.append(action_check)
-            elif self._made_action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
-                                             ActionType.POST_BLIND]:
+            elif self._previous_action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
+                                                 ActionType.POST_BLIND]:
                 if raise_possible:
                     self._possible_actions.append(action_raise)
                 self._possible_actions.append(action_call)
@@ -435,6 +446,15 @@ class Game:
         for player in self.players.values():
             player.is_hero = False
         self.get_player(position).is_hero = True
+
+    def get_hero(self):
+        for player in self.players.values():
+            if player.is_hero:
+                return player
+
+    def get_active_players(self):
+        """ Return lis of active (yet in play) players """
+        return [player for player in self.players.values() if player.is_active]
 
     def set_player_in_action(self, player: Player):
         for pl in self.players.values():
@@ -460,8 +480,8 @@ class Game:
         if player_range is not None:
             self.player_in_action.add_range(player_range)
 
-        self._made_action = action
-        self._made_action_player = self.player_in_action
+        self._previous_action = action
+        self._previous_player = self.player_in_action
         if action.is_sizable:
             self.pot += action.size
             self.player_in_action.stack -= action.size
@@ -486,6 +506,19 @@ class Game:
             self._last_aggressor = None
         else:
             self.set_player_in_action(self.get_next_action_player())
+        self._set_leaf_and_activeness()
+
+    def _set_leaf_and_activeness(self):
+        if self.previous_action.type_ == ActionType.FOLD:
+            self.leaf = GameLeaf.FOLD
+            self.previous_player.is_active = False
+        elif self._is_round_closed:
+            if self.street == Street.SHOWDOWN:
+                self.leaf = GameLeaf.SHOWDOWN
+            else:
+                self.leaf = GameLeaf.ROUND_CLOSED
+        else:
+            self.leaf = GameLeaf.NONE
 
     def clone(self):
         return copy.deepcopy(self)
@@ -499,11 +532,10 @@ class Game:
         self.in_action_position = state.in_action_position
         self._is_round_closed = state._is_round_closed
         self._last_aggressor = state._last_aggressor
-        self._made_action = state.made_action
+        self._previous_action = state.previous_action
 
 
 class GameFlow:
-
     def __init__(self, states: Iterable):
         self.states = list(states)
         self._pointer = 0
@@ -537,8 +569,7 @@ class GameFlow:
 
 
 class GameNode:
-
-    def __init__(self, game: Game, game_state: Game=None, parent=None, level_id=1, action_id=1):
+    def __init__(self, game: Game, game_state: Game = None, parent=None, level_id=1, action_id=1):
         self._game = game
         if game_state is not None:
             self.game_state = game_state
@@ -548,11 +579,11 @@ class GameNode:
         self.action_id = action_id
         self.parent = parent
         self._lines = []
-        self.equity = None
+        self._equity = None
 
     def __repr__(self):
-        player = self.game_state.made_action_player.name
-        action = self.game_state.made_action
+        player = self.game_state.previous_player.name
+        action = self.game_state.previous_action
         return "{} {}".format(player, action)
 
     def __iter__(self):
@@ -563,6 +594,17 @@ class GameNode:
     @property
     def id(self):
         return self.level_id, self.action_id
+
+    @property
+    def equity(self):
+        return self._equity
+
+    @property
+    def pot_share(self):
+        if self.equity is not None:
+            return self.equity * self.game_state.pot
+        else:
+            return None
 
     @property
     def lines(self):
@@ -588,14 +630,12 @@ class GameNode:
         for possible_action in self.game_state.possible_actions:
             self.add_line(copy.copy(possible_action))
 
-    def calculate_equity(self):
-        pass
-
 
 class GameTree:
-
-    def __init__(self, root: GameNode):
+    def __init__(self, root: GameNode, odds_oracle: OddsOracle):
         self.root = root
+        self.calc = Calc(odds_oracle)
+        self.hero = root.game.get_hero()
 
     def __iter__(self):
         yield from self.root
@@ -604,6 +644,17 @@ class GameTree:
         yield game_node
         for child in game_node.lines:
             yield from self._walk(child)
+
+    def calculate_equity(self, node: GameNode):
+        players = [node.game_state.previous_player.ppt(),
+                   node.parent.game_state.previous_player.ppt()]
+        board = node.game.board.ppt()
+        node._equity = self.calc.equity(players, board, hero_only=True)
+        return node.equity
+
+    def calculate_node(self, node: GameNode):
+        if node.game_state.leaf == GameLeaf.ROUND_CLOSED:
+            pass
 
     def calculate(self):
         pass
