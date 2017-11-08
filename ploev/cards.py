@@ -254,7 +254,7 @@ class CardSet:
         return [card.rank for card in self.cards if card.suit == suit]
 
     @classmethod
-    def from_str(cls, card_set):
+    def from_str(cls, card_set=''):
         """
         Create CardSet from string representation of cards.
 
@@ -266,6 +266,8 @@ class CardSet:
         Returns:
             CardSet: created CardSet
         """
+        if card_set == '' or card_set is None:
+            return cls([])
         card_set = card_set.replace(' ', '')
         card_set = card_set.upper()
         p = re.compile(r'(\*|[AKQJT2-9]?[SHDC]?)')
@@ -291,7 +293,7 @@ class CardSet:
 
 class Board(CardSet):
     """
-    Class representing board. Just CardSet with 3,4 or 5 cards
+    Class representing board. Just CardSet with 0, 3, 4 or 5 cards
     """
 
     def __init__(self, cards: Iterable=None):

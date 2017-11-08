@@ -161,6 +161,13 @@ class CardSetTest(unittest.TestCase):
         kings_and_jacks = CardSet.from_card_sets(kings, jacks)
         self.assertEqual(len(kings_and_jacks.cards), 4)
 
+    def test_from_str(self):
+        kings = CardSet([card_from_str('Ks'), card_from_str('Kd')])
+        self.assertEqual(CardSet.from_str('KsKd'), kings)
+        empty = CardSet([])
+        self.assertEqual(CardSet.from_str(''), empty)
+        self.assertEqual(CardSet.from_str(), empty)
+
     def test_equals(self):
         cs1 = CardSet.from_str('As 2s 3s')
         cs2 = CardSet.from_str('As 2s 3s')
