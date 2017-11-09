@@ -30,59 +30,6 @@ from ploev.settings import CONFIG
 logging.getLogger()
 
 
-class SubRange:
-    def __init__(self, sub_range, name=''):
-        self.sub_range = sub_range
-        self.name = name
-
-    def __repr__(self):
-        class_name = type(self).__name__
-        return '{}(sub_range={}, name={})'.format(
-            class_name,
-            repr(self.sub_range), repr(self.name))
-
-
-class Ranges:
-    def __init__(self, sub_ranges, name='', cumulative=True):
-        self._sub_ranges = list(sub_ranges)
-        self.name = name
-        self.cumulative = cumulative
-        self._cumulative_ranges = None
-
-    @property
-    def sub_ranges(self):
-        if self.cumulative:
-            if self._cumulative_ranges is None:
-                self.create_cumulative_ranges()
-            return self._cumulative_ranges
-        else:
-            return self._sub_ranges
-
-    @sub_ranges.setter
-    def sub_ranges(self, value):
-        self._sub_ranges = value
-        self._cumulative_ranges = None
-
-    def create_cumulative_ranges(self):
-        cum_ranges = []
-        for i, r in enumerate(self._sub_ranges):
-            cum_range = copy.copy(r)
-            exclusion = "!".join(['(' + er.sub_range + ')' for er in self._sub_ranges[:i]])
-            if exclusion:
-                cum_range.sub_range = '(' + r.sub_range + ')!' + exclusion
-            cum_ranges.append(cum_range)
-        self._cumulative_ranges = cum_ranges
-
-    def __repr__(self):
-        class_name = type(self).__name__
-        return '{}(sub_ranges={}, name={}, cumulative={})'.format(
-            class_name,
-            repr(self.sub_ranges),
-            repr(self.name),
-            repr(self.cumulative)
-        )
-
-
 class AbstractRange(ABC):
     @abstractmethod
     def ppt(self):

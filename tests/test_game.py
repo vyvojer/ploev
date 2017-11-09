@@ -6,28 +6,6 @@ from ploev.game import *
 odds_oracle = OddsOracle()
 
 
-class RangesTest(unittest.TestCase):
-    def test_sub_ranges(self):
-        raise_range = SubRange('KK', 'raise range')
-        call_range = SubRange('K4', 'raise range')
-        ranges = Ranges([raise_range, call_range], 'standard', cumulative=False)
-        sub_ranges = ranges.sub_ranges
-        self.assertEqual(sub_ranges[0].sub_range, 'KK')
-        self.assertEqual(sub_ranges[1].sub_range, 'K4')
-
-    def test_cumulative_ranges(self):
-        raise_range = SubRange('KK', 'raise range')
-        call_range = SubRange('K4', 'raise range')
-        ranges = Ranges([raise_range, call_range], 'standard', cumulative=True)
-        sub_ranges = ranges.sub_ranges
-        self.assertEqual(sub_ranges[0].sub_range, 'KK')
-        self.assertEqual(sub_ranges[1].sub_range, '(K4)!(KK)')
-        ranges.cumulative = False
-        sub_ranges = ranges.sub_ranges
-        self.assertEqual(sub_ranges[0].sub_range, 'KK')
-        self.assertEqual(sub_ranges[1].sub_range, 'K4')
-
-
 class EasyRangeTest(unittest.TestCase):
     def test_ppt(self):
         board_explorer = BoardExplorer(Board.from_str('AsKdTh'))
