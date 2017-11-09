@@ -1,6 +1,6 @@
 import unittest
 
-from ploev.easy_range import BoardExplorer
+
 from ploev.game import *
 
 odds_oracle = OddsOracle()
@@ -65,12 +65,29 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(len(player.ranges), 1)
         self.assertEqual(player.ranges[0].range_, '70%')
 
+    def test_add_easy_range(self):
+        hero = Player(Position.BB, 90, is_hero=True)
+        villain = Player(Position.BTN, 90)
+        game = Game([hero, villain], 20, board='As Kd 2s 3h')
+        villain.add_range(EasyRange('TS+'))
+        self.assertEqual(villain.ranges[-1].ppt(), '(54,AA)')
+        villain.add_range(EasyRange('SD9+', street=Street.FLOP))
+        self.assertEqual(villain.ranges[-1].ppt(), '(QJT,543)')
+
+
     def test_ppt(self):
         player = Player(Position.BB, 100, name="John", is_hero=True)
         player.add_range(PptRange('70%'))
         player.add_range(PptRange('A,K2'))
         self.assertEqual(player.ppt(), '(70%):(A,K2)')
 
+    def test_previous_stack(self):
+        player = Player(Position.BB, 100, name="John", is_hero=True)
+        self.assertEqual(player.stack, 100)
+        self.assertEqual(player.previous_stack, 100)
+        player.stack = 50
+        self.assertEqual(player.stack, 50)
+        self.assertEqual(player.previous_stack, 100)
 
 class ActionTest(unittest.TestCase):
     def test__init__(self):
@@ -175,6 +192,19 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.possible_actions[1].size, 1)
         game.make_action(game.possible_actions[0])
         self.assertEqual(game.pot, 5)
+
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game([bb, btn], 33, board='2c Kd 8s 3c Jh')
+        bb.add_range(PptRange('AA'))
+        btn.add_range(PptRange('8h 9h Tc Js'))
+        game.make_action(Action(ActionType.BET, size=6))
+        raise_action = game.possible_actions[0]
+        self.assertEqual(raise_action.type_, ActionType.RAISE)
+        self.assertEqual(raise_action.min_size, 12)
+        self.assertEqual(raise_action.max_size, 33)
+        self.assertEqual(raise_action.size, 33)
+
 
     def test_possible_action_when_raise_not_possible(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
@@ -422,7 +452,30 @@ class GameTest(unittest.TestCase):
         game.make_action(Action(ActionType.BET, 3))
         self.assertEqual(game.leaf, GameLeaf.NONE)
         game.make_action(Action(ActionType.CALL, 3))
-        self.assertEqual(game.leaf, GameLeaf.SHOWDOWN)
+        self.assertEqual(game.game_over, True)
+
+    def test_board_explorer(self):
+        btn = Player(Position.BTN, 100)
+        bb = Player(Position.BB, 100)
+        game = Game([btn, bb], 2, board='AsKs2d2s')
+        be_flop1 = BoardExplorer(game.flop)
+        be_flop2 = BoardExplorer(game.flop)
+        self.assertNotEqual(be_flop1, be_flop2)
+        be_flop3 = game.board_explorer(Street.FLOP)
+        be_flop4 = game.board_explorer(Street.FLOP)
+        self.assertEqual(be_flop3, be_flop4)
+        game.board = 'AsKs2d'
+        be_flop5 = game.board_explorer(Street.FLOP)
+        be_flop6 = game.board_explorer(Street.FLOP)
+        self.assertEqual(be_flop3, be_flop4)
+        self.assertEqual(be_flop4, be_flop5)
+        self.assertEqual(be_flop5, be_flop6)
+        game.board = 'AsKs2h'
+        be_flop5 = game.board_explorer(Street.FLOP)
+        be_flop6 = game.board_explorer(Street.FLOP)
+        self.assertEqual(be_flop3, be_flop4)
+        self.assertNotEqual(be_flop4, be_flop5)
+        self.assertEqual(be_flop5, be_flop6)
 
 
 class GameFlowTest(unittest.TestCase):
@@ -500,24 +553,14 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(line_bet.id, (2, 1))
         self.assertEqual(line_check.id, (2, 2))
 
-    def test_pot_share(self):
-        root = GameNode(self.game)
-        root.add_standard_lines()
-        line_bet = root.lines[0]
-        line_check = root.lines[1]
-        self.assertEqual(line_check.pot_share, None)
-        line_check._equity = 0.5
-        self.assertEqual(line_check.pot_share, 3)
-
 
 class GameTreeTest(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.btn = Player(Position.BTN, 100, is_hero=True)
-        cls.bb = Player(Position.BB, 100)
-        cls.game = Game(players=[cls.bb, cls.btn], pot=6, board='2cKd8s')
-        cls.game.make_action(Action(ActionType.CHECK))
+    def setUp(self):
+        self.btn = Player(Position.BTN, 100, is_hero=True)
+        self.bb = Player(Position.BB, 100)
+        self.game = Game(players=[self.bb, self.btn], pot=6, board='2cKd8s')
+        self.game.make_action(Action(ActionType.CHECK))
 
     def test_hero(self):
         root = GameNode(self.game)
@@ -533,31 +576,17 @@ class GameTreeTest(unittest.TestCase):
         self.assertEqual(all_nodes[1], root.lines[0])
         self.assertEqual(all_nodes[2], root.lines[1])
 
-    def test_calculate_equity(self):
-        self.game.board = Board.from_str('As2dKs')
-        self.bb.add_range(PptRange('20%'))
-        self.btn.add_range(PptRange('2hKh7d8d'))
+    def test_get_active_players_with_nodes(self):
         root = GameNode(self.game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
         line_bet = root.lines[0]
-        game_tree.calculate_equity(line_bet)
-        self.assertAlmostEqual(line_bet.equity, 0.45, delta=0.1)
+        line_check = root.lines[0]
+        hero_node, nodes = game_tree._get_nodes_of_active_players(line_bet)
+        self.assertEqual(len(nodes), 2)
+        self.assertEqual(hero_node, line_bet)
 
-    def test_calculate_node_when_hero_close_action(self):
-        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
-        bb = Player(Position.BB, stack=33, name='Villain')
-        game = Game([bb, btn], 33, board='2c Kd 8s')
-        bb.add_range(PptRange('AA'))
-        btn.add_range(PptRange('8h 9h Tc Js'))
-        game.make_action(Action(ActionType.BET, size=33))
-        root = GameNode(game)
-        game_tree = GameTree(root, odds_oracle)
-
-
-class TypicalGameSituationTest(unittest.TestCase):
-
-    def test_calculate_node_when_hero_close_action(self):
+    def test_calculate_node_when_hero_close_game_with_all_in_call(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game([bb, btn], 33, board='2c Kd 8s')
@@ -568,11 +597,67 @@ class TypicalGameSituationTest(unittest.TestCase):
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
         call_line = root.lines[0]
-        fold_line = root.lines[1]
         game_tree.calculate_node(call_line)
-        self.assertEqual(call_line.equity, 0.354)
+        self.assertAlmostEqual(call_line.hero_equity, 0.354, delta=0.01)
+        self.assertAlmostEqual(call_line.hero_pot_share, 35.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev, 35.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share_relative, 2.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev_relative, 2.4, delta=1)
 
-    def test_SPR1_call_pot_bet(self):
+    def test_calculate_node_when_hero_close_game_with_river_call(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game([bb, btn], 33, board='2c Kd 8s 3c Jh')
+        bb.add_range(PptRange('AA'))
+        btn.add_range(PptRange('8h 9h Tc Js'))
+        game.make_action(Action(ActionType.BET, size=6))
+        root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.add_standard_lines()
+        call_line = root.lines[1]
+        game_tree.calculate_node(call_line)
+        self.assertAlmostEqual(call_line.hero_equity, 0.944, delta=0.01)
+        self.assertAlmostEqual(call_line.hero_pot_share, 42.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev, 42.5, delta=1)
+
+    def test_calculate_node_when_hero_close_round_with_call(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game([bb, btn], 33, board='2c Kd 8s 3c')
+        bb.add_range(PptRange('AA'))
+        btn.add_range(PptRange('8h 9h Tc Js'))
+        game.make_action(Action(ActionType.BET, size=6))
+        root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.add_standard_lines()
+        call_line = root.lines[1]
+        game_tree.calculate_node(call_line)
+        self.assertAlmostEqual(call_line.hero_equity, 0.233, delta=0.01)
+        self.assertAlmostEqual(call_line.hero_pot_share, 10.5, delta=1)
+        self.assertEqual(call_line.hero_ev, None)
+
+    def test_calculate_node_when_villain_close_game_with_all_in_call(self):
+        btn = Player(Position.BTN, stack=33, name='Villain')
+        bb = Player(Position.BB, stack=33, is_hero=True, name='Hero')
+        game = Game([bb, btn], 33, board='2c Kd 8s')
+        bb.add_range(PptRange('As Ad 3s 3h'))
+        btn.add_range(PptRange('8h 9h Tc Js'))
+        game.make_action(Action(ActionType.BET, size=33))
+        root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.add_standard_lines()
+        call_line = root.lines[0]
+        game_tree.calculate_node(call_line)
+        self.assertAlmostEqual(call_line.hero_equity, 0.635, delta=0.01)
+        self.assertAlmostEqual(call_line.hero_pot_share, 63.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev, 63.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share_relative, 30.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev_relative, 30.5, delta=1)
+
+
+class TypicalGameSituationTest(unittest.TestCase):
+
+    def _test_SPR1_call_pot_bet(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
