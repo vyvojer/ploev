@@ -6,10 +6,52 @@ from ploev.game import *
 odds_oracle = OddsOracle()
 
 
+class RangeDistributionTest(unittest.TestCase):
+
+    def test_get_not_cumulative_ranges(self):
+        sub_ranges = [
+            SubRange('bet',PptRange('KK')),
+            SubRange('check', PptRange('*!KK'))
+        ]
+        rd = RangeDistribution(sub_ranges, is_cumulative=False)
+        self.assertEqual(rd.as_list(), ['KK', '*!KK'])
+
+    def test_set_cumulative_ranges(self):
+        sub_ranges = [
+            SubRange('bet',PptRange('KK')),
+            SubRange('check', PptRange('*'))
+        ]
+        rd = RangeDistribution(sub_ranges)
+        rd._set_cumulative_ranges()
+        self.assertEqual(rd.sub_ranges['check'].cumulative_range, '(*)!(KK)')
+
+    def test_get_cumulative_ranges(self):
+        sub_ranges = [
+            SubRange('bet',PptRange('KK')),
+            SubRange('check', PptRange('*'))
+        ]
+        rd = RangeDistribution(sub_ranges)
+        self.assertEqual(rd.as_list(), ['(KK)', '(*)!(KK)'])
+
+    def test_ppt_ranges(self):
+        btn = Player(Position.BTN, stack=97)
+        bb = Player(Position.BB, stack=97)
+        game = Game([bb, btn], 6.5, board='As 2d Ks')
+        sub_ranges = [
+            SubRange('bet', EasyRange('T2P+,NFD,SD9+')),
+            SubRange('check', EasyRange('*')),
+        ]
+        rd = RangeDistribution(sub_ranges, game=game)
+        bet = rd.sub_range('bet')
+        self.assertEqual(bet.ppt(), '((AA,KK,22,AK),Qss,(QJT,543))')
+        check = rd.sub_range('check')
+        self.assertEqual(check.ppt(), '(*)!((AA,KK,22,AK),Qss,(QJT,543))')
+
+
 class EasyRangeTest(unittest.TestCase):
     def test_ppt(self):
         board_explorer = BoardExplorer(Board.from_str('AsKdTh'))
-        easy_range = EasyRange('TS+')
+        easy_range = EasyRange('TS+', is_cumulative=False)
         easy_range.board_explorer = board_explorer
         self.assertEqual(easy_range.ppt(), '(QJ,AA)')
 
@@ -47,16 +89,16 @@ class PlayerTest(unittest.TestCase):
         hero = Player(Position.BB, 90, is_hero=True)
         villain = Player(Position.BTN, 90)
         game = Game([hero, villain], 20, board='As Kd 2s 3h')
-        villain.add_range(EasyRange('TS+'))
+        villain.add_range(EasyRange('TS+', is_cumulative=False))
         self.assertEqual(villain.ranges[-1].ppt(), '(54,AA)')
-        villain.add_range(EasyRange('SD9+', street=Street.FLOP))
+        villain.add_range(EasyRange('SD9+', street=Street.FLOP, is_cumulative=False))
         self.assertEqual(villain.ranges[-1].ppt(), '(QJT,543)')
 
 
     def test_ppt(self):
         player = Player(Position.BB, 100, name="John", is_hero=True)
-        player.add_range(PptRange('70%'))
-        player.add_range(PptRange('A,K2'))
+        player.add_range(PptRange('70%', is_cumulative=False))
+        player.add_range(PptRange('A,K2', is_cumulative=False))
         self.assertEqual(player.ppt(), '(70%):(A,K2)')
 
     def test_previous_stack(self):
@@ -502,8 +544,28 @@ class GameNodeTest(unittest.TestCase):
         root = GameNode(self.game)
         root.add_standard_lines()
         self.assertEqual(len(root.lines), 2)
-        self.assertEqual(root.lines[0].game_state.previous_action.type_, ActionType.BET)
-        self.assertEqual(root.lines[1].game_state.previous_action.type_, ActionType.CHECK)
+        self.assertEqual(root.lines[0].game_state.action.type_, ActionType.BET)
+        self.assertEqual(root.lines[1].game_state.action.type_, ActionType.CHECK)
+
+    def test_siblings(self):
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[1]
+        self.assertEqual(line_bet.siblings, root.lines)
+        self.assertEqual(line_check.siblings, root.lines)
+        self.assertEqual(root.siblings, None)
+
+    def test_count_cumulative_ranges(self):
+        btn = Player(Position.BTN, 100)
+        bb = Player(Position.BB, 100)
+        game = Game(players=[bb, btn], pot=10, board='AsKs2d')
+        game.make_action(Action(ActionType.CHECK))
+        root = GameNode(game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[1]
+        line_check.add_range(EasyRange('MS+'))
 
     def test__iter__(self):
         root = GameNode(self.game)
@@ -568,8 +630,8 @@ class GameTreeTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game([bb, btn], 33, board='2c Kd 8s')
-        bb.add_range(PptRange('AA'))
-        btn.add_range(PptRange('8h 9h Tc Js'))
+        bb.add_range(PptRange('AA', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
         game.make_action(Action(ActionType.BET, size=33))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
@@ -586,8 +648,8 @@ class GameTreeTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game([bb, btn], 33, board='2c Kd 8s 3c Jh')
-        bb.add_range(PptRange('AA'))
-        btn.add_range(PptRange('8h 9h Tc Js'))
+        bb.add_range(PptRange('AA', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
         game.make_action(Action(ActionType.BET, size=6))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
@@ -602,8 +664,8 @@ class GameTreeTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game([bb, btn], 33, board='2c Kd 8s 3c')
-        bb.add_range(PptRange('AA'))
-        btn.add_range(PptRange('8h 9h Tc Js'))
+        bb.add_range(PptRange('AA', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
         game.make_action(Action(ActionType.BET, size=6))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
@@ -618,8 +680,8 @@ class GameTreeTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33, name='Villain')
         bb = Player(Position.BB, stack=33, is_hero=True, name='Hero')
         game = Game([bb, btn], 33, board='2c Kd 8s')
-        bb.add_range(PptRange('As Ad 3s 3h'))
-        btn.add_range(PptRange('8h 9h Tc Js'))
+        bb.add_range(PptRange('As Ad 3s 3h', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
         game.make_action(Action(ActionType.BET, size=33))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)

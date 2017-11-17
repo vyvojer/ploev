@@ -15,13 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from enum import Enum
 import copy
-from typing import Iterable
+from typing import Iterable, List
 
 import logging
 
-from easy_range import BoardExplorer
+from ploev.easy_range import BoardExplorer
 from ploev.ppt import OddsOracle
 from ploev.cards import Board
 from ploev.calc import close_parenthesis, create_cumulative_ranges, Calc
@@ -30,18 +31,82 @@ from ploev.settings import CONFIG
 logging.getLogger()
 
 
-class AbstractRange(ABC):
-    @abstractmethod
+class SubRange:
+    def __init__(self, name, range_: 'AbstractRange'):
+        self.name = name
+        self.range_ = range_
+        self.game = None
+
+    def __iter__(self):
+        yield self.name
+        yield self.range_
+
     def ppt(self):
+        return self.range_.ppt()
+
+
+class RangeDistribution:
+    def __init__(self, sub_ranges: Iterable[SubRange] = None, is_cumulative=True, game: 'Game' = None):
+        if sub_ranges is None:
+            sub_ranges = []
+        else:
+            sub_ranges = list(sub_ranges)
+        self.sub_ranges = OrderedDict(sub_ranges)
+        self.is_cumulative = is_cumulative
+        self._set_is_cumulative_to_sub_ranges()
+        self._set_cumulative_ranges()
+        self.game = game
+
+    def _set_is_cumulative_to_sub_ranges(self):
+        for sub_range in self.sub_ranges.values():
+            sub_range.is_cumulative = self.is_cumulative
+
+    def _set_cumulative_ranges(self):
+        cumulative_sub_ranges = [sub_range for sub_range in self.sub_ranges.values() if sub_range.is_cumulative]
+        cumulatived = create_cumulative_ranges(
+            [close_parenthesis(sub_range.range_) for sub_range in cumulative_sub_ranges])
+        for sub_range, cumulative_range in zip(cumulative_sub_ranges, cumulatived):
+            sub_range.cumulative_range = cumulative_range
+
+    def as_list(self):
+        sub_ranges = [sub_range.ppt() for sub_range in self.sub_ranges.values()]
+        return sub_ranges
+
+    def sub_range(self, name):
+        sub_range = self.sub_ranges[name]
+        try:
+            street = sub_range.street
+            sub_range.board_explorer = self.game.board_explorer(street)
+        except AttributeError:
+            pass
+
+        return sub_range
+
+
+class AbstractRange(ABC):
+    def __init__(self, range_: str, is_cumulative=True):
+        self.range_ = range_
+        self.is_cumulative = is_cumulative
+        self.cumulative_range = None
+        self._ppt = None
+
+    def ppt(self):
+        if self._ppt is None:
+            if self.is_cumulative:
+                range_ = self.cumulative_range
+            else:
+                range_ = self.range_
+            self._calculate_ppt(range_)
+        return self._ppt
+
+    @abstractmethod
+    def _calculate_ppt(self, range_):
         pass
 
 
 class PptRange(AbstractRange):
-    def __init__(self, range_: str):
-        self.range_ = range_
-
-    def ppt(self):
-        return self.range_
+    def _calculate_ppt(self, r):
+        self._ppt = r
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -142,7 +207,7 @@ class Player:
 
     @property
     def stack(self):
-        return  self._stack
+        return self._stack
 
     @stack.setter
     def stack(self, value):
@@ -200,19 +265,18 @@ class Street(Enum):
 
 
 class EasyRange(AbstractRange):
-    def __init__(self, range_: str, cumulative: bool = True, street: Street = None):
-        self.range_ = range_
-        self.cumulative = cumulative
+    def __init__(self, range_: str, is_cumulative=True, street: Street = None):
+        super().__init__(range_, is_cumulative)
         self.street = street
         self.board_explorer = None
 
-    def ppt(self):
-        return self.board_explorer.ppt(self.range_)
+    def _calculate_ppt(self, range_):
+        self._ppt = self.board_explorer.ppt(range_)
 
     def __repr__(self):
         cls_name = self.__class__.__name__
         repr_str = "{}({}, cumulative={}, street={})"
-        return repr_str.format(cls_name, self.range_, self.cumulative, self.street)
+        return repr_str.format(cls_name, self.range_, self.is_cumulative, self.street)
 
 
 class GameLeaf(Enum):
@@ -222,7 +286,7 @@ class GameLeaf(Enum):
 
 
 class Game:
-    def __init__(self, players: Iterable, pot: float = 0, board: str='', allin_allowed: bool = False):
+    def __init__(self, players: Iterable, pot=0, board='', allin_allowed=False):
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
             raise ValueError("More than one player with same position")
@@ -240,8 +304,8 @@ class Game:
         self.in_action_position = max(self.active_positions, key=lambda position: position.value)
         self._is_round_closed = False
         self._last_aggressor = None
-        self._previous_player = None
-        self._previous_action = None
+        self._player = None
+        self._action = None
         self.next_raise_possible = True
         self.leaf = GameLeaf.NONE
         self.game_over = False
@@ -331,12 +395,12 @@ class Game:
         return self.get_player(self.in_action_position)
 
     @property
-    def previous_action(self):
-        return self._previous_action
+    def action(self):
+        return self._action
 
     @property
-    def previous_player(self):
-        return self._previous_player
+    def player(self):
+        return self._player
 
     @property
     def possible_actions(self) -> list:
@@ -356,21 +420,21 @@ class Game:
         """ Returns list of possible actions for the player in action """
         self._possible_actions = []
         player_in_action = self.player_in_action
-        if self._previous_action is None:
+        if self._action is None:
             return
 
         action_raise = None
         action_call = None
         raise_possible = True
         # Raise probably possible
-        if self._previous_action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
-            pot_raise = self._count_pot_raise(self._previous_action.size, self.pot)
-            call_size = self._previous_action.size - player_in_action.invested_in_bank
+        if self._action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
+            pot_raise = self._count_pot_raise(self._action.size, self.pot)
+            call_size = self._action.size - player_in_action.invested_in_bank
             if player_in_action.stack <= call_size:
                 raise_possible = False
                 call_size = player_in_action.stack
             if raise_possible:
-                min_raise_size = self._previous_action.size * 2
+                min_raise_size = self._action.size * 2
                 if self.allin_allowed:
                     max_raise_size = player_in_action.stack
                 else:
@@ -392,17 +456,17 @@ class Game:
             # Special situations with BB
             if player_in_action.position == Position.BB:
                 # SB posted small blind, BB must post big blind
-                if self._previous_action.type_ == ActionType.POST_BLIND:
+                if self._action.type_ == ActionType.POST_BLIND:
                     self._possible_actions.append(action_post_bb)
                 # SB completed, BB can check and close round or reopen round by raise
-                elif self._previous_action.type_ == ActionType.CALL and self._previous_action.size == 1:
+                elif self._action.type_ == ActionType.CALL and self._action.size == 1:
                     self._possible_actions.append(action_check)
         else:
-            if self._previous_action.type_ == ActionType.CHECK or self._is_round_closed:
+            if self._action.type_ == ActionType.CHECK or self._is_round_closed:
                 self._possible_actions.append(action_bet)
                 self._possible_actions.append(action_check)
-            elif self._previous_action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
-                                                 ActionType.POST_BLIND]:
+            elif self._action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
+                                        ActionType.POST_BLIND]:
                 if raise_possible:
                     self._possible_actions.append(action_raise)
                 self._possible_actions.append(action_call)
@@ -458,8 +522,8 @@ class Game:
         if player_range is not None:
             self.player_in_action.add_range(player_range)
 
-        self._previous_action = action
-        self._previous_player = self.player_in_action
+        self._action = action
+        self._player = self.player_in_action
         if action.is_sizable:
             self.pot += action.size
             self.player_in_action.stack -= action.size
@@ -488,9 +552,9 @@ class Game:
 
     def _set_leaf_and_activeness(self):
         self.game_over = False
-        if self.previous_action.type_ == ActionType.FOLD:
+        if self.action.type_ == ActionType.FOLD:
             self.leaf = GameLeaf.FOLD
-            self.previous_player.is_active = False
+            self.player.is_active = False
         elif self._is_round_closed:
             self.leaf = GameLeaf.ROUND_CLOSED
             if self.street == Street.SHOWDOWN:
@@ -513,7 +577,7 @@ class Game:
         self.in_action_position = state.in_action_position
         self._is_round_closed = state._is_round_closed
         self._last_aggressor = state._last_aggressor
-        self._previous_action = state.previous_action
+        self._action = state.action
 
 
 class GameFlow:
@@ -567,8 +631,8 @@ class GameNode:
         self.hero_ev_relative = None
 
     def __repr__(self):
-        player = self.game_state.previous_player.name
-        action = self.game_state.previous_action
+        player = self.game_state.player.name
+        action = self.game_state.action
         return "{} {}".format(player, action)
 
     def __iter__(self):
@@ -581,8 +645,15 @@ class GameNode:
         return self.level_id, self.action_id
 
     @property
-    def lines(self):
+    def lines(self) -> List['GameNode']:
         return self._lines
+
+    @property
+    def siblings(self):
+        if self.parent:
+            return self.parent.lines
+        else:
+            return None
 
     @property
     def game(self):
@@ -592,7 +663,7 @@ class GameNode:
     @property
     def player(self):
         """ Return player made node action"""
-        return self.game_state.previous_player
+        return self.game_state.player
 
     def add_line(self, action: Action):
         line_node = GameNode(game=self._game,
@@ -608,6 +679,9 @@ class GameNode:
         """ Add all possible lines  """
         for possible_action in self.game_state.possible_actions:
             self.add_line(copy.copy(possible_action))
+
+    def add_range(self, range_):
+        self.game_state.player.add_range(range_)
 
 
 class GameTree:
