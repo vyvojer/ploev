@@ -1637,7 +1637,7 @@ class BoardExplorer:
                 else:
                     pp_and_better = False
                 hands = self._easy_range2hands(family, easy_range, relative_rank, pp_and_better)
-                if (len(ppt_range) == 0 or ppt_range[-1] != '(') and len(hands) > 1:
+                if  len(hands) > 1:
                     ppt_range += '(' + BoardExplorer._hands2ppt(hands) + ')'
                 else:
                     ppt_range += BoardExplorer._hands2ppt(hands)

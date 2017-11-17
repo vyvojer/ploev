@@ -1341,6 +1341,7 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(be.ppt('FD2'), 'Qdd')
         self.assertEqual(be.ppt('FD3+'), '(Kdd,Qdd,Jdd)')
         self.assertEqual(be.ppt('FD'), 'dd')
+        self.assertEqual(be.ppt('TB2P+'), '(53,AA,44,22,A4,A2)')
         self.assertEqual(be.ppt('TB2P+:(FD)'), '(53,AA,44,22,A4,A2):(dd)')
 
         be = BoardExplorer(Board.from_str('AsJcJh2s'))
@@ -1361,6 +1362,11 @@ class BoardExplorerTest(unittest.TestCase):
 
         # '*'
         self.assertEqual(be.ppt('*'), '*')
+
+    def test_ppt_parenthesis(self):
+        be = BoardExplorer(Board.from_str('As 2d Ks'))
+        ppt = be.ppt('(T2P+,NFD,SD9+)')
+        self.assertEqual(ppt, '((AA,KK,22,AK),Qss,(QJT,543))')
 
 
 class EasyRangeTest(unittest.TestCase):
