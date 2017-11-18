@@ -1,16 +1,14 @@
 import unittest
 
-
 from ploev.game import *
 
 odds_oracle = OddsOracle()
 
 
 class RangeDistributionTest(unittest.TestCase):
-
     def test_get_not_cumulative_ranges(self):
         sub_ranges = [
-            SubRange('bet',PptRange('KK')),
+            SubRange('bet', PptRange('KK')),
             SubRange('check', PptRange('*!KK'))
         ]
         rd = RangeDistribution(sub_ranges, is_cumulative=False)
@@ -18,16 +16,16 @@ class RangeDistributionTest(unittest.TestCase):
 
     def test_set_cumulative_ranges(self):
         sub_ranges = [
-            SubRange('bet',PptRange('KK')),
+            SubRange('bet', PptRange('KK')),
             SubRange('check', PptRange('*'))
         ]
         rd = RangeDistribution(sub_ranges)
         rd._set_cumulative_ranges()
-        self.assertEqual(rd.sub_ranges['check'].cumulative_range, '(*)!(KK)')
+        self.assertEqual(rd._sub_ranges['check'].cumulative_range, '(*)!(KK)')
 
     def test_get_cumulative_ranges(self):
         sub_ranges = [
-            SubRange('bet',PptRange('KK')),
+            SubRange('bet', PptRange('KK')),
             SubRange('check', PptRange('*'))
         ]
         rd = RangeDistribution(sub_ranges)
@@ -93,7 +91,6 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(villain.ranges[-1].ppt(), '(54,AA)')
         villain.add_range(EasyRange('SD9+', street=Street.FLOP, is_cumulative=False))
         self.assertEqual(villain.ranges[-1].ppt(), '(QJT,543)')
-
 
     def test_ppt(self):
         player = Player(Position.BB, 100, name="John", is_hero=True)
@@ -225,7 +222,6 @@ class GameTest(unittest.TestCase):
         self.assertEqual(raise_action.min_size, 12)
         self.assertEqual(raise_action.max_size, 33)
         self.assertEqual(raise_action.size, 33)
-
 
     def test_possible_action_when_raise_not_possible(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
@@ -596,7 +592,6 @@ class GameNodeTest(unittest.TestCase):
 
 
 class GameTreeTest(unittest.TestCase):
-
     def setUp(self):
         self.btn = Player(Position.BTN, 100, is_hero=True)
         self.bb = Player(Position.BB, 100)
@@ -695,18 +690,29 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(call_line.hero_pot_share_relative, 30.5, delta=1)
         self.assertAlmostEqual(call_line.hero_ev_relative, 30.5, delta=1)
 
-    def test_calculate_node_with_ppt_range(self):
-        btn = Player(Position.BTN, stack=33, name='Villain')
-        bb = Player(Position.BB, stack=33)
+    def test_calculate_node_with_range_distribution(self):
+        bb = Player(Position.BB, stack=33, is_hero=True)
+        btn = Player(Position.BTN, stack=33)
         game = Game([bb, btn], 33, board='2c4cKd')
-        game.make_action(Action(Action.CHECK))
         bb.add_range(PptRange('AsAd8s8h'))
+        bb.add_range(PptRange('30%!AA'))
+        game.make_action(Action(Action.BET, 33))
         root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.add_standard_lines()
+        villain_rd = RangeDistribution(sub_ranges=[
+            SubRange('bet', EasyRange('2P+,FD,SD8+')),
+            SubRange('fold', EasyRange('*')),
+        ], game=game)
+        line_bet = root.lines[0]
+        line_check = root.lines[1]
+        line_bet.add_range(villain_rd.sub_range('bet'))
+        line_check.add_range(villain_rd.sub_range('fold'))
+        game_tree.calculate_node(line_bet)
 
 
 class TypicalGameSituationTest(unittest.TestCase):
-
-    def test_SPR1_call_pot_bet(self):
+    def _test_SPR1_call_pot_bet(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
