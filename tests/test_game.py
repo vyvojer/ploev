@@ -695,7 +695,7 @@ class GameTreeTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33)
         game = Game([bb, btn], 33, board='2c4cKd')
         bb.add_range(PptRange('AsAd8s8h'))
-        bb.add_range(PptRange('30%!AA'))
+        btn.add_range(PptRange('30%!AA'))
         game.make_action(Action(Action.BET, 33))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
@@ -709,6 +709,7 @@ class GameTreeTest(unittest.TestCase):
         line_bet.add_range(villain_rd.sub_range('bet'))
         line_check.add_range(villain_rd.sub_range('fold'))
         game_tree.calculate_node(line_bet)
+        self.assertAlmostEqual(line_bet.hero_equity, 0.396, delta=0.01)
 
 
 class TypicalGameSituationTest(unittest.TestCase):

@@ -51,29 +51,29 @@ class RangeDistribution:
             sub_ranges = []
         else:
             sub_ranges = list(sub_ranges)
-        self.sub_ranges = OrderedDict(sub_ranges)
+        self._sub_ranges = OrderedDict(sub_ranges)
         self.is_cumulative = is_cumulative
         self._set_is_cumulative_to_sub_ranges()
         self._set_cumulative_ranges()
         self.game = game
 
     def _set_is_cumulative_to_sub_ranges(self):
-        for sub_range in self.sub_ranges.values():
+        for sub_range in self._sub_ranges.values():
             sub_range.is_cumulative = self.is_cumulative
 
     def _set_cumulative_ranges(self):
-        cumulative_sub_ranges = [sub_range for sub_range in self.sub_ranges.values() if sub_range.is_cumulative]
+        cumulative_sub_ranges = [sub_range for sub_range in self._sub_ranges.values() if sub_range.is_cumulative]
         cumulatived = create_cumulative_ranges(
             [close_parenthesis(sub_range.range_) for sub_range in cumulative_sub_ranges])
         for sub_range, cumulative_range in zip(cumulative_sub_ranges, cumulatived):
             sub_range.cumulative_range = cumulative_range
 
     def as_list(self):
-        sub_ranges = [sub_range.ppt() for sub_range in self.sub_ranges.values()]
+        sub_ranges = [sub_range.ppt() for sub_range in self._sub_ranges.values()]
         return sub_ranges
 
     def sub_range(self, name):
-        sub_range = self.sub_ranges[name]
+        sub_range = self._sub_ranges[name]
         try:
             street = sub_range.street
             sub_range.board_explorer = self.game.board_explorer(street)
@@ -235,8 +235,13 @@ class Player:
         self._is_hero = not value
 
     def add_range(self, range_):
-        if hasattr(range_, 'board_explorer'):
-            range_.board_explorer = self.game.board_explorer(range_.street)
+        try:
+            range_.board_explorer
+        except AttributeError:
+            pass
+        else:
+            if not range_.board_explorer: #  Check if board_explorer alreade was set in RangeDistribution
+                range_.board_explorer = self.game.board_explorer(range_.street)
         self.ranges.append(range_)
 
     def ppt(self):
@@ -679,7 +684,7 @@ class GameNode:
             self.add_line(copy.copy(possible_action))
 
     def add_range(self, range_):
-        self.game_state.player.add_range(range_)
+        self.player.add_range(range_)
 
 
 class GameTree:
