@@ -168,6 +168,8 @@ class OddsOracle:
         """
         result = self._client.PPTServer.computeEquityAuto(self.game, board, dead, self.syntax, hands,
                                                           self.trials, self.seconds, self.threads)
+        if 'Error' in result:
+            raise ValueError("{} in computeEquityAuto: \r\nboard={} dead={} hands={}".format(result, board, dead, hands))
         return self._parse_equity_result(result)
 
     @staticmethod
