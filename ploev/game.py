@@ -84,7 +84,7 @@ class RangeDistribution:
 
 
 class AbstractRange(ABC):
-    def __init__(self, range_: str, is_cumulative=True):
+    def __init__(self, range_: str, is_cumulative=False):
         self.range_ = range_
         self.is_cumulative = is_cumulative
         self.cumulative_range = None
@@ -122,17 +122,15 @@ class Position(Enum):
     UTG = 3
 
 
-class ActionType(Enum):
+class Action():
     BET = 'Bet'
     RAISE = 'Raise'
     CHECK = 'Check'
     CALL = 'Call'
     FOLD = 'Fold'
     POST_BLIND = 'Post'
-
-
-class Action:
-    def __init__(self, type_: ActionType, size: float = None, min_size: float = None, max_size: float = None):
+    
+    def __init__(self, type_: str, size: float=None, min_size: float=None, max_size: float=None):
         self.type_ = type_
         self.size = size
         self._is_sizable = False
@@ -151,13 +149,13 @@ class Action:
         return self._is_sizable
 
     def _set_sizable(self):
-        if self.type_ in [ActionType.CHECK, ActionType.FOLD]:
+        if self.type_ in [self.CHECK, self.FOLD]:
             self._is_sizable = False
         else:
             self._is_sizable = True
 
     def _set_different_size_possible(self):
-        if self.type_ in [ActionType.BET, ActionType.RAISE]:
+        if self.type_ in [self.BET, self.RAISE]:
             self._is_different_sizes_possible = True
         else:
             self._is_different_sizes_possible = False
@@ -172,9 +170,9 @@ class Action:
 
     def __str__(self):
         if self._is_sizable:
-            return f'{self.type_.value} {self.size}'
+            return f'{self.type_} {self.size}'
         else:
-            return f'{self.type_.value}'
+            return f'{self.type_}'
 
 
 class Player:
@@ -427,7 +425,7 @@ class Game:
         action_call = None
         raise_possible = True
         # Raise probably possible
-        if self._action.type_ in [ActionType.RAISE, ActionType.CALL, ActionType.BET, ActionType.POST_BLIND]:
+        if self._action.type_ in [Action.RAISE, Action.CALL, Action.BET, Action.POST_BLIND]:
             pot_raise = self._count_pot_raise(self._action.size, self.pot)
             call_size = self._action.size - player_in_action.invested_in_bank
             if player_in_action.stack <= call_size:
@@ -443,30 +441,30 @@ class Game:
                     min_raise_size = max_raise_size = player_in_action.stack
                 if player_in_action.stack < max_raise_size:  # All-n
                     max_raise_size = player_in_action.stack
-                action_raise = Action(ActionType.RAISE, size=max_raise_size, min_size=min_raise_size,
+                action_raise = Action(Action.RAISE, size=max_raise_size, min_size=min_raise_size,
                                       max_size=max_raise_size)
-            action_call = Action(ActionType.CALL, size=call_size)
+            action_call = Action(Action.CALL, size=call_size)
 
-        action_bet = Action(ActionType.BET, size=self.pot, min_size=1, max_size=self.pot)
-        action_check = Action(ActionType.CHECK)
-        action_fold = Action(ActionType.FOLD)
-        action_post_bb = Action(ActionType.POST_BLIND, size=1)
+        action_bet = Action(Action.BET, size=self.pot, min_size=1, max_size=self.pot)
+        action_check = Action(Action.CHECK)
+        action_fold = Action(Action.FOLD)
+        action_post_bb = Action(Action.POST_BLIND, size=1)
 
         if self.street == Street.PREFLOP and player_in_action.position == Position.BB:
             # Special situations with BB
             if player_in_action.position == Position.BB:
                 # SB posted small blind, BB must post big blind
-                if self._action.type_ == ActionType.POST_BLIND:
+                if self._action.type_ == Action.POST_BLIND:
                     self._possible_actions.append(action_post_bb)
                 # SB completed, BB can check and close round or reopen round by raise
-                elif self._action.type_ == ActionType.CALL and self._action.size == 1:
+                elif self._action.type_ == Action.CALL and self._action.size == 1:
                     self._possible_actions.append(action_check)
         else:
-            if self._action.type_ == ActionType.CHECK or self._is_round_closed:
+            if self._action.type_ == Action.CHECK or self._is_round_closed:
                 self._possible_actions.append(action_bet)
                 self._possible_actions.append(action_check)
-            elif self._action.type_ in [ActionType.RAISE, ActionType.BET, ActionType.CALL,
-                                        ActionType.POST_BLIND]:
+            elif self._action.type_ in [Action.RAISE, Action.BET, Action.CALL,
+                                        Action.POST_BLIND]:
                 if raise_possible:
                     self._possible_actions.append(action_raise)
                 self._possible_actions.append(action_call)
@@ -528,13 +526,13 @@ class Game:
             self.pot += action.size
             self.player_in_action.stack -= action.size
             self.player_in_action.invested_in_bank = action.size
-        if action.type_ in [ActionType.RAISE, ActionType.BET]:
+        if action.type_ in [Action.RAISE, Action.BET]:
             self._last_aggressor = self.player_in_action
-        if action.type_ == ActionType.POST_BLIND:
+        if action.type_ == Action.POST_BLIND:
             self._last_aggressor = self.get_next_action_player()
-        if action.type_ in [ActionType.CALL, ActionType.FOLD] and self.get_next_action_player() == self._last_aggressor:
+        if action.type_ in [Action.CALL, Action.FOLD] and self.get_next_action_player() == self._last_aggressor:
             self._is_round_closed = True
-        elif action.type_ == ActionType.CHECK:
+        elif action.type_ == Action.CHECK:
             if self.player_in_action == self.last_position_player:
                 self._is_round_closed = True
             # Special situation: BB close preflop round after SB completing
@@ -552,7 +550,7 @@ class Game:
 
     def _set_leaf_and_activeness(self):
         self.game_over = False
-        if self.action.type_ == ActionType.FOLD:
+        if self.action.type_ == Action.FOLD:
             self.leaf = GameLeaf.FOLD
             self.player.is_active = False
         elif self._is_round_closed:

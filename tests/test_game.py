@@ -67,7 +67,7 @@ class PlayerTest(unittest.TestCase):
 
     def test_save_state(self):
         player = Player(Position.BB, 100, name="John", is_hero=True)
-        player.action = Action(ActionType.BET, 10)
+        player.action = Action(Action.BET, 10)
         state = player.clone()
         player.name = "Pupa"
         player.stack = 200
@@ -109,16 +109,17 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(player.stack, 50)
         self.assertEqual(player.previous_stack, 100)
 
+
 class ActionTest(unittest.TestCase):
     def test__init__(self):
-        action = Action(ActionType.BET, 100)
-        self.assertEqual(action.type_, ActionType.BET)
+        action = Action(Action.BET, 100)
+        self.assertEqual(action.type_, Action.BET)
         self.assertEqual(action.size, 100)
         self.assertEqual(action.is_sizable, True)
         self.assertEqual(action._is_different_sizes_possible, True)
 
-        action = Action(ActionType.CHECK)
-        self.assertEqual(action.type_, ActionType.CHECK)
+        action = Action(Action.CHECK)
+        self.assertEqual(action.type_, Action.CHECK)
         self.assertEqual(action.size, None)
         self.assertEqual(action.is_sizable, False)
         self.assertEqual(action._is_different_sizes_possible, False)
@@ -198,17 +199,17 @@ class GameTest(unittest.TestCase):
     def test_possible_actions(self):
         game = self.game
         self.assertEqual(game.player_in_action, self.sb)
-        game.make_action(Action(ActionType.POST_BLIND, 0.5))
-        self.assertEqual(game.possible_actions[0].type_, ActionType.POST_BLIND)
+        game.make_action(Action(Action.POST_BLIND, 0.5))
+        self.assertEqual(game.possible_actions[0].type_, Action.POST_BLIND)
         self.assertEqual(game.possible_actions[0].size, 1)
 
-        game.make_action(Action(ActionType.POST_BLIND, 1))
+        game.make_action(Action(Action.POST_BLIND, 1))
         game.pot = 1.5
-        self.assertEqual(game.possible_actions[0].type_, ActionType.RAISE)
+        self.assertEqual(game.possible_actions[0].type_, Action.RAISE)
         self.assertEqual(game.possible_actions[0].size, 3.5)
         self.assertEqual(game.possible_actions[0].min_size, 2)
         self.assertEqual(game.possible_actions[0].max_size, 3.5)
-        self.assertEqual(game.possible_actions[1].type_, ActionType.CALL)
+        self.assertEqual(game.possible_actions[1].type_, Action.CALL)
         self.assertEqual(game.possible_actions[1].size, 1)
         game.make_action(game.possible_actions[0])
         self.assertEqual(game.pot, 5)
@@ -218,9 +219,9 @@ class GameTest(unittest.TestCase):
         game = Game([bb, btn], 33, board='2c Kd 8s 3c Jh')
         bb.add_range(PptRange('AA'))
         btn.add_range(PptRange('8h 9h Tc Js'))
-        game.make_action(Action(ActionType.BET, size=6))
+        game.make_action(Action(Action.BET, size=6))
         raise_action = game.possible_actions[0]
-        self.assertEqual(raise_action.type_, ActionType.RAISE)
+        self.assertEqual(raise_action.type_, Action.RAISE)
         self.assertEqual(raise_action.min_size, 12)
         self.assertEqual(raise_action.max_size, 33)
         self.assertEqual(raise_action.size, 33)
@@ -230,55 +231,55 @@ class GameTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
-        game.make_action(Action(ActionType.BET, size=33))
+        game.make_action(Action(Action.BET, size=33))
         self.assertEqual(len(game.possible_actions), 2)
-        self.assertEqual(game.possible_actions[0].type_, ActionType.CALL)
-        self.assertEqual(game.possible_actions[1].type_, ActionType.FOLD)
+        self.assertEqual(game.possible_actions[0].type_, Action.CALL)
+        self.assertEqual(game.possible_actions[1].type_, Action.FOLD)
 
         btn = Player(Position.BTN, stack=30, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
-        game.make_action(Action(ActionType.BET, size=33))
+        game.make_action(Action(Action.BET, size=33))
         self.assertEqual(len(game.possible_actions), 2)
-        self.assertEqual(game.possible_actions[0].type_, ActionType.CALL)
+        self.assertEqual(game.possible_actions[0].type_, Action.CALL)
         self.assertEqual(game.possible_actions[0].min_size, 30)
         self.assertEqual(game.possible_actions[0].max_size, 30)
-        self.assertEqual(game.possible_actions[1].type_, ActionType.FOLD)
+        self.assertEqual(game.possible_actions[1].type_, Action.FOLD)
 
     def test_possible_action_when_only_allin_possible(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
-        game.make_action(Action(ActionType.BET, size=10))
+        game.make_action(Action(Action.BET, size=10))
         self.assertEqual(len(game.possible_actions), 3)
-        self.assertEqual(game.possible_actions[0].type_, ActionType.RAISE)
+        self.assertEqual(game.possible_actions[0].type_, Action.RAISE)
         self.assertEqual(game.possible_actions[0].min_size, 20)
         self.assertEqual(game.possible_actions[0].max_size, 33)
-        self.assertEqual(game.possible_actions[1].type_, ActionType.CALL)
-        self.assertEqual(game.possible_actions[2].type_, ActionType.FOLD)
+        self.assertEqual(game.possible_actions[1].type_, Action.CALL)
+        self.assertEqual(game.possible_actions[2].type_, Action.FOLD)
 
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
-        game.make_action(Action(ActionType.BET, size=20))
+        game.make_action(Action(Action.BET, size=20))
         self.assertEqual(len(game.possible_actions), 3)
-        self.assertEqual(game.possible_actions[0].type_, ActionType.RAISE)
+        self.assertEqual(game.possible_actions[0].type_, Action.RAISE)
         self.assertEqual(game.possible_actions[0].min_size, 33)
         self.assertEqual(game.possible_actions[0].max_size, 33)
-        self.assertEqual(game.possible_actions[1].type_, ActionType.CALL)
-        self.assertEqual(game.possible_actions[2].type_, ActionType.FOLD)
+        self.assertEqual(game.possible_actions[1].type_, Action.CALL)
+        self.assertEqual(game.possible_actions[2].type_, Action.FOLD)
 
     def test_possible_action_when_allin_allowed(self):
         btn = Player(Position.BTN, stack=330, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=400, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s', allin_allowed=True)
-        game.make_action(Action(ActionType.BET, size=10))
+        game.make_action(Action(Action.BET, size=10))
         self.assertEqual(len(game.possible_actions), 3)
-        self.assertEqual(game.possible_actions[0].type_, ActionType.RAISE)
+        self.assertEqual(game.possible_actions[0].type_, Action.RAISE)
         self.assertEqual(game.possible_actions[0].min_size, 20)
         self.assertEqual(game.possible_actions[0].max_size, 330)
-        self.assertEqual(game.possible_actions[1].type_, ActionType.CALL)
-        self.assertEqual(game.possible_actions[2].type_, ActionType.FOLD)
+        self.assertEqual(game.possible_actions[1].type_, Action.CALL)
+        self.assertEqual(game.possible_actions[2].type_, Action.FOLD)
 
     def test_count_pot_bet(self):
         self.assertEqual(Game._count_pot_raise(call_size=1, pot=1.5), 3.5)
@@ -288,8 +289,8 @@ class GameTest(unittest.TestCase):
         game = self.game
         # SB post sb
         self.assertEqual(game.player_in_action, self.sb)
-        game.make_action(Action(ActionType.POST_BLIND, 0.5))
-        self.assertEqual(self.sb.action.type_, ActionType.POST_BLIND)
+        game.make_action(Action(Action.POST_BLIND, 0.5))
+        self.assertEqual(self.sb.action.type_, Action.POST_BLIND)
         self.assertEqual(self.sb.invested_in_bank, 0.5)
         self.assertEqual(game.player_in_action, self.bb)
         self.assertEqual(game.player_in_action.action, None)
@@ -300,8 +301,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(len(active_players), 3)
 
         # BB post bb
-        game.make_action(Action(ActionType.POST_BLIND, 1))
-        self.assertEqual(self.bb.action.type_, ActionType.POST_BLIND)
+        game.make_action(Action(Action.POST_BLIND, 1))
+        self.assertEqual(self.bb.action.type_, Action.POST_BLIND)
         self.assertEqual(self.bb.invested_in_bank, 1)
         self.assertEqual(game.player_in_action, self.btn)
         self.assertEqual(game.player_in_action.action, None)
@@ -310,8 +311,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.pot, 1.5)
 
         # BTN call (limp)
-        game.make_action(Action(ActionType.CALL, 1))
-        self.assertEqual(self.btn.action.type_, ActionType.CALL)
+        game.make_action(Action(Action.CALL, 1))
+        self.assertEqual(self.btn.action.type_, Action.CALL)
         self.assertEqual(game.player_in_action, self.sb)
         self.assertEqual(game.player_in_action.action, None)
         self.assertEqual(game._last_aggressor, self.btn)
@@ -320,8 +321,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.street, Street.PREFLOP)
 
         # SB call (complete)
-        game.make_action(Action(ActionType.CALL, 0.5))
-        self.assertEqual(self.sb.action.type_, ActionType.CALL)
+        game.make_action(Action(Action.CALL, 0.5))
+        self.assertEqual(self.sb.action.type_, Action.CALL)
         self.assertEqual(game._is_round_closed, False)
         self.assertEqual(game.player_in_action, self.bb)
         self.assertEqual(game.player_in_action.action, None)
@@ -330,8 +331,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.street, Street.PREFLOP)
 
         # BB check, the prelop round completed
-        game.make_action(Action(ActionType.CHECK))
-        self.assertEqual(self.bb.action.type_, ActionType.CHECK)
+        game.make_action(Action(Action.CHECK))
+        self.assertEqual(self.bb.action.type_, Action.CHECK)
         self.assertEqual(game._is_round_closed, True)
         self.assertEqual(game.player_in_action, self.sb)
         self.assertEqual(game.player_in_action.action, None)
@@ -340,8 +341,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.street, Street.FLOP)
 
         # SB check OTF
-        game.make_action(Action(ActionType.CHECK))
-        self.assertEqual(self.sb.action.type_, ActionType.CHECK)
+        game.make_action(Action(Action.CHECK))
+        self.assertEqual(self.sb.action.type_, Action.CHECK)
         self.assertEqual(game._is_round_closed, False)
         self.assertEqual(game.player_in_action, self.bb)
         self.assertEqual(game.player_in_action.action, None)
@@ -350,8 +351,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.street, Street.FLOP)
 
         # BB bet OTF
-        game.make_action(Action(ActionType.BET, 3))
-        self.assertEqual(self.bb.action.type_, ActionType.BET)
+        game.make_action(Action(Action.BET, 3))
+        self.assertEqual(self.bb.action.type_, Action.BET)
         self.assertEqual(game._is_round_closed, False)
         self.assertEqual(game.player_in_action, self.btn)
         self.assertEqual(game.player_in_action.action, None)
@@ -362,8 +363,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(len(active_players), 3)
 
         # BTN fold OTF
-        game.make_action(Action(ActionType.FOLD))
-        self.assertEqual(self.btn.action.type_, ActionType.FOLD)
+        game.make_action(Action(Action.FOLD))
+        self.assertEqual(self.btn.action.type_, Action.FOLD)
         self.assertEqual(game._is_round_closed, False)
         self.assertEqual(game.player_in_action, self.sb)
         self.assertEqual(game.player_in_action.action, None)
@@ -374,8 +375,8 @@ class GameTest(unittest.TestCase):
         self.assertEqual(len(active_players), 2)
 
         # SB call OTF
-        game.make_action(Action(ActionType.CALL, 3))
-        self.assertEqual(self.sb.action.type_, ActionType.CALL)
+        game.make_action(Action(Action.CALL, 3))
+        self.assertEqual(self.sb.action.type_, Action.CALL)
         self.assertEqual(game._is_round_closed, True)
         self.assertEqual(game.player_in_action, self.sb)
         #        self.assertEqual(game.player_in_action.action, None)
@@ -389,15 +390,15 @@ class GameTest(unittest.TestCase):
         game = Game([hero, villain], pot=4.5, board='Td4s3s')
         self.assertEqual(game.player_in_action, villain)
         self.assertEqual(game.street, Street.FLOP)
-        game.make_action(Action(ActionType.CHECK))
+        game.make_action(Action(Action.CHECK))
         self.assertEqual(game.player_in_action, hero)
-        self.assertEqual(game.possible_actions, [Action(ActionType.BET, 4.5, 1, 4.5),
-                                                 Action(ActionType.CHECK)])
-        game.make_action(Action(ActionType.BET, 4.5, 1, 4.5))
+        self.assertEqual(game.possible_actions, [Action(Action.BET, 4.5, 1, 4.5),
+                                                 Action(Action.CHECK)])
+        game.make_action(Action(Action.BET, 4.5, 1, 4.5))
         self.assertEqual(game.player_in_action, villain)
-        self.assertEqual(game.possible_actions, [Action(ActionType.RAISE, 18, 9, 18),
-                                                 Action(ActionType.CALL, 4.5),
-                                                 Action(ActionType.FOLD)])
+        self.assertEqual(game.possible_actions, [Action(Action.RAISE, 18, 9, 18),
+                                                 Action(Action.CALL, 4.5),
+                                                 Action(Action.FOLD)])
         self.assertEqual(game._last_aggressor, hero)
         self.assertEqual(game._is_round_closed, False)
 
@@ -410,7 +411,7 @@ class GameTest(unittest.TestCase):
         self.assertEqual(villain.stack, 98)
         self.assertEqual(game.pot, 4.5)
         state_in_the_begin = game.clone()
-        game.make_action(Action(ActionType.BET, size=4.5))
+        game.make_action(Action(Action.BET, size=4.5))
         self.assertEqual(game.player_in_action, hero)
         self.assertEqual(villain.stack, 93.5)
         self.assertEqual(game.street, Street.FLOP)
@@ -432,7 +433,7 @@ class GameTest(unittest.TestCase):
         bb = Player(Position.BB, 100)
         game = Game([bb, btn], pot=3, board='AsKs2d')
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.CHECK))
+        game.make_action(Action(Action.CHECK))
         self.assertEqual(game.leaf, GameLeaf.NONE)
 
     def test_leaf_round_closed(self):
@@ -440,18 +441,18 @@ class GameTest(unittest.TestCase):
         bb = Player(Position.BB, 100)
         game = Game([bb, btn], pot=3, board='AsKs2d')
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.CHECK))
+        game.make_action(Action(Action.CHECK))
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.CHECK))
+        game.make_action(Action(Action.CHECK))
         self.assertEqual(game.leaf, GameLeaf.ROUND_CLOSED)
 
         btn = Player(Position.BTN, 100)
         bb = Player(Position.BB, 100)
         game = Game([bb, btn], pot=3, board='AsKs2d')
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.BET, 3))
+        game.make_action(Action(Action.BET, 3))
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.CALL, 3))
+        game.make_action(Action(Action.CALL, 3))
         self.assertEqual(game.leaf, GameLeaf.ROUND_CLOSED)
 
     def test_leaf_fold(self):
@@ -459,9 +460,9 @@ class GameTest(unittest.TestCase):
         bb = Player(Position.BB, 100)
         game = Game([bb, btn], pot=3, board='AsKs2d')
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.BET, 3))
+        game.make_action(Action(Action.BET, 3))
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.FOLD))
+        game.make_action(Action(Action.FOLD))
         self.assertEqual(game.leaf, GameLeaf.FOLD)
 
     def test_leaf_showdown(self):
@@ -469,9 +470,9 @@ class GameTest(unittest.TestCase):
         bb = Player(Position.BB, 100)
         game = Game([bb, btn], pot=3, board='AsKs2d2s4h')
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.BET, 3))
+        game.make_action(Action(Action.BET, 3))
         self.assertEqual(game.leaf, GameLeaf.NONE)
-        game.make_action(Action(ActionType.CALL, 3))
+        game.make_action(Action(Action.CALL, 3))
         self.assertEqual(game.game_over, True)
 
     def test_board_explorer(self):
@@ -512,7 +513,7 @@ class GameNodeTest(unittest.TestCase):
         self.btn = Player(Position.BTN, 100)
         self.bb = Player(Position.BB, 100)
         self.game = Game(players=[self.bb, self.btn], pot=6, board='2cKd8s')
-        self.game.make_action(Action(ActionType.CHECK))
+        self.game.make_action(Action(Action.CHECK))
 
     def test__init__(self):
         game_node = GameNode(self.game)
@@ -524,13 +525,13 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(root.game_state.player_in_action.position, Position.BTN)
         self.assertEqual(root.game_state.player_in_action.stack, 100)
 
-        line_check = root.add_line(Action(ActionType.CHECK))
+        line_check = root.add_line(Action(Action.CHECK))
         self.assertEqual(root.game_state.player_in_action.position, Position.BTN)
         self.assertEqual(line_check.game_state.player_in_action.position, Position.BB)
         self.assertEqual(line_check.game_state.get_player(Position.BTN).stack, 100)
         self.assertEqual(line_check.parent, root)
 
-        line_bet = root.add_line(Action(ActionType.BET, 6))
+        line_bet = root.add_line(Action(Action.BET, 6))
         self.assertEqual(root.game_state.player_in_action.position, Position.BTN)
         self.assertEqual(line_check.game_state.player_in_action.position, Position.BB)
         self.assertEqual(line_check.game_state.get_player(Position.BTN).stack, 100)
@@ -544,8 +545,8 @@ class GameNodeTest(unittest.TestCase):
         root = GameNode(self.game)
         root.add_standard_lines()
         self.assertEqual(len(root.lines), 2)
-        self.assertEqual(root.lines[0].game_state.action.type_, ActionType.BET)
-        self.assertEqual(root.lines[1].game_state.action.type_, ActionType.CHECK)
+        self.assertEqual(root.lines[0].game_state.action.type_, Action.BET)
+        self.assertEqual(root.lines[1].game_state.action.type_, Action.CHECK)
 
     def test_siblings(self):
         root = GameNode(self.game)
@@ -560,7 +561,7 @@ class GameNodeTest(unittest.TestCase):
         btn = Player(Position.BTN, 100)
         bb = Player(Position.BB, 100)
         game = Game(players=[bb, btn], pot=10, board='AsKs2d')
-        game.make_action(Action(ActionType.CHECK))
+        game.make_action(Action(Action.CHECK))
         root = GameNode(game)
         root.add_standard_lines()
         line_bet = root.lines[0]
@@ -600,7 +601,7 @@ class GameTreeTest(unittest.TestCase):
         self.btn = Player(Position.BTN, 100, is_hero=True)
         self.bb = Player(Position.BB, 100)
         self.game = Game(players=[self.bb, self.btn], pot=6, board='2cKd8s')
-        self.game.make_action(Action(ActionType.CHECK))
+        self.game.make_action(Action(Action.CHECK))
 
     def test_hero(self):
         root = GameNode(self.game)
@@ -632,7 +633,7 @@ class GameTreeTest(unittest.TestCase):
         game = Game([bb, btn], 33, board='2c Kd 8s')
         bb.add_range(PptRange('AA', is_cumulative=False))
         btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
-        game.make_action(Action(ActionType.BET, size=33))
+        game.make_action(Action(Action.BET, size=33))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
@@ -650,7 +651,7 @@ class GameTreeTest(unittest.TestCase):
         game = Game([bb, btn], 33, board='2c Kd 8s 3c Jh')
         bb.add_range(PptRange('AA', is_cumulative=False))
         btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
-        game.make_action(Action(ActionType.BET, size=6))
+        game.make_action(Action(Action.BET, size=6))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
@@ -666,7 +667,7 @@ class GameTreeTest(unittest.TestCase):
         game = Game([bb, btn], 33, board='2c Kd 8s 3c')
         bb.add_range(PptRange('AA', is_cumulative=False))
         btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
-        game.make_action(Action(ActionType.BET, size=6))
+        game.make_action(Action(Action.BET, size=6))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
@@ -680,9 +681,9 @@ class GameTreeTest(unittest.TestCase):
         btn = Player(Position.BTN, stack=33, name='Villain')
         bb = Player(Position.BB, stack=33, is_hero=True, name='Hero')
         game = Game([bb, btn], 33, board='2c Kd 8s')
-        bb.add_range(PptRange('As Ad 3s 3h', is_cumulative=False))
-        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
-        game.make_action(Action(ActionType.BET, size=33))
+        bb.add_range(PptRange('As Ad 3s 3h'))
+        btn.add_range(PptRange('8h 9h Tc Js'))
+        game.make_action(Action(Action.BET, size=33))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
@@ -694,20 +695,28 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(call_line.hero_pot_share_relative, 30.5, delta=1)
         self.assertAlmostEqual(call_line.hero_ev_relative, 30.5, delta=1)
 
+    def test_calculate_node_with_ppt_range(self):
+        btn = Player(Position.BTN, stack=33, name='Villain')
+        bb = Player(Position.BB, stack=33)
+        game = Game([bb, btn], 33, board='2c4cKd')
+        game.make_action(Action(Action.CHECK))
+        bb.add_range(PptRange('AsAd8s8h'))
+        root = GameNode(game)
+
 
 class TypicalGameSituationTest(unittest.TestCase):
 
-    def _test_SPR1_call_pot_bet(self):
+    def test_SPR1_call_pot_bet(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
         bb.add_range(PptRange('AA'))
         btn.add_range(PptRange('8h 9h Tc Js'))
-        game.make_action(Action(ActionType.BET, size=33))
+        game.make_action(Action(Action.BET, size=33))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
         call_line = root.lines[0]
         fold_line = root.lines[1]
         game_tree.calculate()
-        self.assertAlmostEqual(call_line.equity, 35.4, delta=0.5)
+        self.assertAlmostEqual(call_line.hero_equity, 35.4, delta=0.5)
