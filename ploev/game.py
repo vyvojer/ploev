@@ -16,7 +16,7 @@
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from enum import Enum
+from enum import IntEnum
 import copy
 from typing import Iterable, List
 
@@ -141,7 +141,7 @@ class PptRange(AbstractRange):
         return "{}({})".format(cls_name, self.range_)
 
 
-class Position(Enum):
+class Position(IntEnum):
     BB = 8
     SB = 9
     BTN = 0
@@ -150,7 +150,7 @@ class Position(Enum):
     UTG = 3
 
 
-class Action():
+class Action:
     BET = 'Bet'
     RAISE = 'Raise'
     CHECK = 'Check'
@@ -287,7 +287,7 @@ class Player:
         self._stack = state._stack
 
 
-class Street(Enum):
+class Street(IntEnum):
     PREFLOP = 0
     FLOP = 1
     TURN = 2
@@ -310,7 +310,7 @@ class EasyRange(AbstractRange):
         return repr_str.format(cls_name, self.range_, self.is_cumulative, self.street)
 
 
-class GameLeaf(Enum):
+class GameLeaf(IntEnum):
     NONE = 0
     ROUND_CLOSED = 1
     FOLD = 2

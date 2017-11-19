@@ -67,7 +67,6 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertAlmostEqual(check.fraction, 0.783, delta=0.01)
 
 
-
 class EasyRangeTest(unittest.TestCase):
     def test_ppt(self):
         board_explorer = BoardExplorer(Board.from_str('AsKdTh'))
