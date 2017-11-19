@@ -2,7 +2,7 @@ import unittest
 
 from ploev.game import *
 
-odds_oracle = OddsOracle()
+odds_oracle = OddsOracle(trials=10000, seconds=1)
 
 
 class RangeDistributionTest(unittest.TestCase):
@@ -12,7 +12,7 @@ class RangeDistributionTest(unittest.TestCase):
             SubRange('check', PptRange('*!KK'))
         ]
         rd = RangeDistribution(sub_ranges, is_cumulative=False)
-        self.assertEqual(rd.as_list(), ['KK', '*!KK'])
+        self.assertEqual(rd.ppts(), ['KK', '*!KK'])
 
     def test_set_cumulative_ranges(self):
         sub_ranges = [
@@ -29,7 +29,7 @@ class RangeDistributionTest(unittest.TestCase):
             SubRange('check', PptRange('*'))
         ]
         rd = RangeDistribution(sub_ranges)
-        self.assertEqual(rd.as_list(), ['(KK)', '(*)!(KK)'])
+        self.assertEqual(rd.ppts(), ['(KK)', '(*)!(KK)'])
 
     def test_ppt_ranges(self):
         btn = Player(Position.BTN, stack=97)
@@ -44,6 +44,28 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertEqual(bet.ppt(), '((AA,KK,22,AK),Qss,(QJT,543))')
         check = rd.sub_range('check')
         self.assertEqual(check.ppt(), '(*)!((AA,KK,22,AK),Qss,(QJT,543))')
+
+    def test_calculate(self):
+        btn = Player(Position.BTN, stack=97, is_hero=True)
+        bb = Player(Position.BB, stack=97)
+        bb.add_range(PptRange('30%'))
+        game = Game([bb, btn], 6.5, board='As 2d Ks')
+        player = bb
+        sub_ranges = [
+            SubRange('bet', EasyRange('T2P+,NFD,SD9+')),
+            SubRange('check', EasyRange('*')),
+        ]
+        rd = RangeDistribution(sub_ranges, game=game, player=player, odds_oracle=odds_oracle)
+        bet = rd.sub_range('bet')
+        check = rd.sub_range('check')
+        rd.calculate()
+        self.assertAlmostEqual(bet.fraction, 0.303, delta=0.01)
+        self.assertAlmostEqual(check.fraction, 0.697, delta=0.01)
+        btn.add_range(PptRange('AdKd3s2s'))
+        rd.calculate()
+        self.assertAlmostEqual(bet.fraction, 0.217, delta=0.01)
+        self.assertAlmostEqual(check.fraction, 0.783, delta=0.01)
+
 
 
 class EasyRangeTest(unittest.TestCase):
@@ -710,6 +732,17 @@ class GameTreeTest(unittest.TestCase):
         line_check.add_range(villain_rd.sub_range('fold'))
         game_tree.calculate_node(line_bet)
         self.assertAlmostEqual(line_bet.hero_equity, 0.396, delta=0.01)
+
+    def test__get_leaf_nodes(self):
+        bb = Player(Position.BB, stack=33, is_hero=True)
+        btn = Player(Position.BTN, stack=33)
+        game = Game([bb, btn], 33, board='2c4cKd')
+        game.make_action(Action(Action.BET, 33))
+        root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.add_standard_lines()
+        leaf_nodes = game_tree._get_leaf_nodes()
+        self.assertEqual(list(leaf_nodes), root.lines)
 
 
 class TypicalGameSituationTest(unittest.TestCase):

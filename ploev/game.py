@@ -24,7 +24,7 @@ import logging
 
 from ploev.easy_range import BoardExplorer
 from ploev.ppt import OddsOracle
-from ploev.cards import Board
+from ploev.cards import Board, CardSet
 from ploev.calc import close_parenthesis, create_cumulative_ranges, Calc
 from ploev.settings import CONFIG
 
@@ -46,7 +46,12 @@ class SubRange:
 
 
 class RangeDistribution:
-    def __init__(self, sub_ranges: Iterable[SubRange] = None, is_cumulative=True, game: 'Game' = None):
+    def __init__(self, sub_ranges: Iterable[SubRange] = None,
+                 is_cumulative=True,
+                 game: 'Game' = None,
+                 player: 'Player' = None,
+                 odds_oracle: OddsOracle = None,
+                 count_equity=False):
         if sub_ranges is None:
             sub_ranges = []
         else:
@@ -56,6 +61,10 @@ class RangeDistribution:
         self._set_is_cumulative_to_sub_ranges()
         self._set_cumulative_ranges()
         self.game = game
+        self.player = player
+        self.calc = None
+        if odds_oracle:
+            self.calc = Calc(odds_oracle)
 
     def _set_is_cumulative_to_sub_ranges(self):
         for sub_range in self._sub_ranges.values():
@@ -68,11 +77,18 @@ class RangeDistribution:
         for sub_range, cumulative_range in zip(cumulative_sub_ranges, cumulatived):
             sub_range.cumulative_range = cumulative_range
 
-    def as_list(self):
+    def ppts(self) -> List[str]:
+        """ Returns list of PPT ranges (already cumulative if is_cumulative=True) """
         sub_ranges = [sub_range.ppt() for sub_range in self._sub_ranges.values()]
         return sub_ranges
 
-    def sub_range(self, name):
+    def sub_range(self, name: str) -> 'AbstractRange':
+        """ Returns sub_range by name
+
+        Returns:
+            AbstractRange: sub_range
+
+        """
         sub_range = self._sub_ranges[name]
         try:
             street = sub_range.street
@@ -82,12 +98,24 @@ class RangeDistribution:
 
         return sub_range
 
+    def calculate(self):
+        """ Calculate range distribution """
+        distribution = self.calc.range_distribution(main_range=self.player.ppt(),
+                                                    sub_ranges=self.ppts(),
+                                                    board=str(self.game.board),
+                                                    hero=self.game.get_hero().ppt(),
+                                                    equity=False,
+                                                    cumulative=False)
+        for sub_range, rd_sub_range in zip(self._sub_ranges.values(), distribution):
+            sub_range.fraction = rd_sub_range.fraction
+
 
 class AbstractRange(ABC):
     def __init__(self, range_: str, is_cumulative=False):
         self.range_ = range_
         self.is_cumulative = is_cumulative
         self.cumulative_range = None
+        self.fraction = None
         self._ppt = None
 
     def ppt(self):
@@ -129,8 +157,8 @@ class Action():
     CALL = 'Call'
     FOLD = 'Fold'
     POST_BLIND = 'Post'
-    
-    def __init__(self, type_: str, size: float=None, min_size: float=None, max_size: float=None):
+
+    def __init__(self, type_: str, size: float = None, min_size: float = None, max_size: float = None):
         self.type_ = type_
         self.size = size
         self._is_sizable = False
@@ -240,7 +268,7 @@ class Player:
         except AttributeError:
             pass
         else:
-            if not range_.board_explorer: #  Check if board_explorer alreade was set in RangeDistribution
+            if not range_.board_explorer:  # Check if board_explorer alreade was set in RangeDistribution
                 range_.board_explorer = self.game.board_explorer(range_.street)
         self.ranges.append(range_)
 
@@ -348,7 +376,7 @@ class Game:
         board = self.streets.get(street)
         return board
 
-    def set_street(self, street, board: Board):
+    def set_street(self, street, board: CardSet):
         if self.get_street(street) is None or self.get_street(street) != board:
             self.streets[street] = board
             self.streets_explorers.pop(street, None)
@@ -668,6 +696,10 @@ class GameNode:
         """ Return player made node action"""
         return self.game_state.player
 
+    @property
+    def is_leaf_node(self):
+        return not bool(self.lines)
+
     def add_line(self, action: Action):
         line_node = GameNode(game=self._game,
                              game_state=self.game_state.clone(),
@@ -696,11 +728,6 @@ class GameTree:
 
     def __iter__(self):
         yield from self.root
-
-    def _walk(self, game_node):
-        yield game_node
-        for child in game_node.lines:
-            yield from self._walk(child)
 
     @staticmethod
     def _get_nodes_of_active_players(node: GameNode) -> (GameNode, list):
@@ -742,3 +769,6 @@ class GameTree:
 
     def calculate(self):
         pass
+
+    def _get_leaf_nodes(self):
+        return (node for node in self if node.is_leaf_node)
