@@ -1109,7 +1109,7 @@ class BoardExplorer:
     FLUSH_DRAW = 'flush_draw'
     BLOCKER = 'blocker'
 
-    def __init__(self, board: Board):
+    def __init__(self, board: CardSet):
         """ Constructor for BoardExplorer
 
         Args:
