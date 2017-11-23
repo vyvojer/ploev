@@ -46,7 +46,7 @@ class CalcTest(unittest.TestCase):
             '*'
         ]
         hero = '8c4h6s4c'
-        rd = self.calc.range_distribution(main_range, sub_ranges, board, hero)
+        rd = self.calc.range_distribution(main_range, sub_ranges, board, players=[hero])
         self.assertAlmostEqual(rd[0].fraction, 0.041, delta= 0.01)
         self.assertAlmostEqual(rd[1].fraction, 0.0733, delta=0.01)
         self.assertAlmostEqual(rd[2].fraction, 0.885, delta=0.01)

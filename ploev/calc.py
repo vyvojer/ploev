@@ -43,7 +43,7 @@ def close_parenthesis(range_: str) -> str:
         for index, parenthesis in enumerate(parentheses):
             if parentheses[index - 1] == '(' and parentheses == ')':
                 parentheses.pop(index)
-                parentheses.pop(index-1)
+                parentheses.pop(index - 1)
         if parentheses:
             return '(' + range_ + ')'
         else:
@@ -54,6 +54,7 @@ class Calc:
     """
     Class to make various general calculations
     """
+
     def __init__(self, odds_oracle: OddsOracle):
         """
 
@@ -63,7 +64,7 @@ class Calc:
         self.odds_oracle = odds_oracle
         self.pql = Pql(self.odds_oracle)
 
-    def equity(self, players: list, board: str=None, dead: str=None, hero_only: bool=False):
+    def equity(self, players: list, board: str = None, dead: str = None, hero_only: bool = False):
         """ Calculates equities
 
         For intensive computations set 'hero_only' to True if you need only hero (first player in list) equity. It's faster.
@@ -91,15 +92,15 @@ class Calc:
             return self.pql.equity(players, board, dead)
 
     def range_distribution(self, main_range: str, sub_ranges: list, board: str,
-                           hero: str=None, equity: bool=True, cumulative: bool=True):
+                           players: Iterable[str] = None, equity: bool = True, cumulative: bool = True):
         """ Calculates how often sub_ranges are in main_range and what is hero's equity vs sub_ranges
 
         Args:
             main_range (str): main range
             sub_ranges (list): sub ranges
             board (str): board
-            hero (str): hero range (optional)
-            equity (bool): if True calculate equity
+            players (Iterable[str]): ranges of other players in the hand. If hero, hero must be first element of list
+            equity (bool): if True calculate equity vs first element of list 'players'
             cumulative (bool): if True takes sub ranges, as cumulative
 
         Returns:
@@ -114,11 +115,12 @@ class Calc:
             sub_ranges = create_cumulative_ranges(sub_ranges)
         else:
             sub_ranges = [sub_range for sub_range in sub_ranges]
-        fractions = self.pql.count_in_range(main_range, sub_ranges, board, hero)
+        fractions = self.pql.count_in_range(main_range, sub_ranges, board, players=players)
         distribution = []
         for subrange, fraction in zip(sub_ranges, fractions):
             if equity:
                 villain_range = main_range + ":" + subrange
+                hero = list(players)[0]
                 equity = self.pql.hero_equity(hero, [villain_range], board)
             else:
                 equity = 0
