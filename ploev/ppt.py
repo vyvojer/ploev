@@ -324,14 +324,14 @@ class Pql:
         pql_result = self.odds_oracle.pql(pql)
         return pql_result.results_dict['EQ'][PqlResult.PERCENTAGE]
 
-    def count_in_range(self, main_range: str, sub_ranges: list, board: str, other_players: Iterable[str] = None, dead: str = ''):
+    def count_in_range(self, main_range: str, sub_ranges: list, board: str, players: Iterable[str] = None, dead: str = ''):
         """ Returns how often sub_ranges are in main_range
 
         Args:
             main_range (str): main range
             sub_ranges (list): sub ranges
             board (str): board
-            other_players (Iterable[str]): Iterable of ranges of other players in the hand
+            players (Iterable[str]): Iterable of ranges of other players in the hand
             dead (str): dead cards
 
         Returns:
@@ -339,12 +339,12 @@ class Pql:
 
         """
         self.logger.debug('Started count_in_range')
-        players = [main_range]
-        if other_players is not None:
-            players.extend(list(other_players))
+        other_players = [main_range]
+        if players is not None:
+            other_players.extend(list(players))
         selector = "count(inRange(player_{},'{}'))"
         selectors = ",\n\t".join([selector.format(1, sub_range) for sub_range in sub_ranges])
-        from_clause = self._construct_from_clause(board=board, dead=dead, players=players)
+        from_clause = self._construct_from_clause(board=board, dead=dead, players=other_players)
         pql = self._PQL_COMMON.format(selectors=selectors, from_clause=from_clause)
         pql_result = self.odds_oracle.pql(pql)
         return [result[PqlResult.PERCENTAGE] for result in pql_result.results_list]

@@ -64,7 +64,7 @@ class PqlTest(unittest.TestCase):
         players = ['As Ah 2s 2h']
         main_range = '10%'
         sub_ranges = ['KK,33', 'QJT:ss']
-        rd = self.pql.count_in_range(main_range, sub_ranges, board, other_players=players)
+        rd = self.pql.count_in_range(main_range, sub_ranges, board, players=players)
         self.assertAlmostEqual(rd[0], 0.27, delta=0.02)
         self.assertAlmostEqual(rd[1], 0.02, delta=0.02)
 
@@ -73,7 +73,7 @@ class PqlTest(unittest.TestCase):
         players = ['AsAh2s2h', '3', 'K']
         main_range = '10%'
         sub_ranges = ['KK,33', 'QJT:ss']
-        rd = self.pql.count_in_range(main_range, sub_ranges, board, other_players=players)
+        rd = self.pql.count_in_range(main_range, sub_ranges, board, players=players)
         self.assertAlmostEqual(rd[0], 0.127, delta=0.02)
         self.assertAlmostEqual(rd[1], 0.02, delta=0.02)
 
