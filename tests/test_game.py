@@ -2,7 +2,7 @@ import unittest
 
 from ploev.game import *
 
-odds_oracle = OddsOracle(trials=10000, seconds=1)
+odds_oracle = OddsOracle(trials=100000, seconds=1)
 
 
 class RangeDistributionTest(unittest.TestCase):
@@ -656,7 +656,7 @@ class GameTreeTest(unittest.TestCase):
         call_line = root.lines[0]
         game_tree.calculate_node(call_line)
         self.assertAlmostEqual(call_line.hero_equity, 0.354, delta=0.01)
-        self.assertAlmostEqual(call_line.hero_pot_share, 35.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share, 35.4, delta=2)
         self.assertAlmostEqual(call_line.hero_ev, 35.4, delta=1)
         self.assertAlmostEqual(call_line.hero_pot_share_relative, 2.4, delta=1)
         self.assertAlmostEqual(call_line.hero_ev_relative, 2.4, delta=1)
@@ -731,7 +731,7 @@ class GameTreeTest(unittest.TestCase):
         line_check.add_range(villain_rd.sub_range('fold'))
         game_tree.calculate_node(line_bet)
         self.assertAlmostEqual(line_bet.hero_equity, 0.396, delta=0.01)
-        self.assertAlmostEqual(line_bet.fraction, 0.486, delta=0.01)
+        self.assertAlmostEqual(line_bet.line_fraction, 0.486, delta=0.01)
         game_tree.calculate_node(line_check)
         self.assertAlmostEqual(line_check.hero_equity, 0.76, delta=0.01)
 

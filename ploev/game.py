@@ -22,11 +22,11 @@ from typing import Iterable, List
 
 import logging
 
-from ploev.easy_range import BoardExplorer
-from ploev.ppt import OddsOracle
-from ploev.cards import Board, CardSet
-from ploev.calc import close_parenthesis, create_cumulative_ranges, Calc
-from ploev.settings import CONFIG
+from .easy_range import BoardExplorer
+from .ppt import OddsOracle
+from .cards import Board, CardSet
+from .calc import close_parenthesis, create_cumulative_ranges, Calc
+from .settings import CONFIG
 
 logging.getLogger()
 
@@ -103,7 +103,7 @@ class RangeDistribution:
         distribution = self.calc.range_distribution(main_range=self.player.ppt(),
                                                     sub_ranges=self.ppts(),
                                                     board=str(self.game.board),
-                                                    hero=self.game.get_hero().ppt(),
+                                                    players=[self.game.get_hero().ppt()],
                                                     equity=False,
                                                     cumulative=False)
         for sub_range, rd_sub_range in zip(self._sub_ranges.values(), distribution):
@@ -272,8 +272,21 @@ class Player:
                 range_.board_explorer = self.game.board_explorer(range_.street)
         self.ranges.append(range_)
 
+    @staticmethod
+    def _construct_ppt_from_ranges(ranges: Iterable):
+        ppt = ":".join([close_parenthesis(range_.ppt()) for range_ in ranges])
+        if ppt == '':
+            ppt = '*'
+        return ppt
+
     def ppt(self):
-        return ":".join([close_parenthesis(range_.ppt()) for range_ in self.ranges])
+        return self._construct_ppt_from_ranges(self.ranges)
+
+    def main_range(self):
+        return self._construct_ppt_from_ranges(self.ranges[:-1])
+
+    def sub_range(self):
+        return self.ranges[-1].ppt()
 
     def clone(self):
         return copy.deepcopy(self)
@@ -655,6 +668,7 @@ class GameNode:
         self.action_id = action_id
         self.parent = parent
         self._lines = []
+        self.line_fraction = None
         self.hero_equity = None
         self.hero_pot_share = None
         self.hero_ev = None
@@ -692,7 +706,7 @@ class GameNode:
         return self._game
 
     @property
-    def player(self):
+    def player(self) -> Player:
         """ Return player made node action"""
         return self.game_state.player
 
@@ -731,6 +745,12 @@ class GameTree:
 
     @staticmethod
     def _get_nodes_of_active_players(node: GameNode) -> (GameNode, list):
+        """ Returns nodes of active players in the hand
+
+        Returns:
+            tuple: first element is hero node, second element list of active players'es nodes
+
+        """
         active_players_nodes = []
         hero_node = None
         active_players_position = set(node.game_state.active_positions)
@@ -745,16 +765,22 @@ class GameTree:
         return hero_node, active_players_nodes
 
     @staticmethod
-    def calculate_equity(node: GameNode, active_player_nodes, calc):
+    def calculate_equities_and_fraction(game_node: GameNode, active_player_nodes, calc):
+        """ Calculate equuity for all active players for the node and fraction for the node's range"""
         players_ranges = [node.player.ppt() for node in active_player_nodes]
-        board = node.game.board.ppt()
+        board = game_node.game.board.ppt()
         equities = calc.equity(players_ranges, board)
-        for node, equity in zip(active_player_nodes, equities):
-            node.player.equity = equity
+        main_range = game_node.player.main_range()
+        sub_range = [game_node.player.sub_range()]
+        players = [node.player.ppt() for node in active_player_nodes if node != game_node]
+        fractions = calc.range_distribution(main_range, sub_range, board, players=players)
+        game_node.line_fraction = fractions[0].fraction
+        for game_node, equity in zip(active_player_nodes, equities):
+            game_node.player.equity = equity
 
     def calculate_node(self, node: GameNode):
         hero_node, active_player_nodes = self._get_nodes_of_active_players(node)
-        self.calculate_equity(node, active_player_nodes, self.calc)
+        self.calculate_equities_and_fraction(node, active_player_nodes, self.calc)
         node.hero_equity = hero_node.player.equity
         node.hero_pot_share = None
         node.hero_ev = None
