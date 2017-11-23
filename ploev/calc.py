@@ -19,7 +19,7 @@
 import itertools
 from collections import namedtuple
 from ploev.ppt import Pql, OddsOracle
-from typing import Iterable
+from typing import Iterable, List
 
 SubRange = namedtuple("SubRange", "range fraction equity")
 
@@ -91,8 +91,8 @@ class Calc:
                 dead = ''
             return self.pql.equity(players, board, dead)
 
-    def range_distribution(self, main_range: str, sub_ranges: list, board: str,
-                           players: Iterable[str] = None, equity: bool = True, cumulative: bool = True):
+    def range_distribution(self, main_range: str, sub_ranges: list, board: str, players: Iterable[str] = None,
+                           equity: bool = True, cumulative: bool = True) -> List[SubRange]:
         """ Calculates how often sub_ranges are in main_range and what is hero's equity vs sub_ranges
 
         Args:
