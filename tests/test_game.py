@@ -731,6 +731,9 @@ class GameTreeTest(unittest.TestCase):
         line_check.add_range(villain_rd.sub_range('fold'))
         game_tree.calculate_node(line_bet)
         self.assertAlmostEqual(line_bet.hero_equity, 0.396, delta=0.01)
+        self.assertAlmostEqual(line_bet.fraction, 0.486, delta=0.01)
+        game_tree.calculate_node(line_check)
+        self.assertAlmostEqual(line_check.hero_equity, 0.76, delta=0.01)
 
     def test__get_leaf_nodes(self):
         bb = Player(Position.BB, stack=33, is_hero=True)

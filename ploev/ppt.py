@@ -25,6 +25,7 @@ import logging
 import logging.config
 import pyparsing as pp
 from ploev.settings import CONFIG
+from typing import Iterable
 
 
 # noinspection SqlNoDataSourceInspection
@@ -48,9 +49,9 @@ class OddsOracle:
 
     _XMLRPC = 'http://{host}:{port}/xmlrpc'
 
-    def __init__(self, host: str=None, port: str=None,
-                 trials: int=None, seconds: int=None, threads: int=None,
-                 syntax: str=None, game: str=None, connect: bool=True):
+    def __init__(self, host: str = None, port: str = None,
+                 trials: int = None, seconds: int = None, threads: int = None,
+                 syntax: str = None, game: str = None, connect: bool = True):
         """
         Arguments host, port, trials, secondd, threads, syntax, game takes from settings file if not provided
 
@@ -108,6 +109,7 @@ class OddsOracle:
         Raises:
             ConnectionError: if can't connect to server
         """
+
         def connect():
             server.PPTServer.executePQL('', 10, 1, 1)
             self._client = server
@@ -153,7 +155,7 @@ class OddsOracle:
             raise ValueError("{}in PQL: \r\n{}".format(result, pql))
         return PqlResult(result)
 
-    def equity(self, hands: list, board: str='', dead: str='') -> list:
+    def equity(self, hands: list, board: str = '', dead: str = '') -> list:
         """
         Invoke OddsOracle's computeEquityAuto
 
@@ -169,7 +171,8 @@ class OddsOracle:
         result = self._client.PPTServer.computeEquityAuto(self.game, board, dead, self.syntax, hands,
                                                           self.trials, self.seconds, self.threads)
         if 'Error' in result:
-            raise ValueError("{} in computeEquityAuto: \r\nboard={} dead={} hands={}".format(result, board, dead, hands))
+            raise ValueError(
+                "{} in computeEquityAuto: \r\nboard={} dead={} hands={}".format(result, board, dead, hands))
         return self._parse_equity_result(result)
 
     @staticmethod
@@ -300,7 +303,7 @@ class Pql:
             from_clause.append("\tplayer_{}='{}'".format(number, player))
         return ",\n".join(from_clause)
 
-    def hero_equity(self, hero: str, villains: list, board: str=None, dead: str=None) -> float:
+    def hero_equity(self, hero: str, villains: list, board: str = None, dead: str = None) -> float:
         """ Return equity only for hero
 
         This method is faster than Pql.equity. Use Pql.equity if you need villain's equities
@@ -321,14 +324,14 @@ class Pql:
         pql_result = self.odds_oracle.pql(pql)
         return pql_result.results_dict['EQ'][PqlResult.PERCENTAGE]
 
-    def count_in_range(self, main_range: str, sub_ranges: list, board: str, hero: str='', dead: str=''):
+    def count_in_range(self, main_range: str, sub_ranges: list, board: str, other_players: Iterable[str] = None, dead: str = ''):
         """ Returns how often sub_ranges are in main_range
 
         Args:
             main_range (str): main range
             sub_ranges (list): sub ranges
             board (str): board
-            hero (str): hero
+            other_players (Iterable[str]): Iterable of ranges of other players in the hand
             dead (str): dead cards
 
         Returns:
@@ -336,11 +339,12 @@ class Pql:
 
         """
         self.logger.debug('Started count_in_range')
+        players = [main_range]
+        if other_players is not None:
+            players.extend(list(other_players))
         selector = "count(inRange(player_{},'{}'))"
         selectors = ",\n\t".join([selector.format(1, sub_range) for sub_range in sub_ranges])
-        from_clause = self._construct_from_clause(board=board, dead=dead, hero=hero, players=[main_range])
+        from_clause = self._construct_from_clause(board=board, dead=dead, players=players)
         pql = self._PQL_COMMON.format(selectors=selectors, from_clause=from_clause)
         pql_result = self.odds_oracle.pql(pql)
         return [result[PqlResult.PERCENTAGE] for result in pql_result.results_list]
-
-
