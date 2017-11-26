@@ -39,16 +39,21 @@ CONFIG = _load_config()
 _LOG_CONFIG = {
     'version': 1,
     'handlers': {
-        'fileHandler':{
+        'file':{
             'class': 'logging.FileHandler',
             'formatter': 'myFormatter',
             'filename': 'ploev.log',
             'mode': CONFIG['LOGGER']['mode']
+        },
+        'console':{
+            'class': 'logging.StreamHandler',
+            'formatter': 'myFormatter',
+            'level': logging.INFO
         }
     },
     'loggers': {
         'ppt': {
-            'handlers': ['fileHandler'],
+            'handlers': ['file', 'console'],
             'level': CONFIG['LOGGER']['level'],
         }
     },
@@ -56,7 +61,8 @@ _LOG_CONFIG = {
         'myFormatter': {
             'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         }
-    }
+    },
+    'disable_existing_loggers': False
 }
 
 

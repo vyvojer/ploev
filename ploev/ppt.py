@@ -28,6 +28,9 @@ from ploev.settings import CONFIG
 from typing import Iterable
 
 
+
+
+
 # noinspection SqlNoDataSourceInspection
 
 
@@ -48,6 +51,8 @@ class OddsOracle:
     _JAVA_CLASS = 'propokertools.cli.XMLRPCServer'
 
     _XMLRPC = 'http://{host}:{port}/xmlrpc'
+
+    logger = logging.getLogger('ppt')
 
     def __init__(self, host: str = None, port: str = None,
                  trials: int = None, seconds: int = None, threads: int = None,
@@ -113,7 +118,7 @@ class OddsOracle:
         def connect():
             server.PPTServer.executePQL('', 10, 1, 1)
             self._client = server
-            print('Successfully connected to {}'.format(url))
+            self.logger.info('Successfully connected to {}'.format(url))
             return self._client
 
         url = OddsOracle._XMLRPC.format(host=self._host, port=self._port)
@@ -121,8 +126,8 @@ class OddsOracle:
         try:
             return connect()
         except ConnectionError:
-            print("Connection to {} failed".format(url))
-            print("Trying to run OddsOracle server")
+            self.logger.warning("Connection to {} failed".format(url))
+            self.logger.info("Trying to run OddsOracle server")
             self.run_server()
             try:
                 return connect()
