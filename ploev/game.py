@@ -702,6 +702,7 @@ class GameNode:
         self.line_fraction = None
         self.hero_equity = None
         self.hero_pot_share: Optional[_EV] = None
+        self.has_ev = False
 
     def __repr__(self):
         player = self.game_state.player.name
@@ -755,7 +756,7 @@ class GameNode:
 
     @property
     def hero_ev(self) -> Optional[_EV]:
-        if self.game_state.game_over:
+        if self.has_ev:
             return self.hero_pot_share
         else:
             return None
@@ -895,6 +896,8 @@ class GameTree:
         if node.game_state.leaf != GameLeaf.NONE:
             node.hero_pot_share = _EV(stack=node.hero_equity * node.game_state.pot,
                                       previous_stack=hero_node.player.previous_stack)
+            if node.game_state.game_over:
+                node.has_ev = True
 
     def calculate(self):
         leaf_nodes = set(self._get_leaf_nodes())
