@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from enum import IntEnum
 import copy
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 import logging
 
@@ -82,7 +82,7 @@ class RangeDistribution:
         sub_ranges = [sub_range.ppt() for sub_range in self._sub_ranges.values()]
         return sub_ranges
 
-    def sub_range(self, name: str) -> 'AbstractRange':
+    def get_sub_range(self, name: str) -> 'AbstractRange':
         """ Returns sub_range by name
 
         Returns:
@@ -117,6 +117,9 @@ class AbstractRange(ABC):
         self.cumulative_range = None
         self.fraction = None
         self._ppt = None
+
+    def __str__(self):
+        return self.range_
 
     def ppt(self):
         if self._ppt is None:
@@ -224,6 +227,7 @@ class Player:
         self.in_action = False
         self.action = None
         self.equity = None
+        self.has_equity = None  # player equity before fold
         self.invested_in_bank = 0
         self.game = None
 
@@ -282,11 +286,18 @@ class Player:
     def ppt(self):
         return self._construct_ppt_from_ranges(self.ranges)
 
-    def main_range(self):
+    def main_range_ppt(self):
         return self._construct_ppt_from_ranges(self.ranges[:-1])
 
-    def sub_range(self):
+    def sub_range_ppt(self):
         return self.ranges[-1].ppt()
+
+    def sub_range(self) -> Optional[AbstractRange]:
+        """ Return 'last' sub_range """
+        if self.ranges:
+            return self.ranges[-1]
+        else:
+            return None
 
     def clone(self):
         return copy.deepcopy(self)
@@ -657,6 +668,26 @@ class GameFlow:
         return self.get_state()
 
 
+class _EV:
+    def __init__(self, stack, previous_stack):
+        self.stack = stack
+        self.previous_stack = previous_stack
+        self.relative = None
+        self.is_plus_ev = False
+        self.is_optimal = False
+        self.count()
+
+    def count(self):
+        self.relative = self.stack - self.previous_stack
+        if self.relative >= 0:
+            self.is_plus_ev = True
+        else:
+            self.is_plus_ev = False
+
+    def __str__(self):
+        return '${:.1f} ({:+.1f})'.format(self.stack, self.relative)
+
+
 class GameNode:
     def __init__(self, game: Game, game_state: Game = None, parent=None, level_id=1, action_id=1):
         self._game = game
@@ -670,15 +701,13 @@ class GameNode:
         self._lines = []
         self.line_fraction = None
         self.hero_equity = None
-        self.hero_pot_share = None
-        self.hero_ev = None
-        self.hero_pot_share_relative = None
-        self.hero_ev_relative = None
+        self.hero_pot_share: Optional[_EV] = None
 
     def __repr__(self):
         player = self.game_state.player.name
+        stack = self.game_state.player.previous_stack
         action = self.game_state.action
-        return "{} {}".format(player, action)
+        return "{} (${}) ${}".format(player, stack, action)
 
     def __iter__(self):
         yield self
@@ -700,6 +729,12 @@ class GameNode:
         else:
             return None
 
+    def is_last_sibling(self):
+        if self.siblings:
+            return self.action_id == len(self.siblings)
+        else:
+            return None
+
     @property
     def game(self):
         self._game.restore_state(self.game_state)
@@ -713,6 +748,17 @@ class GameNode:
     @property
     def is_leaf_node(self):
         return not bool(self.lines)
+
+    @property
+    def has_equity(self):
+        return self.player.has_equity
+
+    @property
+    def hero_ev(self) -> Optional[_EV]:
+        if self.game_state.game_over:
+            return self.hero_pot_share
+        else:
+            return None
 
     def add_line(self, action: Action):
         line_node = GameNode(game=self._game,
@@ -743,8 +789,62 @@ class GameTree:
     def __iter__(self):
         yield from self.root
 
+    def __str__(self, node: GameNode = None, html=False):
+        """ String representation of GameTree
+
+        Args:
+            node(GameNode): only for recursion
+            html(bool): if True return html representation
+
+        Returns:
+            representation
+
+        """
+        if html:
+            line_delimiter = '</br>'
+        else:
+            line_delimiter = '\n'
+        if node is None:
+            node = self.root
+
+        indent = (node.level_id - 1)
+        if node.is_last_sibling():
+            corner = '└'
+            vertical_line = ' '
+        else:
+            corner = '├'
+            vertical_line = '│'
+        main_prefix = indent * (corner)
+        prefix = indent * (vertical_line)
+        empty_line = indent * '│'
+
+        # Ranges representation
+        if node.player.sub_range():
+            if node.player.sub_range().is_cumulative:
+                sub_range_fmt = ' <{!s}>'
+            else:
+                sub_range_fmt = ' ({!s})'
+            sub_range_str = sub_range_fmt.format(node.player.sub_range())
+        else:
+            sub_range_str = ''
+        # Equity repesentation
+        if node.hero_equity:
+            infos = []
+            infos.append('HEq={:.2f}'.format(node.hero_equity))
+            if node.hero_pot_share:
+                infos.append('HPS={!s}'.format(node.hero_pot_share))
+            equities_str = line_delimiter + prefix + ', '.join(infos)
+        else:
+            equities_str = ''
+
+        tree_str = empty_line + line_delimiter + main_prefix + str(node) + sub_range_str + equities_str
+        if node.lines:
+            for line in node.lines:
+                tree_str += line_delimiter + self.__str__(line)
+        return tree_str
+
     @staticmethod
-    def _get_nodes_of_active_players(node: GameNode) -> (GameNode, list):
+    def _get_nodes_of_active_players(node: GameNode) -> (GameNode, List[GameNode]):
         """ Returns nodes of active players in the hand
 
         Returns:
@@ -770,31 +870,51 @@ class GameTree:
         players_ranges = [node.player.ppt() for node in active_player_nodes]
         board = game_node.game.board.ppt()
         equities = calc.equity(players_ranges, board)
-        main_range = game_node.player.main_range()
-        sub_range = [game_node.player.sub_range()]
+        for node, equity in zip(active_player_nodes, equities):
+            node.player.equity = equity
+        # calculating "folded" equity
+        if game_node.game_state.leaf == GameLeaf.FOLD:
+            # Have to add folded player, to count what equity he was folded
+            active_nodes_with_folded = active_player_nodes + [game_node]
+            ranges_with_folded = [node.player.ppt() for node in active_nodes_with_folded]
+            has_equities = calc.equity(ranges_with_folded, board)
+            for node, has_equity in zip(active_nodes_with_folded, has_equities):
+                node.player.has_equity = has_equity
+        # calculating fraction
+        main_range = game_node.player.main_range_ppt()
+        sub_range = [game_node.player.sub_range_ppt()]
         players = [node.player.ppt() for node in active_player_nodes if node != game_node]
         fractions = calc.range_distribution(main_range, sub_range, board, players=players)
         game_node.line_fraction = fractions[0].fraction
-        for game_node, equity in zip(active_player_nodes, equities):
-            game_node.player.equity = equity
 
     def calculate_node(self, node: GameNode):
         hero_node, active_player_nodes = self._get_nodes_of_active_players(node)
         self.calculate_equities_and_fraction(node, active_player_nodes, self.calc)
         node.hero_equity = hero_node.player.equity
         node.hero_pot_share = None
-        node.hero_ev = None
-        node.hero_pot_share_relative = None
-        node.hero_ev_relative = None
-        if node.game_state.leaf == GameLeaf.ROUND_CLOSED:
-            node.hero_pot_share = node.hero_equity * node.game_state.pot
-            node.hero_pot_share_relative = node.hero_pot_share - hero_node.player.previous_stack
-            if node.game_state.game_over:
-                node.hero_ev = node.hero_pot_share
-                node.hero_ev_relative = node.hero_pot_share_relative
+        if node.game_state.leaf != GameLeaf.NONE:
+            node.hero_pot_share = _EV(stack=node.hero_equity * node.game_state.pot,
+                                      previous_stack=hero_node.player.previous_stack)
 
     def calculate(self):
-        pass
+        leaf_nodes = set(self._get_leaf_nodes())
+        while leaf_nodes:
+            node = leaf_nodes.pop()
+            parent = node.parent
+            for sibling in node.siblings:
+                leaf_nodes.discard(sibling)
+                self.calculate_node(sibling)
+            self._calculate_parent(parent)
+
+    @staticmethod
+    def _calculate_parent(parent_node: GameNode):
+        is_here_ev = True
+        hero_node, _ = GameTree._get_nodes_of_active_players(parent_node)
+        hero_previous_stack = hero_node.player.previous_stack
+        hero_stack = 0
+        for line in parent_node.lines:
+            hero_stack += line.hero_pot_share.stack * line.line_fraction
+        parent_node.hero_pot_share = _EV(hero_stack, hero_previous_stack)
 
     def _get_leaf_nodes(self):
         return (node for node in self if node.is_leaf_node)

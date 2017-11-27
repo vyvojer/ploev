@@ -40,9 +40,9 @@ class RangeDistributionTest(unittest.TestCase):
             SubRange('check', EasyRange('*')),
         ]
         rd = RangeDistribution(sub_ranges, game=game)
-        bet = rd.sub_range('bet')
+        bet = rd.get_sub_range('bet')
         self.assertEqual(bet.ppt(), '((AA,KK,22,AK),Qss,(QJT,543))')
-        check = rd.sub_range('check')
+        check = rd.get_sub_range('check')
         self.assertEqual(check.ppt(), '(*)!((AA,KK,22,AK),Qss,(QJT,543))')
 
     def test_calculate(self):
@@ -56,8 +56,8 @@ class RangeDistributionTest(unittest.TestCase):
             SubRange('check', EasyRange('*')),
         ]
         rd = RangeDistribution(sub_ranges, game=game, player=player, odds_oracle=odds_oracle)
-        bet = rd.sub_range('bet')
-        check = rd.sub_range('check')
+        bet = rd.get_sub_range('bet')
+        check = rd.get_sub_range('check')
         rd.calculate()
         self.assertAlmostEqual(bet.fraction, 0.303, delta=0.01)
         self.assertAlmostEqual(check.fraction, 0.697, delta=0.01)
@@ -656,10 +656,10 @@ class GameTreeTest(unittest.TestCase):
         call_line = root.lines[0]
         game_tree.calculate_node(call_line)
         self.assertAlmostEqual(call_line.hero_equity, 0.354, delta=0.01)
-        self.assertAlmostEqual(call_line.hero_pot_share, 35.4, delta=2)
-        self.assertAlmostEqual(call_line.hero_ev, 35.4, delta=1)
-        self.assertAlmostEqual(call_line.hero_pot_share_relative, 2.4, delta=1)
-        self.assertAlmostEqual(call_line.hero_ev_relative, 2.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.stack, 35.4, delta=2)
+        self.assertAlmostEqual(call_line.hero_ev.stack, 35.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.relative, 2.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.relative, 2.4, delta=1)
 
     def test_calculate_node_when_hero_close_game_with_river_call(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
@@ -674,8 +674,8 @@ class GameTreeTest(unittest.TestCase):
         call_line = root.lines[1]
         game_tree.calculate_node(call_line)
         self.assertAlmostEqual(call_line.hero_equity, 0.944, delta=0.01)
-        self.assertAlmostEqual(call_line.hero_pot_share, 42.5, delta=1)
-        self.assertAlmostEqual(call_line.hero_ev, 42.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.stack, 42.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.stack, 42.5, delta=1)
 
     def test_calculate_node_when_hero_close_round_with_call(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
@@ -690,7 +690,7 @@ class GameTreeTest(unittest.TestCase):
         call_line = root.lines[1]
         game_tree.calculate_node(call_line)
         self.assertAlmostEqual(call_line.hero_equity, 0.233, delta=0.01)
-        self.assertAlmostEqual(call_line.hero_pot_share, 10.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.stack, 10.5, delta=1)
         self.assertEqual(call_line.hero_ev, None)
 
     def test_calculate_node_when_villain_close_game_with_all_in_call(self):
@@ -706,10 +706,10 @@ class GameTreeTest(unittest.TestCase):
         call_line = root.lines[0]
         game_tree.calculate_node(call_line)
         self.assertAlmostEqual(call_line.hero_equity, 0.635, delta=0.01)
-        self.assertAlmostEqual(call_line.hero_pot_share, 63.5, delta=1)
-        self.assertAlmostEqual(call_line.hero_ev, 63.5, delta=1)
-        self.assertAlmostEqual(call_line.hero_pot_share_relative, 30.5, delta=1)
-        self.assertAlmostEqual(call_line.hero_ev_relative, 30.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.stack, 63.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.stack, 63.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.relative, 30.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.relative, 30.5, delta=1)
 
     def test_calculate_node_with_range_distribution(self):
         bb = Player(Position.BB, stack=33, is_hero=True)
@@ -725,15 +725,17 @@ class GameTreeTest(unittest.TestCase):
             SubRange('bet', EasyRange('2P+,FD,SD8+')),
             SubRange('fold', EasyRange('*')),
         ], game=game)
-        line_bet = root.lines[0]
-        line_check = root.lines[1]
-        line_bet.add_range(villain_rd.sub_range('bet'))
-        line_check.add_range(villain_rd.sub_range('fold'))
-        game_tree.calculate_node(line_bet)
-        self.assertAlmostEqual(line_bet.hero_equity, 0.396, delta=0.01)
-        self.assertAlmostEqual(line_bet.line_fraction, 0.486, delta=0.01)
-        game_tree.calculate_node(line_check)
-        self.assertAlmostEqual(line_check.hero_equity, 0.76, delta=0.01)
+        line_call = root.lines[0]
+        line_fold = root.lines[1]
+        line_call.add_range(villain_rd.get_sub_range('bet'))
+        line_fold.add_range(villain_rd.get_sub_range('fold'))
+        game_tree.calculate_node(line_call)
+        self.assertAlmostEqual(line_call.hero_equity, 0.396, delta=0.01)
+        self.assertAlmostEqual(line_call.line_fraction, 0.486, delta=0.01)
+        game_tree.calculate_node(line_fold)
+        self.assertAlmostEqual(line_fold.has_equity, 0.24, delta=0.01)
+        self.assertAlmostEqual(line_fold.hero_equity, 1, delta=0.01)
+        self.assertAlmostEqual(line_fold.hero_pot_share.stack, 66, delta=0.01)
 
     def test__get_leaf_nodes(self):
         bb = Player(Position.BB, stack=33, is_hero=True)
@@ -745,6 +747,38 @@ class GameTreeTest(unittest.TestCase):
         root.add_standard_lines()
         leaf_nodes = game_tree._get_leaf_nodes()
         self.assertEqual(list(leaf_nodes), root.lines)
+
+    def test_calculate_tree_with_range_distribution(self):
+        bb = Player(Position.BB, stack=33, is_hero=True)
+        btn = Player(Position.BTN, stack=33)
+        game = Game([bb, btn], 33, board='2c4cKd')
+        bb.add_range(PptRange('AsAd8s8h'))
+        btn.add_range(PptRange('30%!AA'))
+        game.make_action(Action(Action.BET, 33))
+        root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.add_standard_lines()
+        villain_rd = RangeDistribution(sub_ranges=[
+            SubRange('bet', EasyRange('2P+,FD,SD8+')),
+            SubRange('fold', EasyRange('*')),
+        ], game=game)
+        line_call = root.lines[0]
+        line_fold = root.lines[1]
+        line_call.add_range(villain_rd.get_sub_range('bet'))
+        line_fold.add_range(villain_rd.get_sub_range('fold'))
+        game_tree.calculate()
+        print(game_tree)
+        self.assertAlmostEqual(line_call.hero_equity, 0.396, delta=0.01)
+        self.assertAlmostEqual(line_call.line_fraction, 0.486, delta=0.01)
+        self.assertAlmostEqual(line_call.hero_ev.stack, 39.2, delta=1)
+
+        self.assertAlmostEqual(line_fold.has_equity, 0.24, delta=0.01)
+        self.assertAlmostEqual(line_fold.hero_equity, 1, delta=0.01)
+        self.assertAlmostEqual(line_fold.hero_pot_share.stack, 66, delta=0.01)
+        self.assertAlmostEqual(line_fold.hero_ev.stack, 66, delta=0.01)
+        self.assertAlmostEqual(line_fold.line_fraction, 0.514, delta=0.01)
+
+        self.assertAlmostEqual(root.hero_pot_share.stack, 52.8, delta=1)
 
 
 class TypicalGameSituationTest(unittest.TestCase):
