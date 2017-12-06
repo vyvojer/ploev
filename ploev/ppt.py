@@ -18,11 +18,11 @@
 
 import re
 import os
+import functools
 import subprocess
 import time
 import xmlrpc.client
 import logging
-import logging.config
 import pyparsing as pp
 from ploev.settings import CONFIG
 from typing import Iterable
@@ -138,6 +138,7 @@ class OddsOracle:
         self.server = subprocess.Popen(command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
         time.sleep(6)
 
+    @functools.lru_cache()
     def pql(self, pql: str):
         """
         Invoke OddsOracle's executePQL
@@ -156,7 +157,8 @@ class OddsOracle:
             raise ValueError("{}in PQL: \r\n{}".format(result, pql))
         return PqlResult(result)
 
-    def equity(self, hands: list, board: str = '', dead: str = '') -> list:
+    @functools.lru_cache(typed=True)
+    def equity(self, hands: tuple, board: str = '', dead: str = '') -> list:
         """
         Invoke OddsOracle's computeEquityAuto
 
@@ -276,7 +278,7 @@ class Pql:
         """
         self.odds_oracle = odds_oracle
 
-    def equity(self, players: list, board='', dead='') -> list:
+    def equity(self, players: Iterable, board='', dead='') -> list:
         """ Return equities for each players.
 
         Args:
@@ -289,7 +291,7 @@ class Pql:
 
         """
         self.logger.debug('Started equity')
-        return self.odds_oracle.equity(players, board, dead)
+        return self.odds_oracle.equity(tuple(players), board, dead)
 
     def _construct_from_clause(self, board=None, dead=None, hero=None, players=None):
         from_clause = list()

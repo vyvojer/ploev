@@ -16,7 +16,7 @@ class OddsOracleTest(unittest.TestCase):
         board = 'Ad Ks 3s'
         villain = 'AA'
         hero = 'Qs Ts Jd 2d'
-        equities = self.oo.equity(board=board, hands=[hero, villain])
+        equities = self.oo.equity(board=board, hands=(hero, villain))
         self.assertAlmostEqual(equities[0], 0.41, delta=0.02)
         self.assertAlmostEqual(equities[1], 0.59, delta=0.02)
 
