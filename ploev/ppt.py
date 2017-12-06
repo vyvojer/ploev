@@ -27,10 +27,6 @@ import pyparsing as pp
 from ploev.settings import CONFIG
 from typing import Iterable
 
-
-
-
-
 # noinspection SqlNoDataSourceInspection
 
 
@@ -155,7 +151,7 @@ class OddsOracle:
         """
         result = self._client.PPTServer.executePQL(pql, self.trials, self.seconds, self.threads)
         logger = logging.getLogger('ppt.OddsOracle.pql')
-        logger.debug('Executed PQL: \n{} \nGot result: \n{}'.format(pql, result))
+        logger.info('Executed PQL: \n{} \nGot result: \n{}'.format(pql, result))
         if 'ERROR' in result:
             raise ValueError("{}in PQL: \r\n{}".format(result, pql))
         return PqlResult(result)
