@@ -36,23 +36,24 @@ def _load_config():
 
 CONFIG = _load_config()
 
-_LOG_CONFIG = {
+LOG_CONFIG = {
     'version': 1,
     'handlers': {
         'file':{
             'class': 'logging.FileHandler',
             'formatter': 'myFormatter',
             'filename': 'ploev.log',
+            'encoding': 'utf-8',
             'mode': CONFIG['LOGGER']['mode']
         },
         'console':{
             'class': 'logging.StreamHandler',
             'formatter': 'myFormatter',
-            'level': logging.INFO
+            'level': logging.WARNING
         }
     },
     'loggers': {
-        'ppt': {
+        '': {
             'handlers': ['file', 'console'],
             'level': CONFIG['LOGGER']['level'],
         }
@@ -65,5 +66,5 @@ _LOG_CONFIG = {
     'disable_existing_loggers': False
 }
 
+logging.config.dictConfig(LOG_CONFIG)
 
-logging.config.dictConfig(_LOG_CONFIG)

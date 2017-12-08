@@ -2,7 +2,7 @@ import unittest
 
 from ploev.game import *
 
-odds_oracle = OddsOracle(trials=100000, seconds=1)
+odds_oracle = OddsOracle(trials=2000, seconds=1)
 
 
 class RangeDistributionTest(unittest.TestCase):
@@ -757,7 +757,6 @@ class GameTreeTest(unittest.TestCase):
         line_call.add_range(villain_rd.sub_range('bet'))
         line_fold.add_range(villain_rd.sub_range('fold'))
         game_tree.calculate()
-        print(game_tree)
         self.assertAlmostEqual(line_call.hero_equity, 0.396, delta=0.01)
         self.assertAlmostEqual(line_call.line_fraction, 0.486, delta=0.01)
         self.assertAlmostEqual(line_call.hero_ev.stack, 39.2, delta=1)
@@ -771,9 +770,9 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(root.hero_pot_share.stack, 52.8, delta=1)
         self.assertAlmostEqual(root.hero_ev.stack, 52.8, delta=1)
 
-    def _test_calculate_multilevel_tree(self):
+    def test_calculate_multilevel_tree(self):
         """ 3bet pot in position as PFR """
-        hero = Player(Position.BTN, 400, is_hero=True)
+        hero = Player(Position.BTN, 400, is_hero=True, name='Hero')
         hero.add_range(PptRange('9s8c6s5d'))
         villain = Player(Position.BB, 90.4)
         villain.add_range(PptRange('$FI50!AA'))
@@ -782,15 +781,18 @@ class GameTreeTest(unittest.TestCase):
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         hero_bet = root.add_line(Action(Action.BET, size=17.6))
+        hero_check = root.add_line(Action(Action.CHECK))
         villain_rd = RangeDistribution(sub_ranges=[SubRange('raise', EasyRange('TB2P+, FD2+, FD:(TP,MP,BP)')),
                                                    SubRange('fold', EasyRange('*')),
                                                    ],
                                        game=game)
         villain_raise = hero_bet.add_line(Action(Action.RAISE, size=90.4), villain_rd.sub_range('raise'))
-        villain_fold = hero_bet.add_line(Action(Action.FOLD), villain_rd.sub_range('raise'))
+        villain_fold = hero_bet.add_line(Action(Action.FOLD), villain_rd.sub_range('fold'))
         hero_bet_call = villain_raise.add_line(Action(Action.CALL))
         hero_bet_fold = villain_raise.add_line(Action(Action.FOLD))
+        print(game_tree)
         game_tree.calculate()
+        print(game_tree)
 
 
 class TypicalGameSituationTest(unittest.TestCase):
