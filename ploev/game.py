@@ -28,7 +28,6 @@ from .cards import Board, CardSet
 from .calc import close_parenthesis, create_cumulative_ranges, Calc
 import settings
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -691,7 +690,7 @@ class _EV:
             self.is_plus_ev = False
 
     def __str__(self):
-        return '${:.1f} ({:+.1f})'.format(self.stack, self.relative)
+        return '{:.1f} ({:+.1f})'.format(self.stack, self.relative)
 
 
 class GameNode:
@@ -710,13 +709,14 @@ class GameNode:
         self.hero_pot_share: Optional[_EV] = None
         self.has_ev = False
         self.calculated = False
+        self.is_max_ev_line = False
 
     def __repr__(self):
         player = self.game_state.player.name
         stack = self.game_state.player.stack
         previous_stack = self.game_state.player.previous_stack
         action = self.game_state.action
-        return "{} {} ({:.1f} -> {:.1f})".format(player, action, previous_stack, stack)
+        return "{} {} ({:.1f} → {:.1f})".format(player, action, previous_stack, stack)
 
     def __iter__(self):
         yield self
@@ -750,7 +750,6 @@ class GameNode:
             return self.action_id == len(self.siblings)
         else:
             return None
-
 
     @property
     def game(self):
@@ -847,7 +846,6 @@ class GameTree:
                             else:
                                 equity_line = vertical_line
                             prefixes.append(space * indent + equity_line + space * indent)
-                            print(prefixes)
                         elif line_type == LineType.BLANK:
                             prefixes.append(space * indent + vertical_line)
 
@@ -869,6 +867,10 @@ class GameTree:
         if node is None:
             node = self.root
 
+        # Pot representation
+
+        pot_repr = get_prefixes(node, LineType.EQUITIES) + "Pot: {}".format(node.game_state.pot)
+
         # Ranges representation
         if node.player.sub_range():
             if node.player.sub_range().is_cumulative:
@@ -881,13 +883,15 @@ class GameTree:
         # Equity repesentation
         ev_info = []
         if node.hero_equity:
-            ev_info.append('HEq={:.2f}'.format(node.hero_equity))
+            ev_info.append('HEq={:.1f}%'.format(node.hero_equity * 100))
         if node.hero_ev:
             ev_info.append('HEV={!s}'.format(node.hero_ev))
         elif node.hero_pot_share:
             ev_info.append('HPS={!s}'.format(node.hero_pot_share))
+        if node.line_fraction:
+            ev_info.append('Fraq={:.0f}%'.format(node.line_fraction * 100))
         if ev_info:
-            ev_prefix =  get_prefixes(node, LineType.EQUITIES)
+            ev_prefix = get_prefixes(node, LineType.EQUITIES)
             ev_str = line_delimiter + ev_prefix + ', '.join(ev_info)
         else:
             ev_str = ''
@@ -895,7 +899,10 @@ class GameTree:
         blank_prefix = get_prefixes(node, LineType.BLANK)
         action_prefix = get_prefixes(node, LineType.ACTION)
 
-        tree_str = (blank_prefix + line_delimiter) * 2 + action_prefix + str(node) + sub_range_str + ev_str
+        tree_str = (blank_prefix + line_delimiter) * 2 \
+                   + action_prefix + str(node) + sub_range_str \
+                   + line_delimiter + pot_repr \
+                   + ev_str
         if node.lines:
             for line in node.lines:
                 tree_str += line_delimiter + self.__str__(line)
@@ -906,11 +913,15 @@ class GameTree:
         """ Calculate equuity for all active players for the node and fraction for the node's range"""
         board = node.game.board.ppt()
         active_players = node.game_state.get_active_players()
-        active_players_ranges = [player.ppt() for player in active_players]
-        equities = calc.equity(active_players_ranges, board)
+        if len(active_players) > 1:
+            active_players_ranges = [player.ppt() for player in active_players]
+            equities = calc.equity(active_players_ranges, board)
 
-        for player, equity in zip(active_players, equities):
-            player.equity = equity
+            for player, equity in zip(active_players, equities):
+                player.equity = equity
+        else:
+            # we have winner
+            active_players[0].equity = 1
         # calculating "folded" equity
         if node.game_state.leaf == GameLeaf.FOLD:
             # Have to add folded player, to count what equity he was folded
@@ -941,8 +952,12 @@ class GameTree:
         else:
             self._calculate_not_leaf_node(node)
 
+    def _is_the_node_player_a_hero(self, node: GameNode):
+        return node.game_state.player.position == self.hero.position
+
     def _calculate_leaf_node(self, node: GameNode):
         logger = logging.getLogger("GameTree._caclulate_leaf_node")
+        logger.debug('calculating %s', node)
         self._calculate_equities(node, self.calc)
         self._calculate_fractions(node, self.calc)
         hero = node.game_state.get_hero()
@@ -950,23 +965,25 @@ class GameTree:
         node.hero_pot_share = None
         if node.game_state.leaf != GameLeaf.NONE:
             logger.debug("HE: %s Pot: %s HpS: %s", node.hero_equity, node.game_state.pot, hero.previous_stack)
-            node.hero_pot_share = _EV(stack=node.hero_equity * node.game_state.pot,
-                                      previous_stack=hero.previous_stack)
+            if self._is_the_node_player_a_hero(node) and node.game_state.leaf == GameLeaf.FOLD:
+                # Special case for hero fold
+                node.hero_pot_share = _EV(stack=hero.stack,
+                                          previous_stack=hero.previous_stack)
+            else:
+                node.hero_pot_share = _EV(stack=node.hero_equity * node.game_state.pot + hero.stack,
+                                          previous_stack=hero.previous_stack)
             if node.game_state.game_over:
                 node.has_ev = True
 
-    def _calculate_not_leaf_node(self, node: GameNode):
-        logger = logging.getLogger('GameTree._calculate_not_leaf_node')
-        logger.debug("Calculatin %s", node)
-        if node.siblings and node.siblings_count > 1:
-            self._calculate_fractions(node, self.calc)
-        else:
-            node.line_fraction = 1
+    def _calculate_not_leaf_node_if_not_hero_choice(self, node: GameNode):
+        logger = logging.getLogger('_calculate_not_leaf_node_if_not_hero_choice')
+        logger.debug('calculating %s', node)
         has_ev = True
         hero = node.game_state.get_hero()
         hero_previous_stack = hero.previous_stack
         hero_stack = 0
         for line in node.lines:
+            self._calculate_fractions(line, self.calc)
             logger.debug("%s HS=%s, Fr=%s", line, line.hero_pot_share.stack, line.line_fraction)
             hero_stack += line.hero_pot_share.stack * line.line_fraction
             if not line.has_ev:
@@ -974,11 +991,37 @@ class GameTree:
         node.hero_pot_share = _EV(hero_stack, hero_previous_stack)
         node.has_ev = has_ev
 
+    def _calculate_not_leaf_node_when_hero_choice(self, node:GameNode):
+        logger = logging.getLogger('_calculate_not_leaf_node_when_hero_choice')
+        logger.debug('calculating %s', node)
+        max_ev_line = node.lines[0]
+        for line in node.lines:
+            if line.hero_pot_share.stack > max_ev_line.hero_pot_share.stack:
+                max_ev_line = line
+        max_ev_line.is_max_ev_line = True
+        node.hero_pot_share = max_ev_line.hero_pot_share
+        pass
+
+    def _is_hero_choice(self, node: GameNode):
+        if node.lines and self._is_the_node_player_a_hero(node.lines[0]):
+            return True
+        else:
+            return False
+
+    def _calculate_not_leaf_node(self, node: GameNode):
+        if self._is_hero_choice(node):
+            self._calculate_not_leaf_node_when_hero_choice(node)
+        else:
+            self._calculate_not_leaf_node_if_not_hero_choice(node)
+
+
+
     def clear_calculation(self):
         for node in self:
             node.calculated = False
 
     def calculate(self):
+        logger = logging.getLogger("GameTree.calculate")
         nodes_by_level = dict()
         for node in self:
             level = nodes_by_level.setdefault(node.level_id, list())
@@ -986,7 +1029,10 @@ class GameTree:
         self.clear_calculation()
         for level in sorted(nodes_by_level.keys(), reverse=True):
             for node in nodes_by_level[level]:
+                logger.debug("Calculating %s", node)
                 self.calculate_node(node)
+                logger.debug("Calculated %s %s %s", node, node.hero_pot_share.stack, node.line_fraction)
+
 
     def _get_leaf_nodes(self):
         return (node for node in self if node.is_leaf_node)
