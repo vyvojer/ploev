@@ -1008,7 +1008,7 @@ class GameTree:
         node.hero_pot_share = None
         if node.game_state.leaf != GameLeaf.NONE:
             logger.debug("HE: %s Pot: %s HpS: %s", node.hero_equity, node.game_state.pot, hero.previous_stack)
-            if self._is_the_fnode_player_a_hero(node) and node.game_state.leaf == GameLeaf.FOLD:
+            if self._is_the_node_player_a_hero(node) and node.game_state.leaf == GameLeaf.FOLD:
                 # Special case for hero fold
                 node.hero_pot_share = _EV(stack=hero.stack,
                                           previous_stack=hero.previous_stack)
