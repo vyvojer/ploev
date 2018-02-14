@@ -19,7 +19,6 @@ from collections import OrderedDict
 from enum import IntEnum
 import copy
 from typing import Iterable, List, Optional, Union
-
 import logging.config
 
 from .easy_range import BoardExplorer
@@ -770,6 +769,16 @@ class GameNode:
         return self.player.has_equity
 
     @property
+    def is_plus_ev(self):
+        if self.hero_pot_share is not None:
+            if self.hero_pot_share.is_plus_ev:
+                return True
+            else:
+                return False
+        else:
+            return None
+
+    @property
     def hero_ev(self) -> Optional[_EV]:
         if self.has_ev:
             return self.hero_pot_share
@@ -793,6 +802,14 @@ class GameNode:
 
     def add_range(self, range_):
         self.player.add_range(range_)
+
+
+class GameTreeException(Exception):
+
+    def __init__(self, msg) -> None:
+        if msg is None:
+            msg = "An GameTree error occurred"
+        super().__init__(msg)
 
 
 class GameTree:
@@ -823,6 +840,24 @@ class GameTree:
             EQUITIES = 1
             BLANK = 2
 
+        class Style(IntEnum):
+            MAX = 0
+            PLUS = 1
+            MINUS = 2
+
+        def set_style(text: str, node: GameNode):
+            return text
+            if node.hero_pot_share is not None and self._is_the_node_player_a_hero(node):
+                if node.is_plus_ev:
+                    prefix = colorama.Fore.YELLOW
+                else:
+                    prefix = colorama.Fore.RED
+                if node.is_max_ev_line:
+                    prefix = colorama.Fore.GREEN
+            else:
+                prefix = ''
+            return prefix + text + colorama.Style.RESET_ALL
+
         def get_prefixes(node: GameNode, line_type: LineType, indent=3):
             prefixes = []
             internal_corner = '├'
@@ -839,7 +874,9 @@ class GameTree:
                                 corner = last_corner
                             else:
                                 corner = internal_corner
-                            prefixes.append(space * indent + corner + horizontal_line * indent)
+                            prefix = space * indent + corner + horizontal_line * indent
+                            prefix = set_style(prefix, node)
+                            prefixes.append(prefix)
                         elif line_type == LineType.EQUITIES:
                             if node.is_last_sibling():
                                 equity_line = space
@@ -847,8 +884,9 @@ class GameTree:
                                 equity_line = vertical_line
                             prefixes.append(space * indent + equity_line + space * indent)
                         elif line_type == LineType.BLANK:
-                            prefixes.append(space * indent + vertical_line)
-
+                            prefix = space * indent + vertical_line
+                            prefix = set_style(prefix, node)
+                            prefixes.append(prefix)
                 else:
                     if current_node.parent:
                         if node.siblings_count <= current_node.siblings_count:
@@ -864,8 +902,11 @@ class GameTree:
             line_delimiter = '</br>'
         else:
             line_delimiter = '\n'
+
+        tree_str = ''
         if node is None:
             node = self.root
+            tree_str = '{}Board: {}'.format(line_delimiter + line_delimiter, node.game_state.board)
 
         # Pot representation
 
@@ -889,7 +930,7 @@ class GameTree:
         elif node.hero_pot_share:
             ev_info.append('HPS={!s}'.format(node.hero_pot_share))
         if node.line_fraction:
-            ev_info.append('Fraq={:.0f}%'.format(node.line_fraction * 100))
+            ev_info.append('Fraq={:.1f}%'.format(node.line_fraction * 100))
         if ev_info:
             ev_prefix = get_prefixes(node, LineType.EQUITIES)
             ev_str = line_delimiter + ev_prefix + ', '.join(ev_info)
@@ -899,7 +940,7 @@ class GameTree:
         blank_prefix = get_prefixes(node, LineType.BLANK)
         action_prefix = get_prefixes(node, LineType.ACTION)
 
-        tree_str = (blank_prefix + line_delimiter) * 2 \
+        tree_str += (blank_prefix + line_delimiter) * 2 \
                    + action_prefix + str(node) + sub_range_str \
                    + line_delimiter + pot_repr \
                    + ev_str
@@ -934,6 +975,7 @@ class GameTree:
 
     @staticmethod
     def _calculate_fractions(node: GameNode, calc):
+        logger = logging.getLogger("GameTree._calculate_fractions")
         logger.debug("Calculating fractions for node %s", node)
         # calculating fraction
         board = node.game.board.ppt()
@@ -974,9 +1016,12 @@ class GameTree:
                                           previous_stack=hero.previous_stack)
             if node.game_state.game_over:
                 node.has_ev = True
+        else:
+            msg = "Can't calculate leaf node '{}'. The leaf node don't close round, add lines to the node."
+            raise GameTreeException(msg=msg.format(node))
 
     def _calculate_not_leaf_node_if_not_hero_choice(self, node: GameNode):
-        logger = logging.getLogger('_calculate_not_leaf_node_if_not_hero_choice')
+        logger = logging.getLogger('GameTree._calculate_not_leaf_node_if_not_hero_choice')
         logger.debug('calculating %s', node)
         has_ev = True
         hero = node.game_state.get_hero()
@@ -991,14 +1036,20 @@ class GameTree:
         node.hero_pot_share = _EV(hero_stack, hero_previous_stack)
         node.has_ev = has_ev
 
-    def _calculate_not_leaf_node_when_hero_choice(self, node:GameNode):
-        logger = logging.getLogger('_calculate_not_leaf_node_when_hero_choice')
+    @staticmethod
+    def _calculate_not_leaf_node_when_hero_choice(node: GameNode):
+        logger = logging.getLogger('GameTree._calculate_not_leaf_node_when_hero_choice')
         logger.debug('calculating %s', node)
         max_ev_line = node.lines[0]
+        has_ev = True
         for line in node.lines:
+            logger.debug('Finding max ev line: checking line %s', line)
+            if not line.has_ev:
+                has_ev = False
             if line.hero_pot_share.stack > max_ev_line.hero_pot_share.stack:
                 max_ev_line = line
         max_ev_line.is_max_ev_line = True
+        node.has_ev = has_ev
         node.hero_pot_share = max_ev_line.hero_pot_share
         pass
 
@@ -1014,14 +1065,13 @@ class GameTree:
         else:
             self._calculate_not_leaf_node_if_not_hero_choice(node)
 
-
-
     def clear_calculation(self):
         for node in self:
             node.calculated = False
 
     def calculate(self):
         logger = logging.getLogger("GameTree.calculate")
+        logger.debug("{!s}\n".format(self))
         nodes_by_level = dict()
         for node in self:
             level = nodes_by_level.setdefault(node.level_id, list())
@@ -1029,10 +1079,8 @@ class GameTree:
         self.clear_calculation()
         for level in sorted(nodes_by_level.keys(), reverse=True):
             for node in nodes_by_level[level]:
-                logger.debug("Calculating %s", node)
                 self.calculate_node(node)
-                logger.debug("Calculated %s %s %s", node, node.hero_pot_share.stack, node.line_fraction)
-
+        logging.debug("{!s}\n".format(self))
 
     def _get_leaf_nodes(self):
         return (node for node in self if node.is_leaf_node)

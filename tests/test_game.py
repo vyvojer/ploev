@@ -2,7 +2,7 @@ import unittest
 
 from ploev.game import *
 
-odds_oracle = OddsOracle(trials=2000, seconds=1)
+odds_oracle = OddsOracle(trials=200000, seconds=1)
 
 
 class RangeDistributionTest(unittest.TestCase):
@@ -661,11 +661,16 @@ class GameTreeTest(unittest.TestCase):
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()
+        raise_line = root.lines[0]
+        raise_line.add_line(Action(Action.CALL), PptRange('*', is_cumulative=False))
         call_line = root.lines[1]
-        game_tree.calculate_node(call_line)
+#        game_tree.calculate_node(call_line)
+        game_tree.calculate()
         self.assertAlmostEqual(call_line.hero_equity, 0.944, delta=0.01)
-        self.assertAlmostEqual(call_line.hero_pot_share.stack, 42.5, delta=1)
-        self.assertAlmostEqual(call_line.hero_ev.stack, 42.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.stack, 69.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.relative, 36.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.stack, 69.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.relative, 36.5, delta=1)
 
     def test_calculate_node_when_hero_close_round_with_call(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
@@ -676,11 +681,13 @@ class GameTreeTest(unittest.TestCase):
         game.make_action(Action(Action.BET, size=6))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
-        root.add_standard_lines()
-        call_line = root.lines[1]
-        game_tree.calculate_node(call_line)
+        #root.add_standard_lines()
+        call_line = root.add_line(Action(Action.CALL))
+        #call_line = root.lines[1]
+        #game_tree.calculate_node(call_line)
+        game_tree.calculate()
         self.assertAlmostEqual(call_line.hero_equity, 0.233, delta=0.01)
-        self.assertAlmostEqual(call_line.hero_pot_share.stack, 10.5, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.stack, 37.5, delta=1)
         self.assertEqual(call_line.hero_ev, None)
 
     def test_calculate_node_when_villain_close_game_with_all_in_call(self):
@@ -772,7 +779,7 @@ class GameTreeTest(unittest.TestCase):
 
     def test_calculate_multilevel_tree(self):
         """ 3bet pot in position as PFR """
-        hero = Player(Position.BTN, 400, is_hero=True, name='Hero')
+        hero = Player(Position.BTN, 407.81, is_hero=True, name='Hero')
         hero.add_range(PptRange('9s8c6s5d'))
         villain = Player(Position.BB, 90.4)
         villain.add_range(PptRange('$FI50!AA'))
@@ -790,9 +797,8 @@ class GameTreeTest(unittest.TestCase):
         villain_fold = hero_bet.add_line(Action(Action.FOLD), villain_rd.sub_range('fold'))
         hero_bet_call = villain_raise.add_line(Action(Action.CALL))
         hero_bet_fold = villain_raise.add_line(Action(Action.FOLD))
-        print(game_tree)
         game_tree.calculate()
-        print(game_tree)
+        self.assertAlmostEqual(hero_check.hero_equity, 0.43, delta=0.01)
 
 
 class TypicalGameSituationTest(unittest.TestCase):
