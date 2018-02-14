@@ -2,7 +2,7 @@ import unittest
 
 from ploev.game import *
 
-odds_oracle = OddsOracle(trials=200000, seconds=1)
+odds_oracle = OddsOracle(trials=10000, seconds=1)
 
 
 class RangeDistributionTest(unittest.TestCase):
@@ -59,12 +59,12 @@ class RangeDistributionTest(unittest.TestCase):
         bet = rd.sub_range('bet')
         check = rd.sub_range('check')
         rd.calculate()
-        self.assertAlmostEqual(bet.fraction, 0.303, delta=0.01)
-        self.assertAlmostEqual(check.fraction, 0.697, delta=0.01)
+        self.assertAlmostEqual(bet.fraction, 0.303, delta=0.03)
+        self.assertAlmostEqual(check.fraction, 0.697, delta=0.03)
         btn.add_range(PptRange('AdKd3s2s'))
         rd.calculate()
-        self.assertAlmostEqual(bet.fraction, 0.217, delta=0.01)
-        self.assertAlmostEqual(check.fraction, 0.783, delta=0.01)
+        self.assertAlmostEqual(bet.fraction, 0.217, delta=0.03)
+        self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)
 
 
 class EasyRangeTest(unittest.TestCase):
