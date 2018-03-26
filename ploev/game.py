@@ -25,7 +25,7 @@ from .easy_range import BoardExplorer
 from .ppt import OddsOracle
 from .cards import Board, CardSet
 from .calc import close_parenthesis, create_cumulative_ranges, Calc
-import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -846,17 +846,19 @@ class GameTree:
             MINUS = 2
 
         def set_style(text: str, node: GameNode):
-            return text
-            if node.hero_pot_share is not None and self._is_the_node_player_a_hero(node):
-                if node.is_plus_ev:
-                    prefix = colorama.Fore.YELLOW
+            if html:
+                if node.hero_pot_share is not None and self._is_the_node_player_a_hero(node):
+                    if node.is_plus_ev:
+                        prefix = '<font color="blue">'
+                    else:
+                        prefix = '<font color="red">'
+                    if node.is_max_ev_line:
+                        prefix = '<font color="green">'
                 else:
-                    prefix = colorama.Fore.RED
-                if node.is_max_ev_line:
-                    prefix = colorama.Fore.GREEN
+                    prefix = '<font color="grey">'
+                return prefix + text + '</font>'
             else:
-                prefix = ''
-            return prefix + text + colorama.Style.RESET_ALL
+                return text
 
         def get_prefixes(node: GameNode, line_type: LineType, indent=3):
             prefixes = []
@@ -864,7 +866,10 @@ class GameTree:
             last_corner = '└'
             vertical_line = '│'
             horizontal_line = '─'
-            space = ' '
+            if html:
+                space = '&nbsp;'
+            else:
+                space = ' '
             current_node = node
             while current_node:
                 if current_node == node:
@@ -899,7 +904,7 @@ class GameTree:
             return ''.join(prefixes)
 
         if html:
-            line_delimiter = '</br>'
+            line_delimiter = '<br>\n'
         else:
             line_delimiter = '\n'
 
@@ -915,9 +920,9 @@ class GameTree:
         # Ranges representation
         if node.player.sub_range():
             if node.player.sub_range().is_cumulative:
-                sub_range_fmt = ' <{!s}>'
-            else:
                 sub_range_fmt = ' [{!s}]'
+            else:
+                sub_range_fmt = ' {!s}'
             sub_range_str = sub_range_fmt.format(node.player.sub_range())
         else:
             sub_range_str = ''
@@ -928,12 +933,12 @@ class GameTree:
         if node.hero_ev:
             ev_info.append('HEV={!s}'.format(node.hero_ev))
         elif node.hero_pot_share:
-            ev_info.append('HPS={!s}'.format(node.hero_pot_share))
+            ev_info.append('HPSh={!s}'.format(node.hero_pot_share))
         if node.line_fraction:
             ev_info.append('Fraq={:.1f}%'.format(node.line_fraction * 100))
         if ev_info:
             ev_prefix = get_prefixes(node, LineType.EQUITIES)
-            ev_str = line_delimiter + ev_prefix + ', '.join(ev_info)
+            ev_str = line_delimiter + ev_prefix + set_style(', '.join(ev_info),node)
         else:
             ev_str = ''
 
@@ -946,8 +951,12 @@ class GameTree:
                    + ev_str
         if node.lines:
             for line in node.lines:
-                tree_str += line_delimiter + self.__str__(line)
+                tree_str += line_delimiter + self.__str__(line, html=html)
         return tree_str
+
+    def _repr_html_(self):
+        repr = '<p style="font-family: \'Courier\', monospace; line-height: 1.2;">{}</p>'
+        return repr.format(self.__str__(html=True))
 
     @staticmethod
     def _calculate_equities(node: GameNode, calc):
