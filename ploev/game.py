@@ -707,8 +707,12 @@ class GameNode:
         self.hero_equity = None
         self.hero_pot_share: Optional[_EV] = None
         self.has_ev = False
-        self.calculated = False
         self.is_max_ev_line = False
+
+    def clear_calculation(self):
+        self.hero_equity = None
+        self.hero_pot_share = None
+        self.is_max_ev_line = None
 
     def __repr__(self):
         player = self.game_state.player.name
@@ -847,16 +851,20 @@ class GameTree:
 
         def set_style(text: str, node: GameNode):
             if html:
-                if node.hero_pot_share is not None and self._is_the_node_player_a_hero(node):
-                    if node.is_plus_ev:
-                        prefix = '<font color="blue">'
+                if self._is_the_node_player_a_hero(node):
+                    prefix = '<b><font '
+                    if node.hero_pot_share is not None:
+                        if node.is_max_ev_line:
+                            prefix += ' color="green"'
+                        elif node.is_plus_ev:
+                            prefix += ' color="blue"'
+                        else:
+                            prefix += 'color="red"'
                     else:
-                        prefix = '<font color="red">'
-                    if node.is_max_ev_line:
-                        prefix = '<font color="green">'
+                        prefix +=  'color="black"'
+                    return prefix + '>' + text + '</font></b>'
                 else:
-                    prefix = '<font color="grey">'
-                return prefix + text + '</font>'
+                    return text
             else:
                 return text
 
@@ -880,7 +888,7 @@ class GameTree:
                             else:
                                 corner = internal_corner
                             prefix = space * indent + corner + horizontal_line * indent
-                            prefix = set_style(prefix, node)
+                            #prefix = set_style(prefix, node)
                             prefixes.append(prefix)
                         elif line_type == LineType.EQUITIES:
                             if node.is_last_sibling():
@@ -890,7 +898,7 @@ class GameTree:
                             prefixes.append(space * indent + equity_line + space * indent)
                         elif line_type == LineType.BLANK:
                             prefix = space * indent + vertical_line
-                            prefix = set_style(prefix, node)
+                            #prefix = set_style(prefix, node)
                             prefixes.append(prefix)
                 else:
                     if current_node.parent:
@@ -915,7 +923,7 @@ class GameTree:
 
         # Pot representation
 
-        pot_repr = get_prefixes(node, LineType.EQUITIES) + "Pot: {}".format(node.game_state.pot)
+        pot_repr = get_prefixes(node, LineType.EQUITIES) + set_style("Pot: {}".format(node.game_state.pot), node)
 
         # Ranges representation
         if node.player.sub_range():
@@ -946,7 +954,7 @@ class GameTree:
         action_prefix = get_prefixes(node, LineType.ACTION)
 
         tree_str += (blank_prefix + line_delimiter) * 2 \
-                   + action_prefix + str(node) + sub_range_str \
+                   + action_prefix + set_style(str(node),node) + sub_range_str \
                    + line_delimiter + pot_repr \
                    + ev_str
         if node.lines:
@@ -1077,7 +1085,7 @@ class GameTree:
 
     def clear_calculation(self):
         for node in self:
-            node.calculated = False
+            node.clear_calculation()
 
     def calculate(self):
         logger = logging.getLogger("GameTree.calculate")
