@@ -67,6 +67,25 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)
 
 
+class ColorCardsTest(unittest.TestCase):
+
+    def test_color_range(self):
+        self.assertEqual(color_cards('2s3d'), '2s<font color=blue>3d</font>')
+        self.assertEqual(color_cards('Ah2s3d'),
+                         '<font color=red>Ah</font>2s<font color=blue>3d</font>')
+        self.assertEqual(color_cards('*cAh2s3d'),
+                         '<font color=green>*c</font><font color=red>Ah</font>2s<font color=blue>3d</font>')
+        self.assertEqual(color_cards('*cAhd2s3d'),
+                         '<font color=green>*c</font><font color=red>Ah</font><font color=blue>d</font>2s<font color=blue>3d</font>')
+
+
+class PptRangeTest(unittest.TestCase):
+
+    def test_repr_html_(self):
+        ppt_range = PptRange('2s3d')
+        self.assertEqual(ppt_range._repr_html_(), '2s<font color=blue>3d</font>')
+
+
 class EasyRangeTest(unittest.TestCase):
     def test_ppt(self):
         board_explorer = BoardExplorer(Board.from_str('AsKdTh'))

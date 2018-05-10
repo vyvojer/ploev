@@ -20,14 +20,28 @@ from enum import IntEnum
 import copy
 from typing import Iterable, List, Optional, Union
 import logging.config
+import re
 
 from .easy_range import BoardExplorer
 from .ppt import OddsOracle
 from .cards import Board, CardSet
 from .calc import close_parenthesis, create_cumulative_ranges, Calc
 
-
 logger = logging.getLogger(__name__)
+
+
+def color_cards(cards: str):
+    suits = [
+        {'suit': 'c', 'color': 'green'},
+        {'suit': 'd', 'color': 'blue'},
+        {'suit': 'h', 'color': 'red'},
+    ]
+    colored_cards = cards
+    for suit in suits:
+        colored_cards = re.sub(r'([2-9*AKTQJaktqj]?{})'.format(suit['suit']),
+                               r'<font color={}>\1</font>'.format(suit['color']),
+                               colored_cards)
+    return colored_cards
 
 
 class SubRange:
@@ -120,6 +134,9 @@ class AbstractRange(ABC):
     def __str__(self):
         return self.range_
 
+    def _repr_html_(self):
+        return self.range_
+
     def ppt(self):
         if self._ppt is None:
             if self.is_cumulative:
@@ -141,6 +158,9 @@ class PptRange(AbstractRange):
     def __repr__(self):
         cls_name = self.__class__.__name__
         return "{}({})".format(cls_name, self.range_)
+
+    def _repr_html_(self):
+        return color_cards(self.range_)
 
 
 class Position(IntEnum):
@@ -861,7 +881,7 @@ class GameTree:
                         else:
                             prefix += 'color="red"'
                     else:
-                        prefix +=  'color="black"'
+                        prefix += 'color="black"'
                     return prefix + '>' + text + '</font></b>'
                 else:
                     return text
@@ -888,7 +908,7 @@ class GameTree:
                             else:
                                 corner = internal_corner
                             prefix = space * indent + corner + horizontal_line * indent
-                            #prefix = set_style(prefix, node)
+                            # prefix = set_style(prefix, node)
                             prefixes.append(prefix)
                         elif line_type == LineType.EQUITIES:
                             if node.is_last_sibling():
@@ -898,7 +918,7 @@ class GameTree:
                             prefixes.append(space * indent + equity_line + space * indent)
                         elif line_type == LineType.BLANK:
                             prefix = space * indent + vertical_line
-                            #prefix = set_style(prefix, node)
+                            # prefix = set_style(prefix, node)
                             prefixes.append(prefix)
                 else:
                     if current_node.parent:
@@ -917,9 +937,13 @@ class GameTree:
             line_delimiter = '\n'
 
         tree_str = ''
+        # Board presentation
         if node is None:
             node = self.root
-            tree_str = '{}Board: {}'.format(line_delimiter + line_delimiter, node.game_state.board)
+            board = node.game_state.board
+            if html:
+                board = color_cards(str(board))
+            tree_str = '{}Board: {}'.format(line_delimiter + line_delimiter, board)
 
         # Pot representation
 
@@ -931,7 +955,11 @@ class GameTree:
                 sub_range_fmt = ' [{!s}]'
             else:
                 sub_range_fmt = ' {!s}'
-            sub_range_str = sub_range_fmt.format(node.player.sub_range())
+            if html:
+                sub_range_str = sub_range_fmt.format(color_cards(str(node.player.sub_range())))
+                sub_range_str = '<b>' + sub_range_str + '</b>'
+            else:
+                sub_range_str = sub_range_fmt.format(node.player.sub_range())
         else:
             sub_range_str = ''
         # Equity repesentation
@@ -946,7 +974,7 @@ class GameTree:
             ev_info.append('Fraq={:.1f}%'.format(node.line_fraction * 100))
         if ev_info:
             ev_prefix = get_prefixes(node, LineType.EQUITIES)
-            ev_str = line_delimiter + ev_prefix + set_style(', '.join(ev_info),node)
+            ev_str = line_delimiter + ev_prefix + set_style(', '.join(ev_info), node)
         else:
             ev_str = ''
 
@@ -954,9 +982,9 @@ class GameTree:
         action_prefix = get_prefixes(node, LineType.ACTION)
 
         tree_str += (blank_prefix + line_delimiter) * 2 \
-                   + action_prefix + set_style(str(node),node) + sub_range_str \
-                   + line_delimiter + pot_repr \
-                   + ev_str
+                    + action_prefix + set_style(str(node), node) + sub_range_str \
+                    + line_delimiter + pot_repr \
+                    + ev_str
         if node.lines:
             for line in node.lines:
                 tree_str += line_delimiter + self.__str__(line, html=html)
