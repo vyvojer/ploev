@@ -246,7 +246,7 @@ class Player:
         self.in_action = False
         self.action = None
         self.equity = None
-        self.has_equity = None  # player equity before fold
+        self.had_equity = None  # player equity before fold
         self.invested_in_bank = 0
         self.game = None
 
@@ -789,8 +789,8 @@ class GameNode:
         return not bool(self.lines)
 
     @property
-    def has_equity(self):
-        return self.player.has_equity
+    def had_equity(self):
+        return self.player.had_equity
 
     @property
     def is_plus_ev(self):
@@ -1015,8 +1015,8 @@ class GameTree:
             active_players_plus_folded = active_players + [node.player]
             ranges_with_folded = [player.ppt() for player in active_players_plus_folded]
             has_equities = calc.equity(ranges_with_folded, board)
-            for player, has_equity in zip(active_players_plus_folded, has_equities):
-                player.has_equity = has_equity
+            for player, had_equity in zip(active_players_plus_folded, has_equities):
+                player.had_equity = had_equity
 
     @staticmethod
     def _calculate_fractions(node: GameNode, calc):
