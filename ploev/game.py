@@ -968,6 +968,8 @@ class GameTree:
             ev_info.append('HEq={:.1f}%'.format(node.hero_equity * 100))
         if node.hero_ev:
             ev_info.append('HEV={!s}'.format(node.hero_ev))
+        if node.had_equity:
+            ev_info.append('FdEq={:.1f}%'.format(node.had_equity * 100))
         elif node.hero_pot_share:
             ev_info.append('HPSh={!s}'.format(node.hero_pot_share))
         if node.line_fraction:
