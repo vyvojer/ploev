@@ -226,8 +226,18 @@ class Action:
 
 
 class Player:
-    def __init__(self, position: Position, stack: float, ranges: Iterable = None, name: str = None,
+    """ Class representing player"""
+
+    def __init__(self, position: Position, stack: float, ranges: Iterable[AbstractRange] = None, name: str = None,
                  is_hero: bool = False):
+        """
+        Args:
+            position(Position): player's position
+            stack(float): player's stack
+            ranges(Iterable): iterable of player ranges (PptRange, EasyRange..), combined by 'and' (:)
+            name(str): optional player's name
+            is_hero(bool): True if player is hero
+        """
         self.position = position
         self._stack = stack
         self._previous_stack = stack
@@ -360,7 +370,19 @@ class GameLeaf(IntEnum):
 
 
 class Game:
+    """
+    Represents current game state.
+    Note: each invoke of 'make_action" changes the game state.
+    """
     def __init__(self, players: Iterable, pot=0, board='', allin_allowed=False):
+        """
+
+        Args:
+            players(Iterable): iterable of players, the order doesn't matter
+            pot(float): pot
+            board(str): board
+            allin_allowed(bool): if True bets and raises more than pot allowed
+        """
         self.players = {player.position: player for player in players}
         if len(list(players)) != len(self.players):
             raise ValueError("More than one player with same position")
