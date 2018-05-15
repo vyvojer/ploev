@@ -180,9 +180,14 @@ class Action:
     FOLD = 'Fold'
     POST_BLIND = 'Post'
 
-    def __init__(self, type_: str, size: float = None, min_size: float = None, max_size: float = None):
+    def __init__(self, type_: str,
+                 size: float = None,
+                 fraction: float = None,
+                 min_size: float = None,
+                 max_size: float = None):
         self.type_ = type_
         self.size = size
+        self.fraction = fraction
         self._is_sizable = False
         self._is_different_sizes_possible = False
         if min_size is None or max_size is None:
@@ -193,6 +198,7 @@ class Action:
             self.max_size = max_size
         self._set_sizable()
         self._set_different_size_possible()
+        self._check_size()
 
     @property
     def is_sizable(self):
@@ -210,13 +216,17 @@ class Action:
         else:
             self._is_different_sizes_possible = False
 
+    def _check_size(self):
+        if self._is_different_sizes_possible and self.size is None and self.fraction is None:
+            raise ValueError(f'size or fraction must be set if action is {self.type_}')
+
     def __eq__(self, other):
-        return self.type_ == other.type_ and self.size == other.size \
+        return self.type_ == other.type_ and self.size == other.size and self.fraction == other.fraction \
                and self.min_size == other.min_size and self.max_size == other.max_size
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        return f'{cls_name}(type_={self.type_}, size={self.size}, min_size={self.min_size}, max_size={self.max_size})'
+        return f'{cls_name}(type_={self.type_}, size={self.size}, fraction={self.fraction}, min_size={self.min_size}, max_size={self.max_size})'
 
     def __str__(self):
         if self._is_sizable:
@@ -374,6 +384,7 @@ class Game:
     Represents current game state.
     Note: each invoke of 'make_action" changes the game state.
     """
+
     def __init__(self, players: Iterable, pot=0, board='', allin_allowed=False):
         """
 

@@ -161,6 +161,17 @@ class ActionTest(unittest.TestCase):
         self.assertEqual(action.is_sizable, False)
         self.assertEqual(action._is_different_sizes_possible, False)
 
+    def test_sizeble(self):
+        Action(Action.BET, size=10)
+        Action(Action.BET, fraction=0.1)
+        Action(Action.RAISE, size=10)
+        Action(Action.RAISE, fraction=0.1)
+        Action(Action.CALL)
+        with self.assertRaises(ValueError) as raised:
+            Action(Action.BET)
+        with self.assertRaises(ValueError) as raised:
+            Action(Action.RAISE)
+
 
 class GameTest(unittest.TestCase):
     def setUp(self):
