@@ -612,7 +612,15 @@ class Game:
         self.in_action_position = player.position
         self._determine_possible_actions()
 
+    def _count_action_size(self, action: Action):
+        if action.fraction is not None:
+            if action.type_ == Action.BET:
+                action.size = action.fraction * self.pot
+            if action.type_ == Action.RAISE:
+                action.size = action.fraction * self._count_pot_raise(call_size=self._action.size, pot=self.pot)
+
     def make_action(self, action: Action, player_range: Union[PptRange, EasyRange] = None):
+        self._count_action_size(action) # Count pot size for fraction
         if self.possible_actions:
             for possible_action in self.possible_actions:
                 if action.type_ == possible_action.type_:

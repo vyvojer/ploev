@@ -332,6 +332,67 @@ class GameTest(unittest.TestCase):
         self.assertEqual(Game._count_pot_raise(call_size=1, pot=1.5), 3.5)
         self.assertEqual(Game._count_pot_raise(call_size=1, pot=2.5), 4.5)
 
+    def test_count_action_size_for_bet(self):
+        btn = Player(Position.BTN, stack=330, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=330)
+        game = Game(players=[bb, btn], pot=100, board='2c Kd 8s', allin_allowed=True)
+        action = Action(Action.BET, fraction=0.85)
+        game._count_action_size(action)
+        self.assertEqual(action.size, 85)
+
+    def test_count_action_size_for_raise(self):
+        btn = Player(Position.BTN, stack=330, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=330)
+        game = Game(players=[bb, btn], pot=100, board='2c Kd 8s', allin_allowed=True)
+        game.make_action(Action(Action.BET, 50))
+        action = Action(Action.RAISE, fraction=0.85)
+        game._count_action_size(action)
+        self.assertEqual(action.size, 212.5)
+
+    def test_posflop_situation(self):
+        hero = Player(Position.BTN, 98, is_hero=True)
+        villain = Player(Position.BB, 98, is_hero=True)
+        game = Game([hero, villain], pot=4.5, board='Td4s3s')
+        self.assertEqual(game.player_in_action, villain)
+        self.assertEqual(game.street, Street.FLOP)
+        game.make_action(Action(Action.CHECK))
+        self.assertEqual(game.player_in_action, hero)
+        self.assertEqual(game.possible_actions, [Action(Action.BET, size=4.5, min_size=1, max_size=4.5),
+                                                 Action(Action.CHECK)])
+        game.make_action(Action(Action.BET, size=4.5, min_size=1, max_size=4.5))
+        self.assertEqual(game.player_in_action, villain)
+        self.assertEqual(game.possible_actions, [Action(Action.RAISE, size=18, min_size=9, max_size=18),
+                                                 Action(Action.CALL, size=4.5),
+                                                 Action(Action.FOLD)])
+        self.assertEqual(game._last_aggressor, hero)
+        self.assertEqual(game._is_round_closed, False)
+
+    def test_game_state(self):
+        hero = Player(Position.BTN, 98, is_hero=True)
+        villain = Player(Position.BB, 98)
+        game = Game([hero, villain], pot=4.5, board='Td4s3s')
+        self.assertEqual(game.player_in_action, villain)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(villain.stack, 98)
+        self.assertEqual(game.pot, 4.5)
+        state_in_the_begin = game.clone()
+        game.make_action(Action(Action.BET, size=4.5))
+        self.assertEqual(game.player_in_action, hero)
+        self.assertEqual(villain.stack, 93.5)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(game.pot, 9)
+        state_after_villain_action = game.clone()
+        game.restore_state(state_in_the_begin)
+        self.assertEqual(game.player_in_action, villain)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(villain.stack, 98)
+        self.assertEqual(game.pot, 4.5)
+        game.restore_state(state_after_villain_action)
+        self.assertEqual(game.player_in_action, hero)
+        self.assertEqual(game.street, Street.FLOP)
+        self.assertEqual(villain.stack, 93.5)
+        self.assertEqual(game.pot, 9)
+
     def test_make_action(self):
         game = self.game
         # SB post sb
@@ -431,49 +492,18 @@ class GameTest(unittest.TestCase):
         self.assertEqual(game.pot, 9)
         self.assertEqual(game.street, Street.TURN)
 
-    def test_posflop_situation(self):
-        hero = Player(Position.BTN, 98, is_hero=True)
-        villain = Player(Position.BB, 98, is_hero=True)
-        game = Game([hero, villain], pot=4.5, board='Td4s3s')
-        self.assertEqual(game.player_in_action, villain)
-        self.assertEqual(game.street, Street.FLOP)
-        game.make_action(Action(Action.CHECK))
-        self.assertEqual(game.player_in_action, hero)
-        self.assertEqual(game.possible_actions, [Action(Action.BET, 4.5, 1, 4.5),
-                                                 Action(Action.CHECK)])
-        game.make_action(Action(Action.BET, 4.5, 1, 4.5))
-        self.assertEqual(game.player_in_action, villain)
-        self.assertEqual(game.possible_actions, [Action(Action.RAISE, 18, 9, 18),
-                                                 Action(Action.CALL, 4.5),
-                                                 Action(Action.FOLD)])
-        self.assertEqual(game._last_aggressor, hero)
-        self.assertEqual(game._is_round_closed, False)
-
-    def test_game_state(self):
+    def test_make_action_with_fraction(self):
         hero = Player(Position.BTN, 98, is_hero=True)
         villain = Player(Position.BB, 98)
-        game = Game([hero, villain], pot=4.5, board='Td4s3s')
-        self.assertEqual(game.player_in_action, villain)
-        self.assertEqual(game.street, Street.FLOP)
-        self.assertEqual(villain.stack, 98)
-        self.assertEqual(game.pot, 4.5)
-        state_in_the_begin = game.clone()
-        game.make_action(Action(Action.BET, size=4.5))
-        self.assertEqual(game.player_in_action, hero)
-        self.assertEqual(villain.stack, 93.5)
-        self.assertEqual(game.street, Street.FLOP)
-        self.assertEqual(game.pot, 9)
-        state_after_villain_action = game.clone()
-        game.restore_state(state_in_the_begin)
-        self.assertEqual(game.player_in_action, villain)
-        self.assertEqual(game.street, Street.FLOP)
-        self.assertEqual(villain.stack, 98)
-        self.assertEqual(game.pot, 4.5)
-        game.restore_state(state_after_villain_action)
-        self.assertEqual(game.player_in_action, hero)
-        self.assertEqual(game.street, Street.FLOP)
-        self.assertEqual(villain.stack, 93.5)
-        self.assertEqual(game.pot, 9)
+        game = Game([hero, villain], pot=5, board='As2d3h')
+        game.make_action(Action(Action.BET, fraction=0.5))
+        self.assertEqual(game.pot, 7.5)
+        self.assertEqual(hero.stack, 98)
+        self.assertEqual(villain.stack, 95.5)
+        game.make_action(Action(Action.RAISE, fraction=0.6))
+        self.assertEqual(game.pot, 15)
+        self.assertEqual(hero.stack, 90.5)
+        self.assertEqual(villain.stack, 95.5)
 
     def test_leaf_none(self):
         btn = Player(Position.BTN, 100)
@@ -678,7 +708,7 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(call_line.hero_equity, 0.354, delta=0.03)
         self.assertAlmostEqual(call_line.hero_pot_share.stack, 35.4, delta=2)
         self.assertAlmostEqual(call_line.hero_ev.stack, 35.4, delta=1)
-        self.assertAlmostEqual(call_line.hero_pot_share.relative, 2.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_pot_share.relative, 2.4, delta=2)
         self.assertAlmostEqual(call_line.hero_ev.relative, 2.4, delta=1)
 
     def test_calculate_node_when_hero_close_game_with_river_call(self):
@@ -793,7 +823,7 @@ class GameTreeTest(unittest.TestCase):
         game_tree.calculate()
         self.assertAlmostEqual(line_call.hero_equity, 0.396, delta=0.03)
         self.assertAlmostEqual(line_call.line_fraction, 0.486, delta=0.03)
-        self.assertAlmostEqual(line_call.hero_ev.stack, 39.2, delta=1)
+        self.assertAlmostEqual(line_call.hero_ev.stack, 39.2, delta=2)
 
         self.assertAlmostEqual(line_fold.had_equity, 0.24, delta=0.03)
         self.assertAlmostEqual(line_fold.hero_equity, 1, delta=0.03)
@@ -801,8 +831,8 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(line_fold.hero_ev.stack, 66, delta=0.03)
         self.assertAlmostEqual(line_fold.line_fraction, 0.514, delta=0.03)
 
-        self.assertAlmostEqual(root.hero_pot_share.stack, 52.8, delta=1)
-        self.assertAlmostEqual(root.hero_ev.stack, 52.8, delta=1)
+        self.assertAlmostEqual(root.hero_pot_share.stack, 52.8, delta=2)
+        self.assertAlmostEqual(root.hero_ev.stack, 52.8, delta=2)
 
     def test_calculate_multilevel_tree(self):
         """ 3bet pot in position as PFR """
