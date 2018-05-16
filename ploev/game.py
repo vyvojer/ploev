@@ -229,10 +229,13 @@ class Action:
         return f'{cls_name}(type_={self.type_}, size={self.size}, fraction={self.fraction}, min_size={self.min_size}, max_size={self.max_size})'
 
     def __str__(self):
-        if self._is_sizable:
-            return '{} {:.1f}'.format(self.type_, self.size)
-        else:
-            return '{}'.format(self.type_)
+        s = '{}'.format(self.type_)
+        if self.size:
+            s += ' {:.1f}'.format(self.size)
+        if self.fraction:
+            s += ' ({:.1f}%)'.format(self.fraction * 100)
+        return s
+
 
 
 class Player:
@@ -988,7 +991,7 @@ class GameTree:
 
         # Pot representation
 
-        pot_repr = get_prefixes(node, LineType.EQUITIES) + set_style("Pot: {}".format(node.game_state.pot), node)
+        pot_repr = get_prefixes(node, LineType.EQUITIES) + set_style("Pot: {:.1f}".format(node.game_state.pot), node)
 
         # Ranges representation
         if node.player.sub_range():
