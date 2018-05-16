@@ -237,17 +237,19 @@ class Action:
         return s
 
 
-
 class Player:
     """ Class representing player"""
 
-    def __init__(self, position: Position, stack: float, ranges: Iterable[AbstractRange] = None, name: str = None,
+    def __init__(self, position: Position,
+                 stack: float,
+                 ranges: Union[AbstractRange, Iterable[AbstractRange]] = None,
+                 name: str = None,
                  is_hero: bool = False):
         """
         Args:
             position(Position): player's position
             stack(float): player's stack
-            ranges(Iterable): iterable of player ranges (PptRange, EasyRange..), combined by 'and' (:)
+            ranges(Iterable): player range or iterable of player ranges (PptRange, EasyRange..), combined by 'and' (:)
             name(str): optional player's name
             is_hero(bool): True if player is hero
         """
@@ -255,7 +257,10 @@ class Player:
         self._stack = stack
         self._previous_stack = stack
         if ranges is not None:
-            self.ranges = list(ranges)
+            try:
+                self.ranges = list(ranges)
+            except TypeError:
+                self.ranges = [ranges]
         else:
             self.ranges = []
         if name is not None:
