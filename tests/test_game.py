@@ -340,6 +340,14 @@ class GameTest(unittest.TestCase):
         game._count_action_size(action)
         self.assertEqual(action.size, 85)
 
+    def test_count_action_fraction_for_bet(self):
+        btn = Player(Position.BTN, stack=330, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=330)
+        game = Game(players=[bb, btn], pot=100, board='2c Kd 8s', allin_allowed=True)
+        action = Action(Action.BET, size=85)
+        game._count_action_size(action)
+        self.assertEqual(action.fraction, 0.85)
+
     def test_count_action_size_for_raise(self):
         btn = Player(Position.BTN, stack=330, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=330)
@@ -348,6 +356,15 @@ class GameTest(unittest.TestCase):
         action = Action(Action.RAISE, fraction=0.85)
         game._count_action_size(action)
         self.assertEqual(action.size, 212.5)
+
+    def test_count_action_fraction_for_raise(self):
+        btn = Player(Position.BTN, stack=330, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=330)
+        game = Game(players=[bb, btn], pot=100, board='2c Kd 8s', allin_allowed=True)
+        game.make_action(Action(Action.BET, 50))
+        action = Action(Action.RAISE, size=212.5)
+        game._count_action_size(action)
+        self.assertEqual(action.fraction, 0.85)
 
     def test_posflop_situation(self):
         hero = Player(Position.BTN, 98, is_hero=True)
