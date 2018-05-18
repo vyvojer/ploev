@@ -146,6 +146,9 @@ class AbstractRange(ABC):
             self._calculate_ppt(range_)
         return self._ppt
 
+    def __eq__(self, other):
+        return self.range_ == other.range_
+
     @abstractmethod
     def _calculate_ppt(self, range_):
         pass
@@ -632,7 +635,6 @@ class Game:
             if action.type_ == Action.RAISE:
                 action.fraction = action.size / self._count_pot_raise(call_size=self._action.size, pot=self.pot)
 
-
     def make_action(self, action: Action, player_range: Union[PptRange, EasyRange] = None):
         self._count_action_size(action) # Count pot size for fraction
         if self.possible_actions:
@@ -784,11 +786,6 @@ class GameNode:
         self.has_ev = False
         self.is_max_ev_line = False
 
-    def clear_calculation(self):
-        self.hero_equity = None
-        self.hero_pot_share = None
-        self.is_max_ev_line = None
-
     def __repr__(self):
         player = self.game_state.player.name
         stack = self.game_state.player.stack
@@ -828,6 +825,11 @@ class GameNode:
             return self.action_id == len(self.siblings)
         else:
             return None
+
+    def clear_calculation(self):
+        self.hero_equity = None
+        self.hero_pot_share = None
+        self.is_max_ev_line = None
 
     @property
     def game(self):
@@ -881,6 +883,29 @@ class GameNode:
 
     def add_range(self, range_):
         self.player.add_range(range_)
+
+    @staticmethod
+    def _rebuild_tree(node):
+        for line in node.lines:
+            cloned_state = node.game_state.clone()
+            action_range = GameNode._extract_action_range(node, line)
+            cloned_state.make_action(line.game_state.action, action_range)
+            line.game_state = cloned_state
+            line.clear_calculation()
+            GameNode._rebuild_tree(line)
+
+    @staticmethod
+    def _extract_action_range(parent_node: 'GameNode', action_node: 'GameNode'):
+        player_position = parent_node.game_state.player_in_action.position
+        parent_ranges = parent_node.game_state.players[player_position].ranges
+        action_ranges = action_node.game_state.players[player_position].ranges
+        extracted = list(action_ranges)[len(parent_ranges):]
+        if extracted:
+            return extracted[0]
+
+    def update_children(self):
+        self.clear_calculation()
+        self._rebuild_tree(self)
 
 
 class GameTreeException(Exception):

@@ -665,10 +665,15 @@ class GameNodeTest(unittest.TestCase):
     def test__iter__(self):
         root = GameNode(self.game)
         root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_bet.add_standard_lines()
         all_nodes = [game_node for game_node in root]
         self.assertEqual(all_nodes[0], root)
         self.assertEqual(all_nodes[1], root.lines[0])
-        self.assertEqual(all_nodes[2], root.lines[1])
+        self.assertEqual(all_nodes[2], line_bet.lines[0])
+        self.assertEqual(all_nodes[3], line_bet.lines[1])
+        self.assertEqual(all_nodes[4], line_bet.lines[2])
+        self.assertEqual(all_nodes[5], root.lines[1])
 
     def test_game(self):
         root = GameNode(self.game)
@@ -687,6 +692,50 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(root.id, (1, 1))
         self.assertEqual(line_bet.id, (2, 1))
         self.assertEqual(line_check.id, (2, 2))
+
+    def test_update_children_for_hero_range(self):
+        self.btn.add_range(PptRange('As9d8sTs'))
+        self.bb.add_range(PptRange('50%'))
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[0]
+        self.assertEqual(root.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
+        self.assertEqual(line_bet.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
+        self.assertEqual(line_check.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
+        root.game_state.players[Position.BTN].ranges = [PptRange('AdKd8s7s')]
+        self.assertEqual(root.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
+        root.update_children()
+        self.assertEqual(line_bet.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
+        self.assertEqual(line_check.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
+
+    def test_update_children_for_villain_range(self):
+        self.btn.add_range(PptRange('As9d8sTs'))
+        self.bb.add_range(PptRange('50%'))
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[0]
+        line_villain_raise = line_bet.add_line(Action(Action.RAISE, fraction=1), PptRange("KK+"))
+        self.assertEqual(root.game.players[Position.BB].ranges, [PptRange('50%')])
+        self.assertEqual(line_bet.game.players[Position.BB].ranges, [PptRange('50%')])
+        self.assertEqual(line_villain_raise.game.players[Position.BB].ranges, [PptRange('50%'),PptRange("KK+")])
+        root.game_state.players[Position.BB].ranges = [PptRange('20%')]
+        self.assertEqual(root.game.players[Position.BB].ranges, [PptRange('20%')])
+        root.update_children()
+        self.assertEqual(line_bet.game.players[Position.BB].ranges, [PptRange('20%')])
+        self.assertEqual(line_check.game.players[Position.BB].ranges, [PptRange('20%')])
+        self.assertEqual(line_villain_raise.game.players[Position.BB].ranges, [PptRange('20%'),PptRange("KK+")])
+
+    def test__extract_action_range(self):
+        self.bb.add_range(PptRange('50%'))
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[0]
+        line_villain_raise = line_bet.add_line(Action(Action.RAISE, fraction=1), PptRange("KK+"))
+        extracted = GameNode._extract_action_range(line_bet, line_villain_raise)
+        self.assertEqual(extracted, PptRange("KK+"))
 
 
 class GameTreeTest(unittest.TestCase):
@@ -724,9 +773,9 @@ class GameTreeTest(unittest.TestCase):
         game_tree.calculate_node(call_line)
         self.assertAlmostEqual(call_line.hero_equity, 0.354, delta=0.03)
         self.assertAlmostEqual(call_line.hero_pot_share.stack, 35.4, delta=2)
-        self.assertAlmostEqual(call_line.hero_ev.stack, 35.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.stack, 35.4, delta=2)
         self.assertAlmostEqual(call_line.hero_pot_share.relative, 2.4, delta=2)
-        self.assertAlmostEqual(call_line.hero_ev.relative, 2.4, delta=1)
+        self.assertAlmostEqual(call_line.hero_ev.relative, 2.4, delta=2)
 
     def test_calculate_node_when_hero_close_game_with_river_call(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
