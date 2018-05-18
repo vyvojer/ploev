@@ -1002,7 +1002,7 @@ class GameTree:
                             prefixes.append(prefix)
                 else:
                     if current_node.parent:
-                        if node.siblings_count <= current_node.siblings_count:
+                        if not current_node.is_last_sibling():
                             parent_prefix = space * indent + vertical_line
                         else:
                             parent_prefix = space * indent + space
