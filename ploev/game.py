@@ -240,6 +240,14 @@ class Action:
         return s
 
 
+class PlayerException(Exception):
+
+    def __init__(self, msg) -> None:
+        if msg is None:
+            msg = "A Player error occurred"
+        super().__init__(msg)
+
+
 class Player:
     """ Class representing player"""
 
@@ -337,10 +345,16 @@ class Player:
         return self._construct_ppt_from_ranges(self.ranges)
 
     def main_range_ppt(self):
-        return self._construct_ppt_from_ranges(self.ranges[:-1])
+        try:
+            return self._construct_ppt_from_ranges(self.ranges[:-1])
+        except IndexError:
+            raise PlayerException("Player's ranges not set")
 
     def sub_range_ppt(self):
-        return self.ranges[-1].ppt()
+        try:
+            return self.ranges[-1].ppt()
+        except IndexError:
+            raise PlayerException("Player's ranges not set")
 
     def sub_range(self) -> Optional[AbstractRange]:
         """ Return 'last' sub_range """
@@ -1023,7 +1037,7 @@ class GameTree:
             board = node.game_state.board
             if html:
                 board = color_cards(str(board))
-            tree_str = '{}Board: {}'.format(line_delimiter + line_delimiter, board)
+            tree_str = '{}Board: <b>{}</b>'.format(line_delimiter + line_delimiter, board)
 
         # Pot representation
 
