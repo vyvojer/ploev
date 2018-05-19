@@ -522,6 +522,37 @@ class GameTest(unittest.TestCase):
         self.assertEqual(hero.stack, 90.5)
         self.assertEqual(villain.stack, 95.5)
 
+    def test_make_action_when_shortstack_diff(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=33, name='Villain')
+        game = Game([bb, btn], 33, board='2c Kd 8s', allin_allowed=True)
+        bb.add_range(PptRange('AA', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
+        game.make_action(Action(Action.BET, size=33))
+        self.assertEqual(game._shortstack_diff, None)
+
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=300, name='Villain')
+        game = Game([bb, btn], 33, board='2c Kd 8s', allin_allowed=True)
+        bb.add_range(PptRange('AA', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
+        game.make_action(Action(Action.BET, size=300))
+        self.assertEqual(game._shortstack_diff, 267)
+
+    def test_make_action_when_shortstack_call_all_in(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=300, name='Villain')
+        game = Game([bb, btn], 33, board='2c Kd 8s', allin_allowed=True)
+        bb.add_range(PptRange('AA', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
+        game.make_action(Action(Action.BET, size=300))
+        self.assertEqual(game.pot, 333)
+        self.assertEqual(bb.side_pot, None)
+        self.assertEqual(game._shortstack_diff, 267)
+        game.make_action(Action(Action.CALL))
+        self.assertEqual(game.pot, 366)
+        self.assertEqual(btn.side_pot, 99)
+
     def test_leaf_none(self):
         btn = Player(Position.BTN, 100)
         bb = Player(Position.BB, 100)
@@ -766,6 +797,24 @@ class GameTreeTest(unittest.TestCase):
         bb.add_range(PptRange('AA', is_cumulative=False))
         btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
         game.make_action(Action(Action.BET, size=33))
+        root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.add_standard_lines()
+        call_line = root.lines[0]
+        game_tree.calculate_node(call_line)
+        self.assertAlmostEqual(call_line.hero_equity, 0.354, delta=0.03)
+        self.assertAlmostEqual(call_line.hero_pot_share.stack, 35.4, delta=2)
+        self.assertAlmostEqual(call_line.hero_ev.stack, 35.4, delta=2)
+        self.assertAlmostEqual(call_line.hero_pot_share.relative, 2.4, delta=2)
+        self.assertAlmostEqual(call_line.hero_ev.relative, 2.4, delta=2)
+
+    def test_calculate_node_when_shortstack_call_all_in(self):
+        btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        bb = Player(Position.BB, stack=300, name='Villain')
+        game = Game([bb, btn], 33, board='2c Kd 8s', allin_allowed=True)
+        bb.add_range(PptRange('AA', is_cumulative=False))
+        btn.add_range(PptRange('8h 9h Tc Js', is_cumulative=False))
+        game.make_action(Action(Action.BET, size=300))
         root = GameNode(game)
         game_tree = GameTree(root, odds_oracle)
         root.add_standard_lines()

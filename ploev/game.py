@@ -288,6 +288,7 @@ class Player:
         self.had_equity = None  # player equity before fold
         self.invested_in_bank = 0
         self.game = None
+        self.side_pot = None
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -438,6 +439,7 @@ class Game:
         self._last_aggressor = None
         self._player = None
         self._action = None
+        self._shortstack_diff = None
         self.next_raise_possible = True
         self.leaf = GameLeaf.NONE
         self.game_over = False
@@ -558,11 +560,14 @@ class Game:
         action_raise = None
         action_call = None
         raise_possible = True
+        self._shortstack_diff = None
         # Raise probably possible
         if self._action.type_ in [Action.RAISE, Action.CALL, Action.BET, Action.POST_BLIND]:
             pot_raise = self._count_pot_raise(self._action.size, self.pot)
             call_size = self._action.size - player_in_action.invested_in_bank
             if player_in_action.stack <= call_size:
+                if player_in_action.stack < call_size:
+                    self._shortstack_diff = call_size - player_in_action.stack
                 raise_possible = False
                 call_size = player_in_action.stack
             if raise_possible:
@@ -675,6 +680,9 @@ class Game:
             self.pot += action.size
             self.player_in_action.stack -= action.size
             self.player_in_action.invested_in_bank = action.size
+            self.player_in_action.side_pot = None
+            if self._shortstack_diff:
+                self.player_in_action.side_pot = self.pot - self._shortstack_diff
         else:
             # even if action is not sizeble we set stack in order to set previous stack!
             self.player_in_action.stack = self.player_in_action.stack
