@@ -26,6 +26,7 @@ from .easy_range import BoardExplorer
 from .ppt import OddsOracle
 from .cards import Board, CardSet
 from .calc import close_parenthesis, create_cumulative_ranges, Calc
+from .utils import Anki
 
 logger = logging.getLogger(__name__)
 
@@ -853,6 +854,8 @@ class GameNode:
         self.hero_equity = None
         self.hero_pot_share = None
         self.is_max_ev_line = None
+        self.line_fraction = None
+        self.player.had_equity = None
 
     @property
     def game(self):
@@ -939,9 +942,10 @@ class GameTreeException(Exception):
         super().__init__(msg)
 
 
-class GameTree:
+class GameTree(Anki):
 
     def __init__(self, root: GameNode, odds_oracle: OddsOracle):
+        super().__init__()
         self.root = root
         self.calc = Calc(odds_oracle)
         self.hero = root.game.get_hero()
@@ -1240,3 +1244,14 @@ class GameTree:
 
     def _get_leaf_nodes(self):
         return (node for node in self if node.is_leaf_node)
+
+    def anki_title(self):
+        return self.anki_description
+
+    def anki_question(self):
+        self.clear_calculation()
+        return self._repr_html_()
+
+    def anki_answer(self):
+        self.calculate()
+        return self._repr_html_()

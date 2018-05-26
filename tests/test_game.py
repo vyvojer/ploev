@@ -70,20 +70,20 @@ class RangeDistributionTest(unittest.TestCase):
 class ColorCardsTest(unittest.TestCase):
 
     def test_color_range(self):
-        self.assertEqual(color_cards('2s3d'), '2s<font color=blue>3d</font>')
+        self.assertEqual(color_cards('2s3d'), '<font color=black>2s </font><font color=blue>3d </font>')
         self.assertEqual(color_cards('Ah2s3d'),
-                         '<font color=red>Ah</font>2s<font color=blue>3d</font>')
+                         '<font color=red>Ah </font><font color=black>2s </font><font color=blue>3d </font>')
         self.assertEqual(color_cards('*cAh2s3d'),
-                         '<font color=green>*c</font><font color=red>Ah</font>2s<font color=blue>3d</font>')
+                         '<font color=green>*c </font><font color=red>Ah </font><font color=black>2s </font><font color=blue>3d </font>')
         self.assertEqual(color_cards('*cAhd2s3d'),
-                         '<font color=green>*c</font><font color=red>Ah</font><font color=blue>d</font>2s<font color=blue>3d</font>')
+                         '<font color=green>*c </font><font color=red>Ah </font><font color=blue>d </font><font color=black>2s </font><font color=blue>3d </font>')
 
 
 class PptRangeTest(unittest.TestCase):
 
     def test_repr_html_(self):
         ppt_range = PptRange('2s3d')
-        self.assertEqual(ppt_range._repr_html_(), '2s<font color=blue>3d</font>')
+        self.assertEqual(ppt_range._repr_html_(), '<font color=black>2s </font><font color=blue>3d </font>')
 
 
 class EasyRangeTest(unittest.TestCase):
