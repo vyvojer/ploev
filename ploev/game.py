@@ -32,14 +32,15 @@ logger = logging.getLogger(__name__)
 
 def color_cards(cards: str):
     suits = [
-        {'suit': 'c', 'color': 'green'},
-        {'suit': 'd', 'color': 'blue'},
-        {'suit': 'h', 'color': 'red'},
+        {'suit': 'c', 'symbol': 'c', 'color': 'green'},
+        {'suit': 'd', 'symbol': 'd', 'color': 'blue'},
+        {'suit': 'h', 'symbol': 'h', 'color': 'red'},
+        {'suit': 's', 'symbol': 's', 'color': 'black'},
     ]
     colored_cards = cards
     for suit in suits:
-        colored_cards = re.sub(r'([2-9*AKTQJaktqj]?{})'.format(suit['suit']),
-                               r'<font color={}>\1</font>'.format(suit['color']),
+        colored_cards = re.sub(r'([2-9*AKTQJaktqj])?({})'.format(suit['suit']),
+                               r'<font color={}>\1{} </font>'.format(suit['color'], suit['symbol']),
                                colored_cards)
     return colored_cards
 
@@ -626,7 +627,7 @@ class Game:
             player.is_hero = False
         self.get_player(position).is_hero = True
 
-    def get_hero(self):
+    def get_hero(self) -> Player:
         for player in self.players.values():
             if player.is_hero:
                 return player
@@ -1048,34 +1049,34 @@ class GameTree:
             tree_str = '{}Board: <b>{}</b>'.format(line_delimiter + line_delimiter, board)
 
         # Pot representation
-
         pot_repr = get_prefixes(node, LineType.EQUITIES) + set_style("Pot: {:.1f}".format(node.game_state.pot), node)
 
         # Ranges representation
         if node.player.sub_range():
             if node.player.sub_range().is_cumulative:
-                sub_range_fmt = ' [{!s}]'
+                sub_range_fmt = '[{!s}]'
             else:
-                sub_range_fmt = ' {!s}'
+                sub_range_fmt = '{!s}'
             if html:
                 sub_range_str = sub_range_fmt.format(color_cards(str(node.player.sub_range())))
                 sub_range_str = '<b>' + sub_range_str + '</b>'
             else:
                 sub_range_str = sub_range_fmt.format(node.player.sub_range())
+            sub_range_str =  get_prefixes(node, LineType.EQUITIES) + sub_range_str
         else:
             sub_range_str = ''
         # Equity repesentation
         ev_info = []
-        if node.hero_equity:
+        if node.hero_equity and not node.had_equity:
             ev_info.append('HEq={:.1f}%'.format(node.hero_equity * 100))
-        if node.hero_ev:
-            ev_info.append('HEV={!s}'.format(node.hero_ev))
         if node.had_equity:
             ev_info.append('FdEq={:.1f}%'.format(node.had_equity * 100))
-        elif node.hero_pot_share:
+        elif node.hero_pot_share and not node.hero_ev:
             ev_info.append('HPSh={!s}'.format(node.hero_pot_share))
+        if node.hero_ev:
+            ev_info.append('HEV={!s}'.format(node.hero_ev))
         if node.line_fraction:
-            ev_info.append('Fraq={:.1f}%'.format(node.line_fraction * 100))
+            ev_info.append('Fr={:.1f}%'.format(node.line_fraction * 100))
         if ev_info:
             ev_prefix = get_prefixes(node, LineType.EQUITIES)
             ev_str = line_delimiter + ev_prefix + set_style(', '.join(ev_info), node)
@@ -1086,7 +1087,8 @@ class GameTree:
         action_prefix = get_prefixes(node, LineType.ACTION)
 
         tree_str += (blank_prefix + line_delimiter) * 2 \
-                    + action_prefix + set_style(str(node), node) + sub_range_str \
+                    + action_prefix + set_style(str(node), node) \
+                    + line_delimiter + sub_range_str \
                     + line_delimiter + pot_repr \
                     + ev_str
         if node.lines:
@@ -1095,8 +1097,8 @@ class GameTree:
         return tree_str
 
     def _repr_html_(self):
-        repr = '<p style="font-family: \'Courier\', monospace; line-height: 1.2;">{}</p>'
-        return repr.format(self.__str__(html=True))
+        repr = '<p style="font-family: \'Liberation Mono\', monospace; line-height: 1.1;">{p}</p>'
+        return repr.format(p=self.__str__(html=True))
 
     @staticmethod
     def _calculate_equities(node: GameNode, calc):
@@ -1155,14 +1157,18 @@ class GameTree:
         hero = node.game_state.get_hero()
         node.hero_equity = hero.equity
         node.hero_pot_share = None
+        if hero.side_pot:
+            pot = hero.side_pot
+        else:
+            pot = node.game_state.pot
         if node.game_state.leaf != GameLeaf.NONE:
-            logger.debug("HE: %s Pot: %s HpS: %s", node.hero_equity, node.game_state.pot, hero.previous_stack)
+            logger.debug("HE: %s Pot: %s HpS: %s", node.hero_equity, pot, hero.previous_stack)
             if self._is_the_node_player_a_hero(node) and node.game_state.leaf == GameLeaf.FOLD:
                 # Special case for hero fold
                 node.hero_pot_share = _EV(stack=hero.stack,
                                           previous_stack=hero.previous_stack)
             else:
-                node.hero_pot_share = _EV(stack=node.hero_equity * node.game_state.pot + hero.stack,
+                node.hero_pot_share = _EV(stack=node.hero_equity * pot + hero.stack,
                                           previous_stack=hero.previous_stack)
             if node.game_state.game_over:
                 node.has_ev = True
