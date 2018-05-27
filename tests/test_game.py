@@ -138,6 +138,18 @@ class PlayerTest(unittest.TestCase):
         player.add_range(PptRange('A,K2', is_cumulative=False))
         self.assertEqual(player.ppt(), '(70%):(A,K2)')
 
+    def test_main_range_ppt(self):
+        player = Player(Position.BB, 100, name="John", is_hero=True)
+        player.add_range(PptRange('70%', is_cumulative=False))
+        player.add_range(PptRange('A,K2', is_cumulative=False))
+        self.assertEqual(player.main_range_ppt(), '(70%)')
+
+    def test_first_range_ppt(self):
+        player = Player(Position.BB, 100, name="John", is_hero=True)
+        player.add_range(PptRange('70%', is_cumulative=False))
+        player.add_range(PptRange('A,K2', is_cumulative=False))
+        self.assertEqual(player.first_range_ppt(), '70%')
+
     def test_previous_stack(self):
         player = Player(Position.BB, 100, name="John", is_hero=True)
         self.assertEqual(player.stack, 100)
@@ -997,6 +1009,19 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(villain_fold.had_equity, 0.5, delta=0.03)
         self.assertAlmostEqual(hero_bet_call.hero_equity, 0.27, delta=0.03)
 
+    def test_anki_title_addition(self):
+        hero = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
+        villain = Player(Position.BB, stack=33, name='Villain')
+        game = Game(players=[hero, villain], pot=33, board='2c Kd 8s')
+        root = GameNode(game)
+        game_tree = GameTree(root, odds_oracle)
+        root.game_state.players[Position.BTN].ranges = [PptRange('AdAs9s2s')]
+        root.game_state.players[Position.BB].ranges = [PptRange('$FI30!AA')]
+        addition = game_tree.anki_title_addition()
+        expected = '<br/>Board: <b><font color=green>2c </font><font color=blue>Kd </font><font color=black>8s </font>' \
+                   '</b> Hero: <b><font color=blue>Ad </font><font color=black>As </font>' \
+                   '<font color=black>9s </font><font color=black>2s </font></b> Villain: <b>$FI30!AA</b>'
+        self.assertEqual(addition, expected)
 
 class TypicalGameSituationTest(unittest.TestCase):
     def _test_SPR1_call_pot_bet(self):

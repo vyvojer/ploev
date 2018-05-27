@@ -26,7 +26,7 @@ from .easy_range import BoardExplorer
 from .ppt import OddsOracle
 from .cards import Board, CardSet
 from .calc import close_parenthesis, create_cumulative_ranges, Calc
-from .utils import Anki
+from .utils import AnkiMixin
 
 logger = logging.getLogger(__name__)
 
@@ -356,6 +356,12 @@ class Player:
     def sub_range_ppt(self):
         try:
             return self.ranges[-1].ppt()
+        except IndexError:
+            raise PlayerException("Player's ranges not set")
+
+    def first_range_ppt(self):
+        try:
+            return self.ranges[0].ppt()
         except IndexError:
             raise PlayerException("Player's ranges not set")
 
@@ -942,7 +948,7 @@ class GameTreeException(Exception):
         super().__init__(msg)
 
 
-class GameTree(Anki):
+class GameTree(AnkiMixin):
 
     def __init__(self, root: GameNode, odds_oracle: OddsOracle):
         super().__init__()
@@ -1245,10 +1251,13 @@ class GameTree(Anki):
     def _get_leaf_nodes(self):
         return (node for node in self if node.is_leaf_node)
 
-    def anki_title(self):
-        title = '<b>{}</b>'.format(self.anki_description)
-        title += '<br/>Board: <b>{}</b>'.format(color_cards(str(self.root.game.board)))
-        return title
+    def anki_title_addition(self):
+        addition = '<br/>Board: <b>{}</b>'.format(color_cards(str(self.root.game.board)))
+        players_add = []
+        for player in self.root.game.players.values():
+            players_add.append('{}: <b>{}</b>'.format(player.name, color_cards(str(player.first_range_ppt()))))
+        addition += " " + " ".join(players_add)
+        return addition
 
     def anki_question(self):
         self.clear_calculation()

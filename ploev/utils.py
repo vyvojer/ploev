@@ -19,7 +19,7 @@ from typing import Iterable, Union
 from abc import ABC, abstractmethod
 
 
-class Anki(ABC):
+class AnkiMixin(ABC):
     def __init__(self):
         self.anki_description = None
         self.anki_tags = list()
@@ -28,7 +28,14 @@ class Anki(ABC):
         return [self.anki_title(), self.anki_question(), self.anki_answer()]
 
     def anki_title(self):
-        return self.anki_description
+        title = '<b>{}</b>'.format(self.anki_description)
+        addition = self.anki_title_addition()
+        if addition:
+            title += addition
+        return title
+
+    def anki_title_addition(self):
+        return None
 
     @abstractmethod
     def anki_question(self):
