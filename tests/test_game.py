@@ -123,6 +123,22 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(len(player.ranges), 1)
         self.assertEqual(player.ranges[0].range_, '70%')
 
+    def test_update_range(self):
+        player = Player(Position.BB, 100, name="John", is_hero=True)
+        self.assertEqual(player.ranges, [])
+        player.add_range(PptRange('70%'))
+        self.assertEqual(len(player.ranges), 1)
+        self.assertEqual(player.ranges[0].range_, '70%')
+        player.add_range(PptRange('60%'))
+        self.assertEqual(len(player.ranges), 2)
+        self.assertEqual(player.ranges[0].range_, '70%')
+        self.assertEqual(player.ranges[1].range_, '60%')
+        player.update_range(PptRange('50%'))
+        self.assertEqual(len(player.ranges), 2)
+        self.assertEqual(player.ranges[0].range_, '70%')
+        self.assertEqual(player.ranges[1].range_, '50%')
+
+
     def test_add_easy_range(self):
         hero = Player(Position.BB, 90, is_hero=True)
         villain = Player(Position.BTN, 90)

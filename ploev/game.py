@@ -337,6 +337,16 @@ class Player:
                 range_.board_explorer = self.game.board_explorer(range_.street)
         self.ranges.append(range_)
 
+    def update_range(self, range_):
+        try:
+            range_.board_explorer
+        except AttributeError:
+            pass
+        else:
+            if not range_.board_explorer:  # Check if board_explorer alreade was set in RangeDistribution
+                range_.board_explorer = self.game.board_explorer(range_.street)
+        self.ranges[-1]= range_
+
     @staticmethod
     def _construct_ppt_from_ranges(ranges: Iterable):
         ppt = ":".join([close_parenthesis(range_.ppt()) for range_ in ranges])
