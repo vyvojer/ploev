@@ -15,13 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
-from typing import Iterable
+from typing import Iterable, Union
 from abc import ABC, abstractmethod
 
 
 class Anki(ABC):
     def __init__(self):
         self.anki_description = None
+        self.anki_tags = list()
 
     def anki_fields(self):
         return [self.anki_title(), self.anki_question(), self.anki_answer()]
@@ -38,9 +39,15 @@ class Anki(ABC):
         pass
 
 
-def to_anki(card_objects: Iterable, file: str):
-    with open(file, 'w', newline='', encoding='utf-8') as csv_file:
+def to_anki(file, card_object=None, card_objects=None, append=False):
+    if append:
+        mode = 'a'
+    else:
+        mode = 'w'
+    if card_object:
+        card_objects = [card_object]
+    with open(file, mode, newline='', encoding='utf-8') as csv_file:
         writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
         for card_object in card_objects:
-            writer.writerow(card_object.anki_fields())
+            writer.writerow(card_object.anki_fields() + [" ".join(card_object.anki_tags)])
 

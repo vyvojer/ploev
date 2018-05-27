@@ -1050,7 +1050,7 @@ class GameTree(Anki):
             board = node.game_state.board
             if html:
                 board = color_cards(str(board))
-            tree_str = '{}Board: <b>{}</b>'.format(line_delimiter + line_delimiter, board)
+            tree_str = '{}Board: <b>{}</b>'.format(line_delimiter, board)
 
         # Pot representation
         pot_repr = get_prefixes(node, LineType.EQUITIES) + set_style("Pot: {:.1f}".format(node.game_state.pot), node)
@@ -1246,7 +1246,9 @@ class GameTree(Anki):
         return (node for node in self if node.is_leaf_node)
 
     def anki_title(self):
-        return self.anki_description
+        title = '<b>{}</b>'.format(self.anki_description)
+        title += '<br/>Board: <b>{}</b>'.format(color_cards(str(self.root.game.board)))
+        return title
 
     def anki_question(self):
         self.clear_calculation()
