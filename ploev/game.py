@@ -61,12 +61,14 @@ class SubRange:
 
 
 class RangeDistribution:
+
     def __init__(self, sub_ranges: Iterable[SubRange] = None,
+                 player: 'Player' = None,
+                 players: Iterable['Player'] = None,
                  is_cumulative=True,
                  game: 'Game' = None,
-                 player: 'Player' = None,
-                 odds_oracle: OddsOracle = None,
-                 count_equity=False):
+                 board: str = None,
+                 odds_oracle: OddsOracle = None):
         if sub_ranges is None:
             sub_ranges = []
         else:
@@ -75,11 +77,43 @@ class RangeDistribution:
         self.is_cumulative = is_cumulative
         self._set_is_cumulative_to_sub_ranges()
         self._set_cumulative_ranges()
-        self.game = game
+        self._board = None
+        self._board_explorer = None
+        self.board = board
+        self.players = players
+        self._game = None
+        if game:
+            self.game = game
         self.player = player
         self.calc = None
         if odds_oracle:
             self.calc = Calc(odds_oracle)
+
+    @property
+    def game(self):
+        return self._game
+
+    @game.setter
+    def game(self, game):
+        self._game = game
+        self.players = [player for player in game.players.values()]
+        self._board = game.board
+
+    @property
+    def board(self):
+        return self._board
+
+    @board.setter
+    def board(self, board):
+        self._board = board
+
+    def _get_board_explorer(self, street):
+        if self._game:
+            return self._game.board_explorer(street)
+        elif self._board:
+            if self._board_explorer is None:
+                self._board_explorer = BoardExplorer(Board.from_str(self.board))
+            return self._board_explorer
 
     def _set_is_cumulative_to_sub_ranges(self):
         for sub_range in self._sub_ranges.values():
@@ -107,7 +141,7 @@ class RangeDistribution:
         sub_range = self._sub_ranges[name]
         try:
             street = sub_range.street
-            sub_range.board_explorer = self.game.board_explorer(street)
+            sub_range.board_explorer = self._get_board_explorer(street)
         except AttributeError:
             pass
 
@@ -117,8 +151,8 @@ class RangeDistribution:
         """ Calculate range distribution """
         distribution = self.calc.range_distribution(main_range=self.player.ppt(),
                                                     sub_ranges=self.ppts(),
-                                                    board=str(self.game.board),
-                                                    players=[self.game.get_hero().ppt()],
+                                                    board=self.board,
+                                                    players=[player.ppt() for player in self.players],
                                                     equity=False,
                                                     cumulative=False)
         for sub_range, rd_sub_range in zip(self._sub_ranges.values(), distribution):

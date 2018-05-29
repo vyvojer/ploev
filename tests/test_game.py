@@ -45,7 +45,7 @@ class RangeDistributionTest(unittest.TestCase):
         check = rd.sub_range('check')
         self.assertEqual(check.ppt(), '(*)!((AA,KK,22,AK),Qss,(QJT,543))')
 
-    def test_calculate(self):
+    def test_calculate_with_game(self):
         btn = Player(Position.BTN, stack=97, is_hero=True)
         bb = Player(Position.BB, stack=97)
         bb.add_range(PptRange('30%'))
@@ -56,6 +56,32 @@ class RangeDistributionTest(unittest.TestCase):
             SubRange('check', EasyRange('*')),
         ]
         rd = RangeDistribution(sub_ranges, game=game, player=player, odds_oracle=odds_oracle)
+        bet = rd.sub_range('bet')
+        check = rd.sub_range('check')
+        rd.calculate()
+        self.assertAlmostEqual(bet.fraction, 0.303, delta=0.03)
+        self.assertAlmostEqual(check.fraction, 0.697, delta=0.03)
+        btn.add_range(PptRange('AdKd3s2s'))
+        rd.calculate()
+        self.assertAlmostEqual(bet.fraction, 0.217, delta=0.03)
+        self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)
+
+    def test_calculate_with_board(self):
+        btn = Player(Position.BTN, stack=97, is_hero=True)
+        bb = Player(Position.BB, stack=97)
+        bb.add_range(PptRange('30%'))
+        board = 'As 2d Ks'
+        player = bb
+        players = [btn]
+        sub_ranges = [
+            SubRange('bet', EasyRange('T2P+,NFD,SD9+')),
+            SubRange('check', EasyRange('*')),
+        ]
+        rd = RangeDistribution(sub_ranges,
+                               player=player,
+                               players=players,
+                               board=board,
+                               odds_oracle=odds_oracle)
         bet = rd.sub_range('bet')
         check = rd.sub_range('check')
         rd.calculate()
@@ -137,7 +163,6 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual(len(player.ranges), 2)
         self.assertEqual(player.ranges[0].range_, '70%')
         self.assertEqual(player.ranges[1].range_, '50%')
-
 
     def test_add_easy_range(self):
         hero = Player(Position.BB, 90, is_hero=True)
