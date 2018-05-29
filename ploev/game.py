@@ -85,9 +85,11 @@ class RangeDistribution:
         if game:
             self.game = game
         self.player = player
-        self.calc = None
+        self._calc = None
+        self._odds_oracle = None
+        self.odds_oracle = odds_oracle
         if odds_oracle:
-            self.calc = Calc(odds_oracle)
+            self._calc = Calc(odds_oracle)
 
     @property
     def game(self):
@@ -106,6 +108,15 @@ class RangeDistribution:
     @board.setter
     def board(self, board):
         self._board = board
+
+    @property
+    def odds_oracle(self):
+        return self._odds_oracle
+
+    @odds_oracle.setter
+    def odds_oracle(self, odds_oracle):
+        self._odds_oracle = odds_oracle
+        self._calc = Calc(odds_oracle)
 
     def _get_board_explorer(self, street):
         if self._game:
@@ -149,12 +160,12 @@ class RangeDistribution:
 
     def calculate(self):
         """ Calculate range distribution """
-        distribution = self.calc.range_distribution(main_range=self.player.ppt(),
-                                                    sub_ranges=self.ppts(),
-                                                    board=self.board,
-                                                    players=[player.ppt() for player in self.players],
-                                                    equity=False,
-                                                    cumulative=False)
+        distribution = self._calc.range_distribution(main_range=self.player.ppt(),
+                                                     sub_ranges=self.ppts(),
+                                                     board=self.board,
+                                                     players=[player.ppt() for player in self.players],
+                                                     equity=False,
+                                                     cumulative=False)
         for sub_range, rd_sub_range in zip(self._sub_ranges.values(), distribution):
             sub_range.fraction = rd_sub_range.fraction
 
