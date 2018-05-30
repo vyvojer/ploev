@@ -89,6 +89,19 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertAlmostEqual(bet.fraction, 0.217, delta=0.03)
         self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)
 
+    def test_calculate_without_call_sub_range(self):
+        sub_ranges = [
+            SubRange('raise', EasyRange('TB2P+, SD10_9+, TP+:GS+, OESD+:(TP+,MP, BP)')),
+            SubRange('call', EasyRange('2P+, SD10+')),
+            SubRange('fold', EasyRange('*'))
+        ]
+        board = 'Qs 7d 6c'
+        rd = RangeDistribution(sub_ranges,
+                               main_range=PptRange('$FI30'),
+                               players_ranges=[PptRange('*')],
+                               board=board,
+                               odds_oracle=odds_oracle)
+        rd.calculate()
 
 class ColorCardsTest(unittest.TestCase):
 

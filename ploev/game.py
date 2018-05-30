@@ -158,7 +158,7 @@ class RangeDistribution:
 
     def ppts(self) -> List[str]:
         """ Returns list of PPT ranges (already cumulative if is_cumulative=True) """
-        sub_ranges = [sub_range.ppt() for sub_range in self._sub_ranges.values()]
+        sub_ranges = [self.sub_range(sub_range_name).ppt() for sub_range_name in self._sub_ranges]
         return sub_ranges
 
     def sub_range(self, name: str) -> 'AbstractRange':
