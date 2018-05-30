@@ -61,12 +61,10 @@ class SubRange:
 
 
 class RangeDistribution:
-
     def __init__(self, sub_ranges: Iterable[SubRange] = None,
-                 player: 'Player' = None,
-                 players: Iterable['Player'] = None,
+                 main_range: 'AbstractRange' = None,
+                 players_ranges: Iterable['AbstractRange'] = None,
                  is_cumulative=True,
-                 game: 'Game' = None,
                  board: str = None,
                  odds_oracle: OddsOracle = None):
         if sub_ranges is None:
@@ -74,22 +72,34 @@ class RangeDistribution:
         else:
             sub_ranges = list(sub_ranges)
         self._sub_ranges = OrderedDict(sub_ranges)
+        self.main_range = main_range
+        self.players_ranges = players_ranges
+        self._player = None
         self.is_cumulative = is_cumulative
         self._set_is_cumulative_to_sub_ranges()
         self._set_cumulative_ranges()
         self._board = None
         self._board_explorer = None
         self.board = board
-        self.players = players
         self._game = None
-        if game:
-            self.game = game
-        self.player = player
         self._calc = None
         self._odds_oracle = None
         self.odds_oracle = odds_oracle
         if odds_oracle:
             self._calc = Calc(odds_oracle)
+
+    @classmethod
+    def from_game(cls,
+                  sub_ranges: Iterable[SubRange],
+                  player: 'Player',
+                  game: 'Game',
+                  is_cumulative=True,
+                  odds_oracle=None,
+                  ):
+        klass = cls(sub_ranges=sub_ranges, is_cumulative=is_cumulative, odds_oracle=odds_oracle)
+        klass.game = game
+        klass.player = player
+        return klass
 
     @property
     def game(self):
@@ -98,8 +108,17 @@ class RangeDistribution:
     @game.setter
     def game(self, game):
         self._game = game
-        self.players = [player for player in game.players.values()]
+        self.players_ranges = [player for player in game.players.values() if player != self.player]
         self._board = game.board
+
+    @property
+    def player(self):
+        return self._player
+
+    @player.setter
+    def player(self, player):
+        self._player = player
+        self.main_range = player
 
     @property
     def board(self):
@@ -160,10 +179,10 @@ class RangeDistribution:
 
     def calculate(self):
         """ Calculate range distribution """
-        distribution = self._calc.range_distribution(main_range=self.player.ppt(),
+        distribution = self._calc.range_distribution(main_range=self.main_range.ppt(),
                                                      sub_ranges=self.ppts(),
                                                      board=self.board,
-                                                     players=[player.ppt() for player in self.players],
+                                                     players=[player.ppt() for player in self.players_ranges],
                                                      equity=False,
                                                      cumulative=False)
         for sub_range, rd_sub_range in zip(self._sub_ranges.values(), distribution):
@@ -390,7 +409,7 @@ class Player:
         else:
             if not range_.board_explorer:  # Check if board_explorer alreade was set in RangeDistribution
                 range_.board_explorer = self.game.board_explorer(range_.street)
-        self.ranges[-1]= range_
+        self.ranges[-1] = range_
 
     @staticmethod
     def _construct_ppt_from_ranges(ranges: Iterable):
@@ -718,7 +737,7 @@ class Game:
                 action.fraction = action.size / self._count_pot_raise(call_size=self._action.size, pot=self.pot)
 
     def make_action(self, action: Action, player_range: Union[PptRange, EasyRange] = None):
-        self._count_action_size(action) # Count pot size for fraction
+        self._count_action_size(action)  # Count pot size for fraction
         if self.possible_actions:
             for possible_action in self.possible_actions:
                 if action.type_ == possible_action.type_:
@@ -1127,7 +1146,7 @@ class GameTree(AnkiMixin):
                 sub_range_str = '<b>' + sub_range_str + '</b>'
             else:
                 sub_range_str = sub_range_fmt.format(node.player.sub_range())
-            sub_range_str =  get_prefixes(node, LineType.EQUITIES) + sub_range_str
+            sub_range_str = get_prefixes(node, LineType.EQUITIES) + sub_range_str
         else:
             sub_range_str = ''
         # Equity repesentation
