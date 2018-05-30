@@ -21,7 +21,7 @@ class RangeDistributionTest(unittest.TestCase):
         ]
         rd = RangeDistribution(sub_ranges)
         rd._set_cumulative_ranges()
-        self.assertEqual(rd._sub_ranges['check'].cumulative_range, '(*)!(KK)')
+        self.assertEqual(rd._sub_ranges_dict['check'].cumulative_range, '(*)!(KK)')
 
     def test_get_cumulative_ranges(self):
         sub_ranges = [
@@ -79,8 +79,8 @@ class RangeDistributionTest(unittest.TestCase):
                                players_ranges=players_ranges,
                                board=board,
                                odds_oracle=odds_oracle)
-        bet = rd.sub_range('bet')
-        check = rd.sub_range('check')
+        bet = rd.sub_ranges[0].range_
+        check = rd.sub_ranges[1].range_
         rd.calculate()
         self.assertAlmostEqual(bet.fraction, 0.303, delta=0.03)
         self.assertAlmostEqual(check.fraction, 0.697, delta=0.03)
@@ -89,19 +89,6 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertAlmostEqual(bet.fraction, 0.217, delta=0.03)
         self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)
 
-    def test_calculate_without_call_sub_range(self):
-        sub_ranges = [
-            SubRange('raise', EasyRange('TB2P+, SD10_9+, TP+:GS+, OESD+:(TP+,MP, BP)')),
-            SubRange('call', EasyRange('2P+, SD10+')),
-            SubRange('fold', EasyRange('*'))
-        ]
-        board = 'Qs 7d 6c'
-        rd = RangeDistribution(sub_ranges,
-                               main_range=PptRange('$FI30'),
-                               players_ranges=[PptRange('*')],
-                               board=board,
-                               odds_oracle=odds_oracle)
-        rd.calculate()
 
 class ColorCardsTest(unittest.TestCase):
 

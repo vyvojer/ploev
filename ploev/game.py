@@ -71,7 +71,9 @@ class RangeDistribution:
             sub_ranges = []
         else:
             sub_ranges = list(sub_ranges)
-        self._sub_ranges = OrderedDict(sub_ranges)
+        self._sub_ranges = None
+        self._sub_ranges_dict = None
+        self.sub_ranges = sub_ranges
         self.main_range = main_range
         self.players_ranges = players_ranges
         self._player = None
@@ -100,6 +102,15 @@ class RangeDistribution:
         klass.game = game
         klass.player = player
         return klass
+
+    @property
+    def sub_ranges(self):
+        return self._sub_ranges
+
+    @sub_ranges.setter
+    def sub_ranges(self, sub_ranges):
+        self._sub_ranges = sub_ranges
+        self._sub_ranges_dict = OrderedDict(sub_ranges)
 
     @property
     def game(self):
@@ -146,11 +157,11 @@ class RangeDistribution:
             return self._board_explorer
 
     def _set_is_cumulative_to_sub_ranges(self):
-        for sub_range in self._sub_ranges.values():
-            sub_range.is_cumulative = self.is_cumulative
+        for sub_range in self.sub_ranges:
+            sub_range.range_.is_cumulative = self.is_cumulative
 
     def _set_cumulative_ranges(self):
-        cumulative_sub_ranges = [sub_range for sub_range in self._sub_ranges.values() if sub_range.is_cumulative]
+        cumulative_sub_ranges = [sub_range.range_ for sub_range in self.sub_ranges if sub_range.range_.is_cumulative]
         cumulatived = create_cumulative_ranges(
             [close_parenthesis(sub_range.range_) for sub_range in cumulative_sub_ranges])
         for sub_range, cumulative_range in zip(cumulative_sub_ranges, cumulatived):
@@ -158,7 +169,7 @@ class RangeDistribution:
 
     def ppts(self) -> List[str]:
         """ Returns list of PPT ranges (already cumulative if is_cumulative=True) """
-        sub_ranges = [self.sub_range(sub_range_name).ppt() for sub_range_name in self._sub_ranges]
+        sub_ranges = [self.sub_range(sub_range.name).ppt() for sub_range in self.sub_ranges]
         return sub_ranges
 
     def sub_range(self, name: str) -> 'AbstractRange':
@@ -168,7 +179,7 @@ class RangeDistribution:
             AbstractRange: sub_range
 
         """
-        sub_range = self._sub_ranges[name]
+        sub_range = self._sub_ranges_dict[name]
         try:
             street = sub_range.street
             sub_range.board_explorer = self._get_board_explorer(street)
@@ -185,7 +196,7 @@ class RangeDistribution:
                                                      players=[player.ppt() for player in self.players_ranges],
                                                      equity=False,
                                                      cumulative=False)
-        for sub_range, rd_sub_range in zip(self._sub_ranges.values(), distribution):
+        for sub_range, rd_sub_range in zip(self._sub_ranges_dict.values(), distribution):
             sub_range.fraction = rd_sub_range.fraction
 
 
