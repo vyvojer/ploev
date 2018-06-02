@@ -60,13 +60,15 @@ class SubRange:
         return self.range_.ppt()
 
 
-class RangeDistribution:
+class RangeDistribution(AnkiMixin):
     def __init__(self, sub_ranges: Iterable[SubRange] = None,
                  main_range: 'AbstractRange' = None,
                  players_ranges: Iterable['AbstractRange'] = None,
                  is_cumulative=True,
                  board: str = None,
                  odds_oracle: OddsOracle = None):
+        super().__init__()
+        self.anki_fields['description'] = None
         if sub_ranges is None:
             sub_ranges = []
         else:
@@ -198,6 +200,67 @@ class RangeDistribution:
                                                      cumulative=False)
         for sub_range, rd_sub_range in zip(self._sub_ranges_dict.values(), distribution):
             sub_range.fraction = rd_sub_range.fraction
+
+    def clear_calculation(self):
+        for sub_range in self.sub_ranges:
+            sub_range.range_.fraction = None
+
+    def __str__(self, html=False):
+        if html:
+            delimiter = '<br/>'
+        else:
+            delimiter = '\n'
+        repr_list = []
+        for sub_range in self.sub_ranges:
+            repr_name = "{}:".format(sub_range.name)
+            if html:
+                repr_name = "<b>" + repr_name + "</b>"
+            repr_range = str(sub_range.range_)
+            repr_list.append(repr_name + " " + repr_range)
+            if sub_range.range_.fraction:
+                bar_repr = self._get_fraction_bar(sub_range.range_.fraction)
+                if html:
+                    bar_repr = '<font color=blue>' + bar_repr + '</font>'
+                fraction_repr = '  {:.1f}%'.format(sub_range.range_.fraction * 100)
+                if html:
+                    fraction_repr = '<b>' + fraction_repr + '</b>'
+                repr_list.append(bar_repr + fraction_repr + delimiter)
+            else:
+                repr_list.append('?' + delimiter)
+        return delimiter.join(repr_list)
+
+    def _repr_html_(self):
+        return self.__str__(html=True)
+
+    @staticmethod
+    def _get_fraction_bar(fraction):
+        fr_per = fraction * 100
+        full = '█'
+        full_count = 0
+        half = '▌'
+        half_count = 0
+        full_count = int(fr_per // 10)
+        mod = fr_per % 10
+        if mod >= 7.5:
+            full_count += 1
+        elif mod >= 2.5:
+            half_count = 1
+        if full_count == 0 and half_count == 0:
+            half_count = 1
+        return full * full_count + half * half_count
+
+    def fill_anki_fields(self):
+        description = "</br></br>"
+        if self.board:
+            description += "<b>Board</b>: {}".format(self.board)
+        description += "</br><b>Main range</b>: {}".format(self.main_range)
+        if self.players_ranges:
+            description += "</br><b>Villains</b>: {}".format(", ".join([player.ppt() for player in self.players_ranges]))
+        self.anki_fields['description'] = "<b>" + self.anki_fields['description'] + '</b>' + description
+        self.clear_calculation()
+        self.anki_fields['question'] = self._repr_html_()
+        self.calculate()
+        self.anki_fields['answer'] = self._repr_html_()
 
 
 class AbstractRange(ABC):

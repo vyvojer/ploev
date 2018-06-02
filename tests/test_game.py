@@ -89,6 +89,31 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertAlmostEqual(bet.fraction, 0.217, delta=0.03)
         self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)
 
+    def test_get_fraction_bar(self):
+        fr = 0.9
+        self.assertEqual(RangeDistribution._get_fraction_bar(fr),
+                         '█████████')
+        fr = 0.92
+        self.assertEqual(RangeDistribution._get_fraction_bar(fr),
+                         '█████████')
+        fr = 0.88
+        self.assertEqual(RangeDistribution._get_fraction_bar(fr),
+                         '█████████')
+        fr = 0.95
+        self.assertEqual(RangeDistribution._get_fraction_bar(fr),
+                         '█████████▌')
+
+        fr = 0.87
+        self.assertEqual(RangeDistribution._get_fraction_bar(fr),
+                         '████████▌')
+
+        fr = 0.83
+        self.assertEqual(RangeDistribution._get_fraction_bar(fr),
+                         '████████▌')
+
+        fr = 0.01
+        self.assertEqual(RangeDistribution._get_fraction_bar(fr),
+                         '▌')
 
 class ColorCardsTest(unittest.TestCase):
 

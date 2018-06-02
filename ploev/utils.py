@@ -15,46 +15,31 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
-from typing import Iterable, Union
+
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 
 
 class AnkiMixin(ABC):
     def __init__(self):
-        self.anki_description = None
         self.anki_tags = list()
-
-    def anki_fields(self):
-        return [self.anki_title(), self.anki_question(), self.anki_answer()]
-
-    def anki_title(self):
-        title = '<b>{}</b>'.format(self.anki_description)
-        addition = self.anki_title_addition()
-        if addition:
-            title += addition
-        return title
-
-    def anki_title_addition(self):
-        return None
+        self.anki_fields = OrderedDict()
 
     @abstractmethod
-    def anki_question(self):
+    def fill_anki_fields(self):
         pass
 
-    @abstractmethod
-    def anki_answer(self):
-        pass
+    def _anki_fields_as_list(self):
+        return [field for field in self.anki_fields.values()]
 
+    def save_anki(self, file, append=True):
+        self.fill_anki_fields()
+        if append:
+            mode = 'a'
+        else:
+            mode = 'w'
+        with open(file, mode, newline='', encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
+            writer.writerow(self._anki_fields_as_list() + [" ".join(self.anki_tags)])
 
-def to_anki(file, card_object=None, card_objects=None, append=False):
-    if append:
-        mode = 'a'
-    else:
-        mode = 'w'
-    if card_object:
-        card_objects = [card_object]
-    with open(file, mode, newline='', encoding='utf-8') as csv_file:
-        writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
-        for card_object in card_objects:
-            writer.writerow(card_object.anki_fields() + [" ".join(card_object.anki_tags)])
 
