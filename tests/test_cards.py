@@ -208,6 +208,16 @@ class CardSetTest(unittest.TestCase):
         cs = CardSet([Card(14, 1), Card(13, 3)])
         self.assertEqual(str(cs), 'AsKd')
 
+    def test_get_simple_form(self):
+        cs = CardSet.from_str('2d3dAsKs')
+        self.assertEqual(cs.get_simple_form(),'(AK)(32)')
+        cs = CardSet.from_str('Ad6cAs5s')
+        self.assertEqual(cs.get_simple_form(),'(A5)A6')
+        cs = CardSet.from_str('Ad4dAs5s')
+        self.assertEqual(cs.get_simple_form(),'(A5)(A4)')
+        cs = CardSet.from_str('JdKcJs5s')
+        self.assertEqual(cs.get_simple_form(),'K(J5)J')
+
 
 class BoardTest(unittest.TestCase):
 

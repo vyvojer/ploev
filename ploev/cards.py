@@ -253,6 +253,20 @@ class CardSet:
         """ Returns list of ranks for certain suit"""
         return [card.rank for card in self.cards if card.suit == suit]
 
+    def get_simple_form(self) -> str:
+        ranks_by_suit = []
+        simple_form = ''
+        for suit in self.unique_suits:
+            ranks_by_suit.append(sorted(self.get_ranks_for_suit(suit), reverse=True))
+        ranks_by_suit.sort(key=lambda x: (x[0],sum(x)), reverse=True)
+        for ranks in ranks_by_suit:
+            ranks_str = ''.join([RANK_TO_STRING[rank] for rank in ranks])
+            if len(ranks) > 1:
+                simple_form += '(' + ranks_str + ')'
+            else:
+                simple_form += ranks_str
+        return simple_form
+
     @classmethod
     def from_str(cls, card_set=''):
         """
