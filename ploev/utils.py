@@ -32,8 +32,14 @@ class AnkiMixin(ABC):
     def _anki_fields_as_list(self):
         return [field for field in self.anki_fields.values()]
 
+    def _clear_empty_fields(self):
+        for key, value in self.anki_fields.items():
+            if value is None:
+                del(self.anki_fields[key])
+
     def save_anki(self, file, append=True):
         self.fill_anki_fields()
+        self._clear_empty_fields()
         if append:
             mode = 'a'
         else:
