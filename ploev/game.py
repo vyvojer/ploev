@@ -213,18 +213,19 @@ class RangeDistribution(AnkiMixin):
         repr_list = []
         cummulative = 0
         for sub_range in self.sub_ranges:
-            repr_name = "{}:".format(sub_range.name)
+            repr_name = "{}".format(sub_range.name)
             if html:
                 repr_name = "<b>" + repr_name + "</b>"
             repr_range = str(sub_range.range_)
-            repr_list.append(repr_name + " " + repr_range)
+            repr_list.append(repr_name)
+            repr_list.append(repr_range)
             if sub_range.range_.fraction:
                 bar_repr = self._get_fraction_bar(sub_range.range_.fraction)
                 cummulative += sub_range.range_.fraction
                 if html:
                     bar_repr = '<font color=blue>' + bar_repr + '</font>'
-                fraction_repr = '  {:.1f}%'.format(sub_range.range_.fraction * 100)
-                cummulative_repr = ' ({:.1f}%)'.format(cummulative * 100)
+                fraction_repr = '  {:.0f}%'.format(sub_range.range_.fraction * 100)
+                cummulative_repr = ' ({:.0f}%)'.format(cummulative * 100)
                 if html:
                     fraction_repr = '<b>' + fraction_repr + '</b>'
                 repr_list.append(bar_repr + fraction_repr + cummulative_repr + delimiter)
