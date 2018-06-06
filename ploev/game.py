@@ -267,6 +267,7 @@ class RangeDistribution(AnkiMixin):
         self.anki_fields['answer'] = self._repr_html_()
 
 
+
 class AbstractRange(ABC):
     def __init__(self, range_: str, is_cumulative=False):
         self.range_ = range_
@@ -1104,6 +1105,7 @@ class GameTree(AnkiMixin):
 
     def __init__(self, root: GameNode, odds_oracle: OddsOracle):
         super().__init__()
+        self.anki_fields['description'] = None
         self.root = root
         self.calc = Calc(odds_oracle)
         self.hero = root.game.get_hero()
@@ -1341,8 +1343,8 @@ class GameTree(AnkiMixin):
     def _calculate_not_leaf_node_if_not_hero_choice(self, node: GameNode):
         logger = logging.getLogger('GameTree._calculate_not_leaf_node_if_not_hero_choice')
         logger.debug('calculating %s', node)
-        has_ev = True
         hero = node.game_state.get_hero()
+        has_ev = True
         hero_previous_stack = hero.previous_stack
         hero_stack = 0
         for line in node.lines:
@@ -1403,18 +1405,16 @@ class GameTree(AnkiMixin):
     def _get_leaf_nodes(self):
         return (node for node in self if node.is_leaf_node)
 
-    def anki_title_addition(self):
-        addition = '<br/>Board: <b>{}</b>'.format(color_cards(str(self.root.game.board)))
+    def fill_anki_fields(self):
+        description_add = '<br/>Board: <b>{}</b>'.format(color_cards(str(self.root.game.board)))
         players_add = []
         for player in self.root.game.players.values():
             players_add.append('{}: <b>{}</b>'.format(player.name, color_cards(str(player.first_range_ppt()))))
-        addition += " " + " ".join(players_add)
-        return addition
-
-    def anki_question(self):
+        description_add += " " + " ".join(players_add)
+        self.anki_fields['description'] += description_add
         self.clear_calculation()
-        return self._repr_html_()
-
-    def anki_answer(self):
+        self.anki_fields['question'] = self._repr_html_()
         self.calculate()
-        return self._repr_html_()
+        self.anki_fields['answer'] = self._repr_html_()
+
+
