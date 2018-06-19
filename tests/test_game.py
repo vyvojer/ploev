@@ -139,6 +139,7 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertEqual(RangeDistribution._get_fraction_bar(fr),
                          '▌')
 
+
 class ColorCardsTest(unittest.TestCase):
 
     def test_color_range(self):
@@ -149,6 +150,39 @@ class ColorCardsTest(unittest.TestCase):
                          '<font color=green>*c </font><font color=red>Ah </font><font color=black>2s </font><font color=blue>3d </font>')
         self.assertEqual(color_cards('*cAhd2s3d'),
                          '<font color=green>*c </font><font color=red>Ah </font><font color=blue>d </font><font color=black>2s </font><font color=blue>3d </font>')
+
+
+class CombinedRangeTest(unittest.TestCase):
+
+    def test_or(self):
+        r1 = PptRange('AA')
+        r2 = PptRange('30%')
+        cr = CombinedRange(r1, r2, CombinedRange.OR)
+        self.assertEqual(cr.ppt(), 'AA,30%')
+
+        cr2 = r1 | r2
+        self.assertEqual(cr2.ppt(), 'AA,30%')
+
+        cr3 = r1 + r2
+        self.assertEqual(cr3.ppt(), 'AA,30%')
+
+    def test_and(self):
+        r1 = PptRange('AA')
+        r2 = PptRange('30%')
+        cr = CombinedRange(r1, r2, CombinedRange.AND)
+        self.assertEqual(cr.ppt(), 'AA:30%')
+
+        cr2 = r1 & r2
+        self.assertEqual(cr2.ppt(), 'AA:30%')
+
+    def test_not(self):
+        r1 = PptRange('AA')
+        r2 = PptRange('30%')
+        cr = CombinedRange(r1, r2, CombinedRange.NOT)
+        self.assertEqual(cr.ppt(), 'AA!30%')
+
+        cr2 = r1 - r2
+        self.assertEqual(cr2.ppt(), 'AA!30%')
 
 
 class PptRangeTest(unittest.TestCase):

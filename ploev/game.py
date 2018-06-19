@@ -273,7 +273,6 @@ class RangeDistribution(AnkiMixin):
         self.anki_fields['answer'] = self._repr_html_()
 
 
-
 class AbstractRange(ABC):
     def __init__(self, range_: str, is_cumulative=False):
         self.range_ = range_
@@ -300,9 +299,48 @@ class AbstractRange(ABC):
     def __eq__(self, other):
         return self.range_ == other.range_
 
+    def __or__(self, other):
+        return CombinedRange(self, other, CombinedRange.OR)
+
+    def __add__(self, other):
+        return self.__or__(other)
+
+    def __and__(self, other):
+        return CombinedRange(self, other, CombinedRange.AND)
+
+    def __sub__(self, other):
+        return CombinedRange(self, other, CombinedRange.NOT)
+
     @abstractmethod
     def _calculate_ppt(self, range_):
         pass
+
+
+class CombinedRange(AbstractRange):
+    OR = 0
+    AND = 1
+    NOT = 3
+
+    def __init__(self, range1, range2, op: int):
+        super().__init__("")
+        self.range1 = range1
+        self.range2 = range2
+        self.op = op
+
+    def __str__(self):
+        return str(self.range1) + self._get_operator() + str(self.range2)
+
+    def _calculate_ppt(self, range_):
+        self._ppt = self.range1.ppt() + self._get_operator() + self.range2.ppt()
+
+    def _get_operator(self):
+        if self.op == self.OR:
+            return ','
+        if self.op == self.AND:
+            return ':'
+        if self.op == self.NOT:
+            return '!'
+
 
 
 class PptRange(AbstractRange):
