@@ -86,6 +86,7 @@ class RangeDistribution(AnkiMixin):
         self._board_explorer = None
         self.board = board
         self._game = None
+        self.street = None
         self._calc = None
         self._odds_oracle = None
         self.odds_oracle = odds_oracle
@@ -97,11 +98,13 @@ class RangeDistribution(AnkiMixin):
                   sub_ranges: Iterable[SubRange],
                   player: 'Player',
                   game: 'Game',
+                  street=None,
                   is_cumulative=True,
                   odds_oracle=None,
                   ):
         klass = cls(sub_ranges=sub_ranges, is_cumulative=is_cumulative, odds_oracle=odds_oracle)
         klass.player = player
+        klass.street = street
         klass.game = game
         return klass
 
@@ -119,10 +122,13 @@ class RangeDistribution(AnkiMixin):
         return self._game
 
     @game.setter
-    def game(self, game):
+    def game(self, game: 'Game'):
         self._game = game
         self._another_players = [player for player in game.players.values() if player != self.player]
-        self._board = game.board
+        if self.street:
+            self._board = game.get_street(self.street)
+        else:
+            self._board = game.board
 
     @property
     def player(self):

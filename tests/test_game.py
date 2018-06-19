@@ -67,6 +67,29 @@ class RangeDistributionTest(unittest.TestCase):
         self.assertAlmostEqual(bet.fraction, 0.217, delta=0.03)
         self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)
 
+    def test_calculate_from_game_with_street(self):
+        btn = Player(Position.BTN, stack=97, is_hero=True)
+        bb = Player(Position.BB, stack=97)
+        bb.add_range(PptRange('30%'))
+        game = Game([bb, btn], 6.5, board='As 2d Ks 6d')
+        player = bb
+        sub_ranges = [
+            SubRange('bet', EasyRange('T2P+,NFD,SD9+', street=Street.FLOP)),
+            SubRange('check', EasyRange('*', street=Street.FLOP)),
+        ]
+        rd = RangeDistribution.from_game(sub_ranges,
+                                         player=player,
+                                         game=game,
+                                         street=Street.FLOP,
+                                         odds_oracle=odds_oracle)
+        self.assertEqual(len(rd._another_players), 1)
+        bet = rd.sub_range('bet')
+        check = rd.sub_range('check')
+        rd.calculate()
+        self.assertAlmostEqual(bet.fraction, 0.303, delta=0.03)
+        self.assertAlmostEqual(check.fraction, 0.697, delta=0.03)
+
+
     def test_calculate(self):
         board = 'As 2d Ks'
         main_range = PptRange('30%')
