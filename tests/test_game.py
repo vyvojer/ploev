@@ -56,6 +56,7 @@ class RangeDistributionTest(unittest.TestCase):
             SubRange('check', EasyRange('*')),
         ]
         rd = RangeDistribution.from_game(sub_ranges, player=player, game=game, odds_oracle=odds_oracle)
+        self.assertEqual(len(rd._another_players), 1)
         bet = rd.sub_range('bet')
         check = rd.sub_range('check')
         rd.calculate()
@@ -84,7 +85,7 @@ class RangeDistributionTest(unittest.TestCase):
         rd.calculate()
         self.assertAlmostEqual(bet.fraction, 0.303, delta=0.03)
         self.assertAlmostEqual(check.fraction, 0.697, delta=0.03)
-        rd.players_ranges = [PptRange('AdKd3s2s')]
+        rd._another_players = [PptRange('AdKd3s2s')]
         rd.calculate()
         self.assertAlmostEqual(bet.fraction, 0.217, delta=0.03)
         self.assertAlmostEqual(check.fraction, 0.783, delta=0.03)

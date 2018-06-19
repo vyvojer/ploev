@@ -77,7 +77,7 @@ class RangeDistribution(AnkiMixin):
         self._sub_ranges_dict = None
         self.sub_ranges = sub_ranges
         self.main_range = main_range
-        self.players_ranges = players_ranges
+        self._another_players = players_ranges
         self._player = None
         self.is_cumulative = is_cumulative
         self._set_is_cumulative_to_sub_ranges()
@@ -101,8 +101,8 @@ class RangeDistribution(AnkiMixin):
                   odds_oracle=None,
                   ):
         klass = cls(sub_ranges=sub_ranges, is_cumulative=is_cumulative, odds_oracle=odds_oracle)
-        klass.game = game
         klass.player = player
+        klass.game = game
         return klass
 
     @property
@@ -121,7 +121,7 @@ class RangeDistribution(AnkiMixin):
     @game.setter
     def game(self, game):
         self._game = game
-        self.players_ranges = [player for player in game.players.values() if player != self.player]
+        self._another_players = [player for player in game.players.values() if player != self.player]
         self._board = game.board
 
     @property
@@ -195,7 +195,7 @@ class RangeDistribution(AnkiMixin):
         distribution = self._calc.range_distribution(main_range=self.main_range.ppt(),
                                                      sub_ranges=self.ppts(),
                                                      board=self.board,
-                                                     players=[player.ppt() for player in self.players_ranges],
+                                                     players=[player.ppt() for player in self._another_players],
                                                      equity=False,
                                                      cumulative=False)
         for sub_range, rd_sub_range in zip(self._sub_ranges_dict.values(), distribution):
@@ -258,8 +258,8 @@ class RangeDistribution(AnkiMixin):
         if self.board:
             description += "<b>Board</b>: {}".format(self.board)
         description += "</br><b>Main range</b>: {}".format(self.main_range)
-        if self.players_ranges:
-            description += "</br><b>Villains</b>: {}".format(", ".join([player.ppt() for player in self.players_ranges]))
+        if self._another_players:
+            description += "</br><b>Villains</b>: {}".format(", ".join([player.ppt() for player in self._another_players]))
         self.anki_fields['description'] = "<b>" + self.anki_fields['description'] + '</b>' + description
         self.clear_calculation()
         self.anki_fields['question'] = self._repr_html_()
