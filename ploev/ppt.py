@@ -152,7 +152,7 @@ class OddsOracle:
         """
         result = self._client.PPTServer.executePQL(pql, self.trials, self.seconds, self.threads)
         logger = logging.getLogger('ppt.OddsOracle.pql')
-        logger.info('Executed PQL: \n{} \nGot result: \n{}'.format(pql, result))
+        logger.info('Really executed PQL: \n{} \nGot result: \n{}'.format(pql, result))
         if 'ERROR' in result:
             raise ValueError("{}in PQL: \r\n{}".format(result, pql))
         return PqlResult(result)
@@ -171,6 +171,7 @@ class OddsOracle:
             list: list of equities
 
         """
+        self.logger.debug(f'Really calculated (not cashed)')
         result = self._client.PPTServer.computeEquityAuto(self.game, board, dead, self.syntax, hands,
                                                           self.trials, self.seconds, self.threads)
         if 'Error' in result:
@@ -290,7 +291,7 @@ class Pql:
             list: list of equities
 
         """
-        self.logger.debug('Started equity')
+        self.logger.debug(f'Equity will calculated (or will get from the cash) for players={players}, board={board}')
         return self.odds_oracle.equity(tuple(players), board, dead)
 
     def _construct_from_clause(self, board=None, dead=None, hero=None, players=None):

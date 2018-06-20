@@ -1132,23 +1132,9 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(villain_fold.had_equity, 0.5, delta=0.03)
         self.assertAlmostEqual(hero_bet_call.hero_equity, 0.27, delta=0.03)
 
-    def test_anki_title_addition(self):
-        hero = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
-        villain = Player(Position.BB, stack=33, name='Villain')
-        game = Game(players=[hero, villain], pot=33, board='2c Kd 8s')
-        root = GameNode(game)
-        game_tree = GameTree(root, odds_oracle)
-        root.game_state.players[Position.BTN].ranges = [PptRange('AdAs9s2s')]
-        root.game_state.players[Position.BB].ranges = [PptRange('$FI30!AA')]
-        addition = game_tree.anki_title_addition()
-        expected = '<br/>Board: <b><font color=green>2c </font><font color=blue>Kd </font><font color=black>8s </font>' \
-                   '</b> Hero: <b><font color=blue>Ad </font><font color=black>As </font>' \
-                   '<font color=black>9s </font><font color=black>2s </font></b> Villain: <b>$FI30!AA</b>'
-        self.assertEqual(addition, expected)
-
 
 class TypicalGameSituationTest(unittest.TestCase):
-    def _test_SPR1_call_pot_bet(self):
+    def test_SPR1_call_pot_bet(self):
         btn = Player(Position.BTN, stack=33, is_hero=True, name='Hero')
         bb = Player(Position.BB, stack=33, name='Villain')
         game = Game(players=[bb, btn], pot=33, board='2c Kd 8s')
@@ -1161,4 +1147,5 @@ class TypicalGameSituationTest(unittest.TestCase):
         call_line = root.lines[0]
         fold_line = root.lines[1]
         game_tree.calculate()
-        self.assertAlmostEqual(call_line.hero_equity, 35.4, delta=0.5)
+        self.assertAlmostEqual(call_line.hero_equity, 0.35, delta=0.03)
+
