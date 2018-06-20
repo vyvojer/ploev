@@ -1314,6 +1314,9 @@ class GameTree(AnkiMixin):
         board = node.game.board.ppt()
         active_players = node.game_state.get_active_players()
         if len(active_players) > 1:
+            # Sort only for  full equality 'active_players_ranges' and 'active_players_plus_folded'.
+            # To cash ppt.equity
+            active_players.sort(key=lambda player: player.ppt())
             active_players_ranges = [player.ppt() for player in active_players]
             equities = calc.equity(active_players_ranges, board)
 
@@ -1327,6 +1330,9 @@ class GameTree(AnkiMixin):
             # Have to add folded player, to count what equity he was folded
             node.player.equity = 0
             active_players_plus_folded = active_players + [node.player]
+            # Sort only for  full equality 'active_players_ranges' and 'active_players_plus_folded'.
+            # To cash ppt.equity
+            active_players_plus_folded.sort(key=lambda player: player.ppt())
             ranges_with_folded = [player.ppt() for player in active_players_plus_folded]
             has_equities = calc.equity(ranges_with_folded, board)
             for player, had_equity in zip(active_players_plus_folded, has_equities):
