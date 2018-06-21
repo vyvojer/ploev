@@ -514,7 +514,7 @@ class Player:
         self._is_villain = value
         self._is_hero = not value
 
-    def add_range(self, range_):
+    def add_range(self, range_: AbstractRange):
         try:
             range_.board_explorer
         except AttributeError:
@@ -524,7 +524,7 @@ class Player:
                 range_.board_explorer = self.game.board_explorer(range_.street)
         self.ranges.append(range_)
 
-    def update_range(self, range_):
+    def update_range(self, range_: AbstractRange):
         try:
             range_.board_explorer
         except AttributeError:
@@ -1135,6 +1135,10 @@ class GameNode:
     def update_children(self):
         self.clear_calculation()
         self._rebuild_tree(self)
+
+    def update_range(self, range_: AbstractRange):
+        self.game_state.player_in_action.update_range(range_)
+        self.update_children()
 
 
 class GameTreeException(Exception):

@@ -891,6 +891,36 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(line_check.game.players[Position.BB].ranges, [PptRange('20%')])
         self.assertEqual(line_villain_raise.game.players[Position.BB].ranges, [PptRange('20%'), PptRange("KK+")])
 
+    def test_update_range_for_hero(self):
+        self.btn.add_range(PptRange('As9d8sTs'))
+        self.bb.add_range(PptRange('50%'))
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[0]
+        self.assertEqual(root.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
+        self.assertEqual(line_bet.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
+        self.assertEqual(line_check.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
+        root.game_state.players[Position.BTN].ranges = [PptRange('AdKd8s7s')]
+        root.update_range(PptRange('AdKd8s7s'))
+        self.assertEqual(root.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
+        self.assertEqual(line_bet.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
+        self.assertEqual(line_check.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
+
+    def test_update_range_for_villain(self):
+        self.btn.add_range(PptRange('As9d8sTs'))
+        self.bb.add_range(PptRange('50%'))
+        root = GameNode(self.game)
+        root.add_standard_lines()
+        line_bet = root.lines[0]
+        line_check = root.lines[0]
+        line_villain_raise = line_bet.add_line(Action(Action.RAISE, fraction=1), PptRange("KK+"))
+        self.assertEqual(root.game.players[Position.BB].ranges, [PptRange('50%')])
+        self.assertEqual(line_bet.game.players[Position.BB].ranges, [PptRange('50%')])
+        self.assertEqual(line_villain_raise.game.players[Position.BB].ranges, [PptRange('50%'), PptRange("KK+")])
+        line_villain_raise.update_range(PptRange('AA+'))
+        self.assertEqual(line_villain_raise.game.players[Position.BB].ranges, [PptRange('50%'), PptRange("AA+")])
+
     def test__extract_action_range(self):
         self.bb.add_range(PptRange('50%'))
         root = GameNode(self.game)
