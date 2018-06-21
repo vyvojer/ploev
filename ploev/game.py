@@ -329,7 +329,7 @@ class CombinedRange(AbstractRange):
 
     def __repr__(self):
         class_name = self.__class__.__name__
-        repr_str = "{}({}, {}, op={}}"
+        repr_str = "{}({}, {}, op={})"
         return repr_str.format(class_name, self.range1, self.range2, self.op)
 
     def __str__(self):
