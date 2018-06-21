@@ -327,6 +327,11 @@ class CombinedRange(AbstractRange):
         self.range2 = range2
         self.op = op
 
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        repr_str = "{}({}, {}, op={}}"
+        return repr_str.format(class_name, self.range1, self.range2, self.op)
+
     def __str__(self):
         return str(self.range1) + self._get_operator() + str(self.range2)
 
@@ -340,7 +345,6 @@ class CombinedRange(AbstractRange):
             return ':'
         if self.op == self.NOT:
             return '!'
-
 
 
 class PptRange(AbstractRange):
@@ -1137,7 +1141,7 @@ class GameNode:
         self._rebuild_tree(self)
 
     def update_range(self, range_: AbstractRange):
-        self.game_state.player_in_action.update_range(range_)
+        self.game_state.player.update_range(range_)
         self.update_children()
 
 
