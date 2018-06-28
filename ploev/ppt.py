@@ -177,6 +177,7 @@ class OddsOracle:
         if 'Error' in result:
             raise ValueError(
                 "{} in computeEquityAuto: \r\nboard={} dead={} hands={}".format(result, board, dead, hands))
+        self.logger.debug('Equity result: {}'.format(result))
         return self._parse_equity_result(result)
 
     @staticmethod
