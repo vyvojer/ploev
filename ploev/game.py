@@ -773,7 +773,7 @@ class Game:
         # Raise probably possible
         if self._action.type_ in [Action.RAISE, Action.CALL, Action.BET, Action.POST_BLIND]:
             pot_raise = self._count_pot_raise(self._action.size, self.pot)
-            call_size = self._action.size - player_in_action.invested_in_bank
+            call_size = self.player.invested_in_bank - player_in_action.invested_in_bank
             if player_in_action.stack <= call_size:
                 if player_in_action.stack < call_size:
                     self._shortstack_diff = call_size - player_in_action.stack
@@ -888,7 +888,7 @@ class Game:
         if action.is_sizable:
             self.pot += action.size
             self.player_in_action.stack -= action.size
-            self.player_in_action.invested_in_bank = action.size
+            self.player_in_action.invested_in_bank += action.size
             self.player_in_action.side_pot = None
             if self._shortstack_diff:
                 self.player_in_action.side_pot = self.pot - self._shortstack_diff
