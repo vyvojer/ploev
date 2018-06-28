@@ -379,11 +379,13 @@ class Action:
     def __init__(self, type_: str,
                  size: float = None,
                  fraction: float = None,
+                 all_in: bool = False,
                  min_size: float = None,
                  max_size: float = None):
         self.type_ = type_
         self.size = size
         self.fraction = fraction
+        self.all_in = all_in
         self._is_sizable = False
         self._is_different_sizes_possible = False
         if min_size is None or max_size is None:
@@ -413,7 +415,7 @@ class Action:
             self._is_different_sizes_possible = False
 
     def _check_size(self):
-        if self._is_different_sizes_possible and self.size is None and self.fraction is None:
+        if self._is_different_sizes_possible and self.size is None and self.fraction is None and not self.all_in:
             raise ValueError(f'size or fraction must be set if action is {self.type_}')
 
     def __eq__(self, other):
@@ -873,6 +875,8 @@ class Game:
                 raise ValueError(f"Action is not possible, only {self.possible_actions} are possible", action)
             if action.type_ == Action.CALL and action.size is None:  # Set call size if size not specified
                 action.size = possible_action.size
+            if action.is_sizable and action.all_in:
+                action.size = self.player_in_action.stack
             if action.is_sizable and (action.size < possible_action.min_size or action.size > possible_action.max_size):
                 message = "Action size is not possible, size must be between {} and {}"
                 raise ValueError(message.format(possible_action.min_size, possible_action.max_size), action.size)

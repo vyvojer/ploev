@@ -700,6 +700,17 @@ class GameTest(unittest.TestCase):
         game.make_action(Action(Action.CALL))
         self.assertEqual(villain.stack, 0)
 
+    def test_make_action_with_size_more_than_stack(self):
+        hero = Player(Position.UTG, 200, is_hero=True, name='hero')
+        villain = Player(Position.BB, 200, name='villain')
+        game = Game(players=[hero, villain], pot=10, board='6d 4c 8h', allin_allowed=True)
+        game.make_action(Action(Action.CHECK))
+        game.make_action(Action(Action.BET, 7))  # Hero bet
+        self.assertEqual(hero.stack, 193)
+        game.make_action(Action(Action.RAISE, 30))  # Villain 2bet
+        self.assertEqual(villain.stack, 170)
+        game.make_action(Action(Action.RAISE, all_in=True))
+        self.assertEqual(hero.stack, 0)
 
     def test_leaf_none(self):
         btn = Player(Position.BTN, 100)
