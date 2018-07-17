@@ -40,6 +40,3 @@ calc.equity(players=[hero, villain], board=board)
 ```
 [0.593, 0.407]
 
-### More info
-
-[Документация на русском](http://onlineplo.com/ploev/)
