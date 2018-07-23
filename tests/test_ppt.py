@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from ploev.ppt import OddsOracle, Pql, PqlResult
+from ploev.ppt import *
 
 
 class OddsOracleTest(unittest.TestCase):
@@ -19,6 +19,16 @@ class OddsOracleTest(unittest.TestCase):
         equities = self.oo.equity(board=board, hands=(hero, villain))
         self.assertAlmostEqual(equities[0], 0.41, delta=0.02)
         self.assertAlmostEqual(equities[1], 0.59, delta=0.02)
+
+    def test_card_in_more_tnan_one_place_error(self):
+        board = 'Jd 7h 3h'
+        villain = '(J:Ah)!(JJ,77,33)'
+        hero = 'Ah 6h 5c 8c'
+        with self.assertRaises(ComputeEquityCardInMoreThanOnePlaceError) as raised:
+            equities = self.oo.equity(board=board, hands=(hero, villain))
+            exception = raised.exception
+            self.assertEqual(exception.board, board)
+
 
     def test_pql(self):
         # noinspection SqlNoDataSourceInspection,SqlDialectInspection

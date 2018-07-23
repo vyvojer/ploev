@@ -30,6 +30,22 @@ from typing import Iterable
 # noinspection SqlNoDataSourceInspection
 
 
+class ComputeEquityError(Exception):
+    def __init__(self, board, dead, hands, result, msg=None):
+        if msg is None:
+            msg = result
+        super().__init__(msg)
+        self.board = board
+        self.dead = dead
+        self.hands = hands
+        self.result = result
+
+
+class ComputeEquityCardInMoreThanOnePlaceError(ComputeEquityError):
+    def __init__(self, board, dead, hands, result, msg=None):
+        super().__init__(board, dead, hands, result, msg)
+
+
 class OddsOracle:
     """Represent OddsOracle xmlrpc server
 
@@ -175,8 +191,10 @@ class OddsOracle:
         result = self._client.PPTServer.computeEquityAuto(self.game, board, dead, self.syntax, hands,
                                                           self.trials, self.seconds, self.threads)
         if 'Error' in result:
-            raise ValueError(
-                "{} in computeEquityAuto: \r\nboard={} dead={} hands={}".format(result, board, dead, hands))
+            if 'cannot be in more than one place at the same time' in result:
+                raise ComputeEquityCardInMoreThanOnePlaceError(board=board, dead=dead, hands=hands, result=result)
+            else:
+                raise ComputeEquityError(board=board, dead=dead, hands=hands, result=result)
         self.logger.debug('Equity result: {}'.format(result))
         return self._parse_equity_result(result)
 
