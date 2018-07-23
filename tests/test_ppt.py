@@ -45,7 +45,7 @@ class OddsOracleTest(unittest.TestCase):
 
     def test_pql_error(self):
         pql = "la-la"
-        self.assertRaises(ValueError, self.oo.pql, pql)
+        self.assertRaises(PqlError, self.oo.pql, pql)
 
 
 class PqlTest(unittest.TestCase):

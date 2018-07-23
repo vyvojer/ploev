@@ -46,6 +46,20 @@ class ComputeEquityCardInMoreThanOnePlaceError(ComputeEquityError):
         super().__init__(board, dead, hands, result, msg)
 
 
+class PqlError(Exception):
+    def __init__(self, pql, result, msg=None):
+        if msg is None:
+            msg = result
+        super().__init__(msg)
+        self.pql = pql
+        self.result = result
+
+
+class PqlCardInMoreThanOnePlaceError(PqlError):
+    def __init__(self, pql, result, msg=None):
+        super().__init__(pql, result, msg)
+
+
 class OddsOracle:
     """Represent OddsOracle xmlrpc server
 
@@ -170,7 +184,10 @@ class OddsOracle:
         logger = logging.getLogger('ppt.OddsOracle.pql')
         logger.info('Really executed PQL: \n{} \nGot result: \n{}'.format(pql, result))
         if 'ERROR' in result:
-            raise ValueError("{}in PQL: \r\n{}".format(result, pql))
+            if 'cannot be in more than one place at the same time' in result:
+                raise PqlCardInMoreThanOnePlaceError(pql, result)
+            else:
+                raise PqlError(pql, result)
         return PqlResult(result)
 
     @functools.lru_cache(typed=True)
