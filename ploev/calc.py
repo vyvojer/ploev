@@ -18,7 +18,7 @@
 
 import itertools
 from collections import namedtuple
-from ploev.ppt import Pql, OddsOracle
+from ploev.ppt import Pql, OddsOracle, PqlCardInMoreThanOnePlaceError
 from typing import Iterable, List
 
 SubRange = namedtuple("SubRange", "range fraction equity")
@@ -121,7 +121,10 @@ class Calc:
             if equity:
                 villain_range = main_range + ":" + subrange
                 hero = list(players)[0]
-                equity = self.pql.hero_equity(hero, [villain_range], board)
+                try:
+                    equity = self.pql.hero_equity(hero, [villain_range], board)
+                except PqlCardInMoreThanOnePlaceError:
+                    equity = None
             else:
                 equity = 0
             distribution.append(SubRange(subrange, fraction, equity))
