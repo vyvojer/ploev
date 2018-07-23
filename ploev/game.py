@@ -23,7 +23,7 @@ import logging.config
 import re
 
 from .easy_range import BoardExplorer
-from .ppt import OddsOracle
+from .ppt import OddsOracle, ComputeEquityCardInMoreThanOnePlaceError
 from .cards import Board, CardSet
 from .calc import close_parenthesis, create_cumulative_ranges, Calc
 from .utils import AnkiMixin
@@ -1346,7 +1346,10 @@ class GameTree(AnkiMixin):
             # To cash ppt.equity
             active_players_plus_folded.sort(key=lambda player: player.ppt())
             ranges_with_folded = [player.ppt() for player in active_players_plus_folded]
-            has_equities = calc.equity(ranges_with_folded, board)
+            try:
+                has_equities = calc.equity(ranges_with_folded, board)
+            except ComputeEquityCardInMoreThanOnePlaceError:
+                has_equities = [None]
             for player, had_equity in zip(active_players_plus_folded, has_equities):
                 player.had_equity = had_equity
 

@@ -1188,6 +1188,29 @@ class GameTreeTest(unittest.TestCase):
         self.assertAlmostEqual(villain_fold.had_equity, 0.5, delta=0.03)
         self.assertAlmostEqual(hero_bet_call.hero_equity, 0.27, delta=0.03)
 
+    def test_line_with_zero_frequency(self):
+        hero = Player(Position.BTN, stack=10, is_hero=True, name='hero', ranges=PptRange('Ah 6h 5c 8c'))
+        villain = Player(Position.UTG, stack=10, is_hero=True, name='villain')
+        game = Game(players=[hero, villain], pot=10, board = 'Jd 7h 3h')
+        game.make_action(Action(Action.CHECK))
+        villain_check = GameNode(game)
+        game_tree = GameTree(villain_check, odds_oracle)
+        hero_bet =  villain_check.add_line(Action(Action.BET, 10))
+        villain_rd = RangeDistribution.from_game(
+            sub_ranges=[
+                SubRange("call", EasyRange("BS+")),
+                SubRange("fold", EasyRange("TP:NFDB")),
+            ],
+            game=game,
+            player=villain,
+        )
+        villain_call = hero_bet.add_line(Action(Action.CALL), villain_rd.sub_range("call"))
+        villain_fold = hero_bet.add_line(Action(Action.FOLD), villain_rd.sub_range("fold"))
+        game_tree.calculate()
+        self.assertEqual(villain_fold.line_fraction, 0)
+        self.assertAlmostEqual(villain_call.line_fraction, 0.056, delta=0.03)
+
+
 
 class TypicalGameSituationTest(unittest.TestCase):
     def test_SPR1_call_pot_bet(self):
