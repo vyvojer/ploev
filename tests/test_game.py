@@ -927,8 +927,7 @@ class GameNodeTest(unittest.TestCase):
         self.assertEqual(root.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
         self.assertEqual(line_bet.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
         self.assertEqual(line_check.game.players[Position.BTN].ranges, [PptRange('As9d8sTs')])
-        root.game_state.players[Position.BTN].ranges = [PptRange('AdKd8s7s')]
-        root.update_range(PptRange('AdKd8s7s'))
+        root.update_range(PptRange('AdKd8s7s'), position=Position.BTN)
         self.assertEqual(root.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
         self.assertEqual(line_bet.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])
         self.assertEqual(line_check.game.players[Position.BTN].ranges, [PptRange('AdKd8s7s')])

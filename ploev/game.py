@@ -265,7 +265,8 @@ class RangeDistribution(AnkiMixin):
             description += "<b>Board</b>: {}".format(self.board)
         description += "</br><b>Main range</b>: {}".format(self.main_range)
         if self._another_players:
-            description += "</br><b>Villains</b>: {}".format(", ".join([player.ppt() for player in self._another_players]))
+            description += "</br><b>Villains</b>: {}".format(
+                ", ".join([player.ppt() for player in self._another_players]))
         self.anki_fields['description'] = "<b>" + self.anki_fields['description'] + '</b>' + description
         self.clear_calculation()
         self.anki_fields['question'] = self._repr_html_()
@@ -1144,8 +1145,11 @@ class GameNode:
         self.clear_calculation()
         self._rebuild_tree(self)
 
-    def update_range(self, range_: AbstractRange):
-        self.game_state.player.update_range(range_)
+    def update_range(self, range_: AbstractRange, position: Position = None):
+        if position is not None:
+            self.game_state.players[position].update_range(range_)
+        else:
+            self.game_state.player.update_range(range_)
         self.update_children()
 
 
@@ -1481,5 +1485,3 @@ class GameTree(AnkiMixin):
         self.anki_fields['question'] = self._repr_html_()
         self.calculate()
         self.anki_fields['answer'] = self._repr_html_()
-
-
