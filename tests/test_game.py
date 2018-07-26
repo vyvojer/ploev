@@ -1225,6 +1225,24 @@ class GameTreeTest(unittest.TestCase):
         self.assertEqual(villain_fold.line_fraction, 0)
         self.assertAlmostEqual(villain_call.line_fraction, 0.056, delta=0.03)
 
+    def test_hero_lines(self):
+        hero = Player(Position.BTN, 100, name='hero', is_hero=True)
+        villain = Player(Position.BB, 100, name='villain')
+        game = Game([hero, villain], 20, board='Ad 3s Kh')
+        game.make_action(Action(Action.CHECK))
+        root = GameNode(game)
+        self.assertEqual(root.tree_repr(), "villain Check")
+        hero_bet = root.add_line(Action(Action.BET, fraction=0.5))
+        villain_fold = hero_bet.add_line(Action(Action.FOLD))
+        self.assertEqual(villain_fold.tree_repr(), "villain Check - Fold")
+        villain_check_raise = hero_bet.add_line(Action(Action.RAISE, fraction=0.5))
+        self.assertEqual(villain_check_raise.tree_repr(), "villain Check - Raise 25.0 (50.0%)")
+        hero_reraise = villain_check_raise.add_line(Action(Action.RAISE, fraction=0.5))
+        villain_check_raise_call = hero_reraise.add_line(Action(Action.CALL))
+        self.assertEqual(villain_check_raise_call.tree_repr(), "villain Check - Raise 25.0 (50.0%) - Call 37.5")
+        game_tree = GameTree(root, odds_oracle)
+        hero_lines = game_tree.get_hero_lines()
+        self.assertEqual(len(hero_lines), 2)
 
 
 class TypicalGameSituationTest(unittest.TestCase):

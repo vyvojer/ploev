@@ -1486,6 +1486,9 @@ class GameTree(AnkiMixin):
     def _get_leaf_nodes(self):
         return (node for node in self if node.is_leaf_node)
 
+    def get_hero_lines(self):
+        return [node for node in self if node.game_state.player.is_hero]
+
     def fill_anki_fields(self):
         description_add = '<br/>Board: <b>{}</b>'.format(color_cards(str(self.root.game.board)))
         players_add = []
