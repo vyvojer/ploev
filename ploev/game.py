@@ -1034,6 +1034,18 @@ class GameNode:
         for child in self.lines:
             yield from child
 
+    def tree_repr(self):
+        player = self.game_state.player
+        player_name = player.name
+        action = self.game_state.action
+        ancestor = self.parent
+        while (ancestor is not None) and (ancestor.game_state.player.position != player.position):
+            ancestor = ancestor.parent
+        if ancestor:
+            return "{} - {}".format(ancestor.tree_repr(), action)
+        else:
+            return "{} {}".format(player_name, action)
+
     @property
     def id(self):
         return self.level_id, self.action_id

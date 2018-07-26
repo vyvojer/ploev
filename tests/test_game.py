@@ -956,6 +956,22 @@ class GameNodeTest(unittest.TestCase):
         extracted = GameNode._extract_action_range(line_bet, line_villain_raise)
         self.assertEqual(extracted, PptRange("KK+"))
 
+    def test_tree_repr(self):
+        hero = Player(Position.BTN, 100, name='hero')
+        villain = Player(Position.BB, 100, name='villain')
+        game = Game([hero, villain], 20, board='Ad 3s Kh')
+        game.make_action(Action(Action.CHECK))
+        root = GameNode(game)
+        self.assertEqual(root.tree_repr(), "villain Check")
+        hero_bet = root.add_line(Action(Action.BET, fraction=0.5))
+        villain_fold = hero_bet.add_line(Action(Action.FOLD))
+        self.assertEqual(villain_fold.tree_repr(), "villain Check - Fold")
+        villain_check_raise = hero_bet.add_line(Action(Action.RAISE, fraction=0.5))
+        self.assertEqual(villain_check_raise.tree_repr(), "villain Check - Raise 25.0 (50.0%)")
+        hero_reraise = villain_check_raise.add_line(Action(Action.RAISE, fraction=0.5))
+        villain_check_raise_call = hero_reraise.add_line(Action(Action.CALL))
+        self.assertEqual(villain_check_raise_call.tree_repr(), "villain Check - Raise 25.0 (50.0%) - Call 37.5")
+
 
 class GameTreeTest(unittest.TestCase):
     def setUp(self):
