@@ -597,10 +597,13 @@ class Street(IntEnum):
 
 
 class EasyRange(AbstractRange):
-    def __init__(self, range_: str, is_cumulative=True, street: Street = None):
+    def __init__(self, range_: str, is_cumulative=True, street: Street = None, board=None):
         super().__init__(range_, is_cumulative)
         self.street = street
-        self.board_explorer = None
+        if board is not None:
+            self.board_explorer = BoardExplorer.from_str(board)
+        else:
+            self.board_explorer = None
 
     def _calculate_ppt(self, range_):
         self._ppt = self.board_explorer.ppt(range_)

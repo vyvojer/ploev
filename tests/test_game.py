@@ -199,6 +199,10 @@ class EasyRangeTest(unittest.TestCase):
         easy_range.board_explorer = board_explorer
         self.assertEqual(easy_range.ppt(), '(QJ,AA)')
 
+    def test_ppt_with_board(self):
+        easy_range = EasyRange('TS+', is_cumulative=False, board='AsKdTh')
+        self.assertEqual(easy_range.ppt(), '(QJ,AA)')
+
 
 class PlayerTest(unittest.TestCase):
     def test_villain_and_hero(self):
