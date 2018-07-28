@@ -1092,6 +1092,7 @@ class Syntax:
         'FD': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, None, None, None, None, [0, 1]),
         'FDT': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.TURNED, None, None, None, [0, 1]),
         'SDB': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.TWO_CARD, None, None, None, [1]),
+        'SDBO': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.ONE_CARD, None, None, None, [1]),
         'NFDB': EasyRange(BLOCKER, Blocker.FLUSH_DRAW_BLOCKER, None, (1,), None, None, [0]),
         'FDB': EasyRange(BLOCKER, Blocker.FLUSH_DRAW_BLOCKER, None, None, None, None, [1]),
         'SB': EasyRange(BLOCKER, Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, None, None, None, [1]),

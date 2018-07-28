@@ -1360,6 +1360,10 @@ class BoardExplorerTest(unittest.TestCase):
         be = BoardExplorer(Board.from_str('As2s3s'))
         self.assertEqual(be.ppt('NFB'), 'Ks')
 
+        be = BoardExplorer.from_str('Js 9h 4h')
+        self.assertEqual(be.ppt('SDB1'), 'KK')
+        self.assertEqual(be.ppt('SDBO1'), 'K')
+
         # '*'
         self.assertEqual(be.ppt('*'), '*')
 
