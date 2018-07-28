@@ -33,7 +33,11 @@ from typing import Iterable
 class ComputeEquityError(Exception):
     def __init__(self, board, dead, hands, result, msg=None):
         if msg is None:
-            msg = result
+            msg = """{result} when caluclating equity for
+board = {board}
+hands: 
+{hands}
+            """.format(result=result, board=board, hands="\n\n".join(hands))
         super().__init__(msg)
         self.board = board
         self.dead = dead
