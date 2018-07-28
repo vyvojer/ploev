@@ -50,6 +50,11 @@ class ComputeEquityCardInMoreThanOnePlaceError(ComputeEquityError):
         super().__init__(board, dead, hands, result, msg)
 
 
+class ComputeEquityEmptyRangeError(ComputeEquityError):
+    def __init__(self, board, dead, hands, result, msg=None):
+        super().__init__(board, dead, hands, result, msg)
+
+
 class PqlError(Exception):
     def __init__(self, pql, result, msg=None):
         if msg is None:
@@ -214,6 +219,8 @@ class OddsOracle:
         if 'Error' in result:
             if 'cannot be in more than one place at the same time' in result:
                 raise ComputeEquityCardInMoreThanOnePlaceError(board=board, dead=dead, hands=hands, result=result)
+            elif 'Empty range found' in result:
+                raise ComputeEquityEmptyRangeError(board=board, dead=dead, hands=hands, result=result)
             else:
                 raise ComputeEquityError(board=board, dead=dead, hands=hands, result=result)
         self.logger.debug('Equity result: {}'.format(result))
