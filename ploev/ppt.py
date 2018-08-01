@@ -221,7 +221,7 @@ class OddsOracle:
             if 'cannot be in more than one place at the same time' in result:
                 raise ComputeEquityCardInMoreThanOnePlaceError(board=board, dead=dead, hands=hands, result=result)
             elif 'Empty range found' in result:
-                hand_index = int(re.search(r"#(\d+)", result).group(1)) + 1
+                hand_index = int(re.search(r"#(\d+)", result).group(1)) - 1
                 raise ComputeEquityEmptyRangeError(board=board, dead=dead,
                                                    hands=hands, result=result,
                                                    hand_index=hand_index)
