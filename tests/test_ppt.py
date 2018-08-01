@@ -28,6 +28,7 @@ class OddsOracleTest(unittest.TestCase):
             equities = self.oo.equity(board=board, hands=(hero, villain))
             exception = raised.exception
             self.assertEqual(exception.board, board)
+            self.assertEqual(exception.hand_index, 1)
 
 
     def test_pql(self):
