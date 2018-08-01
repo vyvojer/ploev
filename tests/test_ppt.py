@@ -26,9 +26,8 @@ class OddsOracleTest(unittest.TestCase):
         hero = 'Ah 6h 5c 8c'
         with self.assertRaises(ComputeEquityCardInMoreThanOnePlaceError) as raised:
             equities = self.oo.equity(board=board, hands=(hero, villain))
-            exception = raised.exception
-            self.assertEqual(exception.board, board)
-            self.assertEqual(exception.hand_index, 1)
+        exception = raised.exception
+        self.assertEqual(exception.board, board)
 
 
     def test_pql(self):
