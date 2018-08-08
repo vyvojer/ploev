@@ -1110,6 +1110,11 @@ class BoardExplorer:
     FLUSH_DRAW = 'flush_draw'
     BLOCKER = 'blocker'
 
+    ONLY_THAT = 'only_that'
+    THAT_AND_BETTER = 'that_and_better'
+    THAT_AND_WORSE = 'that_and_worse'
+    ALL_BUT_THAT = 'all_but_that'
+
     def __init__(self, board: CardSet):
         """ Constructor for BoardExplorer
 
@@ -1230,7 +1235,7 @@ class BoardExplorer:
         return sorted(list(set(hands)), reverse=True)
 
     def find_made_hands(self, type_: int, sub_type: int = MadeHand.NONE,
-                        relative_rank: tuple = None, and_better: bool = False) -> list:
+                        relative_rank: tuple = None, strictness: str = 'only_that') -> list:
         """ Returns list of hands (or that hands and better hands) of specified type, sub_type and relative rank
 
             If appropriate hand doesn't exist returns hand one rank higher.
@@ -1239,7 +1244,8 @@ class BoardExplorer:
             type_ (int): MadeHand type_
             sub_type (int): MadeHand sub_type
             relative_rank (tuple): MadeHand relative_rank.
-            and_better (bool): if True returns not only the found hand, but all the hands better
+            strictness (str): one of BoardExplorer.ONLY_THAT, .THAT_AND_BETTER, .ALL_BUT_THAT
+            if THAT_AND_BETTER returns not only the found hand, but all the hands better
 
         Returns:
             list: list of MadeHand
@@ -1314,7 +1320,7 @@ class BoardExplorer:
         else:
             founded_hands = []
 
-        if and_better:
+        if strictness == self.THAT_AND_BETTER:
             ungeneralized_hands = founded_hands
         else:
             hands = list(itertools.takewhile(only_that_hands, sorted(founded_hands)))
@@ -1332,13 +1338,13 @@ class BoardExplorer:
             return ungeneralized_hands
 
     def find_straight_draws(self, type_: int = StraightDraw.NORMAL, relative_rank: tuple = (0, 0),
-                            and_better: bool = False) -> list:
+                            strictness: str = 'only_that') -> list:
         """ Returns list of StraightDraw with required number of outs and nut outs
 
         Args:
             type_ (int): type of straight draw on of StraightDraw.NORMAL, StraightDraw.BACKDOOR
             relative_rank (tuple): (number outs, number nut outs). Use 0 if number not required
-            and_better (bool): if True returns not only the found draw, but all the draw better
+            strictness (str): if BoardExplorer.THAT_AND_BETTER, but all the draw better
 
         Returns:
             list: list of found draws
@@ -1359,7 +1365,7 @@ class BoardExplorer:
         index = self._get_first_suitable_straight_draw_index(type_, outs, nut_outs)
         if index == -1:
             return []
-        if and_better:
+        if strictness == BoardExplorer.THAT_AND_BETTER:
             draws = {draw.hole_ranks: draw for draw in searchable[0:index + 1]}
         else:
             first_suitable_outs = searchable[index].count_outs()
@@ -1423,7 +1429,7 @@ class BoardExplorer:
             del draws[rank]
 
     def find_flush_draws(self, type_: int = FlushDraw.NORMAL, sub_type: int = None,
-                         relative_rank: tuple = None, and_better: bool = False):
+                         relative_rank: tuple = None, strictness: str = 'only_that'):
         """ Returns list flush draws for the board
 
         Args:
@@ -1432,7 +1438,7 @@ class BoardExplorer:
             relative_rank (tuple):  relative rank of draw. (1,) for 1st draw, (2,) for 2nd.
                 If relative_rank is None, than returns list of generic draws
                 (1 or 2 draws, if turned flush draws are possible)
-            and_better (bool):  if True returns not only the found draw, but all the draw better
+            strictness (str):  if BoardExplorer.THAT_AND_BETTER returns not only the found draw, but all the draw better
 
         Returns:
             list:  list of draws
@@ -1458,7 +1464,7 @@ class BoardExplorer:
             return [FlushDraw(draw.type_, draw.subtype, (0,), (0,), CardSet([Card(0, draw.hole[0].suit)] * 2))
                     for draw in draws]
         else:  # Concrete draws
-            if and_better:
+            if strictness == BoardExplorer.THAT_AND_BETTER:
                 if sub_type == FlushDraw.NONE:
                     return [draw for draw in searchable if draw.relative_rank <= relative_rank]
                 else:
@@ -1472,7 +1478,7 @@ class BoardExplorer:
                             if draw.relative_rank == relative_rank and draw.subtype == sub_type]
 
     def find_blockers(self, type_: int, subtype: int = None, relative_rank: tuple = None,
-                      and_better: bool = False) -> list:
+                      strictness: str = 'only_that') -> list:
         """ Returns list of blockers for the board
 
         Args:
@@ -1480,7 +1486,7 @@ class BoardExplorer:
                 Blocker.FLUSH_DRAW_BLOCKER,  Blocker.STRAIGHT_DRAW_BLOCKER
             subtype (int): sub type of blocker: Blocker.FLOPPED, Blocker.TURNED, Blocker.ONE_CARD, Blocker.TWO_CARD
             relative_rank (tuple): rank of blocker
-            and_better (bool):  if True returns not only the found blocker, but all the blockers better
+            strictness (str):  if 'that_and_better' returns not only the found blocker, but all the blockers better
 
         Returns:
             list: list of blockers
@@ -1503,7 +1509,7 @@ class BoardExplorer:
                 all_blockers = [blocker for blocker in searchable if blocker.type_ == type_]
             return all_blockers
         else:  # Concrete draw
-            if and_better:
+            if strictness == BoardExplorer.THAT_AND_BETTER:
                 if subtype:
                     return [blocker for blocker in searchable
                             if blocker.type_ == type_ and blocker.subtype == subtype
@@ -1521,7 +1527,7 @@ class BoardExplorer:
                             if blocker.type_ == type_ and blocker.relative_rank == relative_rank]
 
     def find(self, family: int, type_: int, sub_type: int = None, relative_rank: tuple = None,
-             and_better: bool = False) -> list:
+             strictness: str = 'only_that') -> list:
         """ Returns found hands for one of family of hands: made hands, flush draws, straight draws, blockers
 
         Args:
@@ -1530,22 +1536,22 @@ class BoardExplorer:
             type_ (int): type of hands
             sub_type (int): sub_type of hands
             relative_rank (tuple): relative rank of hands
-            and_better (bool): if True returns not only the found hands, but all the hands better
+            strictness (bool): if 'that_and_better' returns not only the found hands, but all the hands better
 
         Returns:
             list: list of found hands
         """
         if family == BoardExplorer.MADE_HAND:
-            return self.find_made_hands(type_, sub_type, relative_rank, and_better)
+            return self.find_made_hands(type_, sub_type, relative_rank, strictness)
         elif family == BoardExplorer.FLUSH_DRAW:
-            return self.find_flush_draws(type_, sub_type, relative_rank, and_better)
+            return self.find_flush_draws(type_, sub_type, relative_rank, strictness)
         elif family == BoardExplorer.STRAIGHT_DRAW:
-            return self.find_straight_draws(type_=type_, relative_rank=relative_rank, and_better=and_better)
+            return self.find_straight_draws(type_=type_, relative_rank=relative_rank, strictness=strictness)
         elif family == BoardExplorer.BLOCKER:
-            return self.find_blockers(type_, sub_type, relative_rank, and_better)
+            return self.find_blockers(type_, sub_type, relative_rank, strictness)
 
     def _easy_range2hands(self, family: str, easy_range: str, relative_rank: tuple = None,
-                          and_better: bool = False) -> list:
+                          strictness: str = 'only_that') -> list:
         """ Returns found hands for easy range
 
         Args:
@@ -1553,7 +1559,7 @@ class BoardExplorer:
                 BoardExplorer.STRAIGHT_DRAW, BoardExplorer.BLOCKER
             easy_range (str): easy range
             relative_rank (tuple): relative rank of hand
-            and_better ():  if True returns not only the found hands, but all the hands better
+            strictness (str):  if 'that_and_better' returns not only the found hands, but all the hands better
 
         Returns:
             list: list of found hands
@@ -1562,7 +1568,7 @@ class BoardExplorer:
         TYPE_ = 'type_'
         SUBTYPE = 'sub_type'
         RELATIVE_RANK = 'relative_rank'
-        AND_BETTER = 'and_better'
+        STRICTNESS = 'strictness'
 
         params = {FAMILY: family,
                   TYPE_: Syntax.syntax[easy_range].type_}
@@ -1578,9 +1584,9 @@ class BoardExplorer:
         if Syntax.syntax[easy_range].subtype:
             params[SUBTYPE] = Syntax.syntax[easy_range].subtype
         if Syntax.syntax[easy_range].and_better:
-            params[AND_BETTER] = Syntax.syntax[easy_range].and_better
+            params[STRICTNESS] = Syntax.syntax[easy_range].and_better
         else:
-            params[AND_BETTER] = and_better
+            params[STRICTNESS] = strictness
         return self.find(**params)
 
     @staticmethod
@@ -1634,10 +1640,10 @@ class BoardExplorer:
                         relative_rank = tuple([int(rank) for rank in relative_rank if rank != '_'])
                 pp_and_better = res_dict.get(Syntax.AND_BETTER)
                 if pp_and_better:
-                    pp_and_better = True
+                    strictness = self.THAT_AND_BETTER
                 else:
-                    pp_and_better = False
-                hands = self._easy_range2hands(family, easy_range, relative_rank, pp_and_better)
+                    strictness = self.ONLY_THAT
+                hands = self._easy_range2hands(family, easy_range, relative_rank, strictness)
                 if  len(hands) > 1:
                     ppt_range += '(' + BoardExplorer._hands2ppt(hands) + ')'
                 else:
@@ -1723,3 +1729,7 @@ def check_range(range_):
         raise EasyRangeValueError.from_pe(pe) from None
     else:
         return True
+
+
+class Combinations:
+    pass
