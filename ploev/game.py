@@ -23,7 +23,7 @@ import logging.config
 import re
 
 from .easy_range import BoardExplorer
-from .ppt import OddsOracle, ComputeEquityCardInMoreThanOnePlaceError
+from .ppt import OddsOracle, ComputeEquityCardInMoreThanOnePlaceError, ComputeEquityEmptyRangeError
 from .cards import Board, CardSet
 from .calc import close_parenthesis, create_cumulative_ranges, Calc
 from .utils import AnkiMixin
