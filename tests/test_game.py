@@ -1248,6 +1248,25 @@ class GameTreeTest(unittest.TestCase):
         hero_lines = game_tree.get_hero_lines()
         self.assertEqual(len(hero_lines), 2)
 
+    def test_empty_range(self):
+        board = 'Js 9h 4h'
+        hero = Player(Position.BTN, 100, name='hero', is_hero=True)
+        hero.add_range(EasyRange("TP!(2P,PP1, PP2, PP3, PP4):NFD:SDB2+",
+                                 board=board,
+                                 is_cumulative=False))
+        villain = Player(Position.BB, 100, name='villain')
+        game = Game([hero, villain], 20, board=board)
+        game.make_action(Action(Action.CHECK))
+        villain_check = GameNode(game)
+        game_tree = GameTree(villain_check, odds_oracle)
+        hero_bet = villain_check.add_line(Action(Action.BET, 20))
+        villain_fold = hero_bet.add_line(Action(Action.FOLD))
+        with self.assertRaises(GameTreeEmptyRangeExecption) as raised:
+            game_tree.calculate()
+        exception = raised.exception
+        self.assertEqual(exception.player.name, hero.name)
+        self.assertIn("TP!(2P,PP1, PP2, PP3, PP4):NFD:SDB2+", exception.args[0])
+
 
 class TypicalGameSituationTest(unittest.TestCase):
     def test_SPR1_call_pot_bet(self):

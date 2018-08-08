@@ -1176,6 +1176,15 @@ class GameTreeException(Exception):
         super().__init__(msg)
 
 
+class GameTreeEmptyRangeExecption(GameTreeException):
+    def __init__(self, player: Player, msg=None):
+        if msg is None:
+            text = "Player {} has empty range:\n{}\nPPT: {}"
+            msg = text.format(player, player.ranges, player.ppt())
+        super().__init__(msg)
+        self.player = player
+
+
 class GameTree(AnkiMixin):
 
     def __init__(self, root: GameNode, odds_oracle: OddsOracle):
@@ -1369,6 +1378,9 @@ class GameTree(AnkiMixin):
                 has_equities = calc.equity(ranges_with_folded, board)
             except ComputeEquityCardInMoreThanOnePlaceError:
                 has_equities = [None]
+            except ComputeEquityEmptyRangeError as exc:
+                index = exc.hand_index
+                raise GameTreeEmptyRangeExecption(active_players_plus_folded[index]) from None
             for player, had_equity in zip(active_players_plus_folded, has_equities):
                 player.had_equity = had_equity
 
