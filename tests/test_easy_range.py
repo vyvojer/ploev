@@ -1,7 +1,7 @@
 import unittest
 from ploev.cards import *
 from ploev.easy_range import *
-from ploev.easy_range import  _StraightDrawExplorer, _StraightExplorer
+from ploev.easy_range import _StraightDrawExplorer, _StraightExplorer
 from ploev.easy_range import _MadeHandExplorer, _FlushDrawExplorer
 
 
@@ -788,7 +788,8 @@ class BoardExplorerTest(unittest.TestCase):
     def test_find_made_hands(self):
         be = BoardExplorer(Board.from_str('AdKc7h8s3s'))
         hand = be.find_made_hands(MadeHand.SET, MadeHand.NONE, (2,))
-        hand_and_better = be.find_made_hands(MadeHand.SET, MadeHand.NONE, (2,), strictness=BoardExplorer.THAT_AND_BETTER)
+        hand_and_better = be.find_made_hands(MadeHand.SET, MadeHand.NONE, (2,),
+                                             strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(hand[0], MadeHand(MadeHand.SET, MadeHand.NONE, (13,), (2,), CardSet.from_str('KK'),
                                            CardSet.from_str('KKK')))
         self.assertEqual(len(hand_and_better), 2)
@@ -898,6 +899,23 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(len(hands), 3)
         self.assertEqual(hands[0], MadeHand(MadeHand.TWO_PAIR, MadeHand.NONE, (11, 3), (1, 2),
                                             CardSet.from_str('J3'), CardSet.from_str('JJ33')))
+
+    def test_find_made_hands_all_but_that(self):
+        be = BoardExplorer(Board.from_str('AdKc7h8s3s'))
+
+        hand = be.find_made_hands(MadeHand.TWO_PAIR, MadeHand.NONE, (3, 4))
+        self.assertEqual(hand[0], MadeHand(MadeHand.TWO_PAIR, MadeHand.NONE, (8, 7), (3, 4), CardSet.from_str('87'),
+                                           CardSet.from_str('8877')))
+
+        hand_and_better = be.find_made_hands(MadeHand.TWO_PAIR, MadeHand.NONE, (3, 4),
+                                             strictness=BoardExplorer.THAT_AND_BETTER)
+        self.assertEqual(len(hand_and_better), 13)
+
+        all_but_that = be.find_made_hands(MadeHand.TWO_PAIR, MadeHand.NONE, (3, 4),
+                                          strictness=BoardExplorer.ALL_BUT_THAT)
+        self.assertNotIn(MadeHand(MadeHand.TWO_PAIR, MadeHand.NONE, (8, 7), (3, 4), CardSet.from_str('87'),
+                                           CardSet.from_str('8877')), all_but_that)
+        self.assertEqual(len(be.made_hands) - 1,len(all_but_that))
 
     def test_flush_draws(self):
         be = BoardExplorer(Board.from_str('AdKd8s'))
@@ -1064,7 +1082,8 @@ class BoardExplorerTest(unittest.TestCase):
         be = BoardExplorer(board)
         blockers = be.find_blockers(type_=Blocker.FLUSH_BLOCKER, relative_rank=(2,))
         self.assertEqual(len(blockers), 1)
-        blockers = be.find_blockers(type_=Blocker.FLUSH_BLOCKER, relative_rank=(2,), strictness=BoardExplorer.THAT_AND_BETTER)
+        blockers = be.find_blockers(type_=Blocker.FLUSH_BLOCKER, relative_rank=(2,),
+                                    strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(len(blockers), 2)
         blockers = be.find_blockers(type_=Blocker.FLUSH_BLOCKER)
         self.assertEqual(len(blockers), 10)
@@ -1091,14 +1110,16 @@ class BoardExplorerTest(unittest.TestCase):
         be = BoardExplorer(board)
         backdoors = be.find_flush_draws(type_=FlushDraw.BACKDOOR, relative_rank=(2,))
         self.assertEqual(len(backdoors), 3)
-        backdoors = be.find_flush_draws(type_=FlushDraw.BACKDOOR, relative_rank=(2,), strictness=BoardExplorer.THAT_AND_BETTER)
+        backdoors = be.find_flush_draws(type_=FlushDraw.BACKDOOR, relative_rank=(2,),
+                                        strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(len(backdoors), 6)
 
         board = Board.from_str('As Ks 7h')
         be = BoardExplorer(board)
         backdoors = be.find_flush_draws(type_=FlushDraw.BACKDOOR, relative_rank=(2,))
         self.assertEqual(len(backdoors), 1)
-        backdoors = be.find_flush_draws(type_=FlushDraw.BACKDOOR, relative_rank=(2,), strictness=BoardExplorer.THAT_AND_BETTER)
+        backdoors = be.find_flush_draws(type_=FlushDraw.BACKDOOR, relative_rank=(2,),
+                                        strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(len(backdoors), 2)
 
     def test_straight_blockers(self):
@@ -1119,11 +1140,13 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(len(blockers), 2)
         self.assertEqual(blockers[0],
                          Blocker(Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, (5,), (2,), CardSet.from_str('55')))
-        blockers = be.find_blockers(Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, (2,), strictness=BoardExplorer.THAT_AND_BETTER)
+        blockers = be.find_blockers(Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, (2,),
+                                    strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(len(blockers), 4)
         self.assertEqual(blockers[0],
                          Blocker(Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, (12,), (1,), CardSet.from_str('QQ')))
-        blockers = be.find_blockers(Blocker.STRAIGHT_BLOCKER, Blocker.ONE_CARD, (2,), strictness=BoardExplorer.THAT_AND_BETTER)
+        blockers = be.find_blockers(Blocker.STRAIGHT_BLOCKER, Blocker.ONE_CARD, (2,),
+                                    strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(len(blockers), 4)
         self.assertEqual(blockers[0],
                          Blocker(Blocker.STRAIGHT_BLOCKER, Blocker.ONE_CARD, (12,), (1,), CardSet.from_str('Q')))
@@ -1157,7 +1180,8 @@ class BoardExplorerTest(unittest.TestCase):
         hands = be.find(BoardExplorer.MADE_HAND, MadeHand.SET, relative_rank=(2,))
         self.assertEqual(hands[0], MadeHand(MadeHand.SET, MadeHand.NONE, (7,), (2,),
                                             CardSet.from_str('77'), CardSet.from_str('777')))
-        hands = be.find(BoardExplorer.FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.NONE, relative_rank=(2,), strictness=BoardExplorer.THAT_AND_BETTER)
+        hands = be.find(BoardExplorer.FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.NONE, relative_rank=(2,),
+                        strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(hands[0], FlushDraw(FlushDraw.NORMAL, FlushDraw.FLOPPED, (14,), (1,), CardSet.from_str('Ass')))
         self.assertEqual(hands[1], FlushDraw(FlushDraw.NORMAL, FlushDraw.FLOPPED, (13,), (2,), CardSet.from_str('Kss')))
         hands = be.find(BoardExplorer.STRAIGHT_DRAW, StraightDraw.NORMAL, relative_rank=(9, 9))
@@ -1242,7 +1266,8 @@ class BoardExplorerTest(unittest.TestCase):
         self.assertEqual(len(hands), 3)
         self.assertEqual(hands[0],
                          FlushDraw(FlushDraw.BACKDOOR, FlushDraw.FLOPPED, (14,), (1,), CardSet.from_str('Ass')))
-        hands = be._easy_range2hands(BoardExplorer.STRAIGHT_DRAW, 'BSD', (12,), strictness=BoardExplorer.THAT_AND_BETTER)
+        hands = be._easy_range2hands(BoardExplorer.STRAIGHT_DRAW, 'BSD', (12,),
+                                     strictness=BoardExplorer.THAT_AND_BETTER)
         self.assertEqual(len(hands), 9)
         self.assertEqual(hands[0], StraightDraw(StraightDraw.BACKDOOR, (11, 10), (13, 12, 8, 7), ()))
 
@@ -1384,7 +1409,7 @@ class EasyRangeTest(unittest.TestCase):
         wrong_range = 'MS+,YB'
         self.assertTrue(check_range(right_range))
         with self.assertRaises(EasyRangeValueError) as raised:
-           check_range(wrong_range)
+            check_range(wrong_range)
         self.assertEqual(raised.exception.column, 5)
         self.assertEqual(raised.exception.easy_range, 'MS+,YB')
 

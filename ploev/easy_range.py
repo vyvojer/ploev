@@ -1268,6 +1268,7 @@ class BoardExplorer:
 
         condition_equal = 0
         condition_equal_or_less = 1
+        condition_doesnt_equal = 3
 
         def relative_rank_condition(made_hand, condition=condition_equal_or_less):
             rank_is_none = relative_rank is None
@@ -1288,7 +1289,7 @@ class BoardExplorer:
                 specified_hand_rank = made_hand.relative_rank
             if condition == condition_equal_or_less:
                 return rank_is_none or specified_hand_rank <= specified_rank
-            else:
+            elif condition == condition_equal:
                 return rank_is_none or specified_hand_rank == specified_rank
 
         def that_hands_and_better(made_hand):
@@ -1333,9 +1334,16 @@ class BoardExplorer:
                 ungeneralized_hands = []  # There are no even better hands
 
         if ungeneralized_hands and must_generalize:
-            return self._generalize_hands(ungeneralized_hands, [type_])
+            generalized_hands = self._generalize_hands(ungeneralized_hands, [type_])
         else:
-            return ungeneralized_hands
+            generalized_hands = ungeneralized_hands
+        if strictness == BoardExplorer.ALL_BUT_THAT:
+            all_hands = copy.deepcopy(self.made_hands)
+            for hand in generalized_hands:
+                all_hands.remove(hand)
+            return all_hands
+        else:
+            return generalized_hands
 
     def find_straight_draws(self, type_: int = StraightDraw.NORMAL, relative_rank: tuple = (0, 0),
                             strictness: str = 'only_that') -> list:
