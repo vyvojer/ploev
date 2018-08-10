@@ -16,7 +16,7 @@
 
 """ Classes implementing 'easy' (traditional) ranges for a board. """
 
-from typing import Iterable
+from typing import Iterable, Union
 from collections import Counter, namedtuple
 import itertools
 import copy
@@ -1737,6 +1737,31 @@ def check_range(range_):
         raise EasyRangeValueError.from_pe(pe) from None
     else:
         return True
+
+
+class PureHand:
+    def __init__(self, include: Union[CardSet, Iterable[CardSet]],
+                 exclude: Union[CardSet, Iterable[CardSet]]):
+        if isinstance(include, CardSet):
+            self.include = [include]
+        else:
+            self.include = list(include)
+        if isinstance(exclude, CardSet):
+            self.exclude = [exclude]
+        else:
+            self.exclude = list(exclude)
+
+    def ppt(self):
+        include_ppt = ",".join(str(card_set) for card_set in self.include)
+        if len(self.include) > 1:
+            include_ppt = "(" + include_ppt + ")"
+        exclude_ppt = ",".join(str(card_set) for card_set in self.exclude)
+        if len(self.exclude) > 1:
+            exclude_ppt = "(" + exclude_ppt + ")"
+        return "{}!{}".format(include_ppt, exclude_ppt)
+
+    def __add__(self, other):
+        pass
 
 
 class Combinations:

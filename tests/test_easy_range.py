@@ -1414,6 +1414,16 @@ class EasyRangeTest(unittest.TestCase):
         self.assertEqual(raised.exception.easy_range, 'MS+,YB')
 
 
+class PureHandTest(unittest.TestCase):
+    def test_ppt(self):
+        pure_hand = PureHand(CardSet.from_str('T'),
+                             CardSet.from_str('AA'))
+        self.assertEqual(pure_hand.ppt(), 'T!AA')
+        pure_hand = PureHand(CardSet.from_str('T'),
+                             [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        self.assertEqual(pure_hand.ppt(), 'T!(AA,KK)')
+
+
 class CombinationsTest(unittest.TestCase):
     pass
 
