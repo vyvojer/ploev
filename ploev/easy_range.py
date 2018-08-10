@@ -1101,6 +1101,10 @@ class Syntax:
         'FB': EasyRange(BLOCKER, Blocker.FLUSH_BLOCKER, None, None, None, None, [1]),
     }
 
+    @staticmethod
+    def get_name():
+        pass
+
 
 class BoardExplorer:
     """ Class explorers a board for all possible made hands and draws. """
@@ -1615,7 +1619,7 @@ class BoardExplorer:
         if easy_ranges.strip() == '*':
             return '*'
 
-        parser = _parser
+        parser = _parser.parser
 
         results = None
         try:
@@ -1664,49 +1668,60 @@ class BoardExplorer:
         return "{}({!r})".format(class_name, self._board)
 
 
-def _generate_parser() -> pp.ParserElement:
-    """ Generates pyparsing parser for easy ranges
+class Parser:
+    def __init__(self):
+        self._parser = None
 
-    Returns:
-        pyparsing.ParserElement: generated parser
-    """
-    digits = [0, 1, 2]
-    families = [Syntax.MADE_HAND, Syntax.STRAIGHT_DRAW, Syntax.FLUSH_DRAW, Syntax.BLOCKER]
-    hands_digits = {0: {}, 1: {}, 2: {}}
-    for (key, value) in Syntax.syntax.items():
-        for digit in value.digits:
-            family_list = hands_digits[digit].setdefault(value.family, [])
-            family_list.append(key)
+    @property
+    def parser(self):
+        if self._parser is None:
+            self._parser = self._generate_parser()
+        return self._parser
 
-    pp_and_better = pp.Optional(pp.Literal('+')).setResultsName(Syntax.AND_BETTER)
-    pp_kicker = pp.Optional(pp.Literal('K'))
+    @staticmethod
+    def _generate_parser() -> pp.ParserElement:
+        """ Generates pyparsing parser for easy ranges
 
-    pp_one_or_more = None
+        Returns:
+            pyparsing.ParserElement: generated parser
+        """
+        digits = [0, 1, 2]
+        families = [Syntax.MADE_HAND, Syntax.STRAIGHT_DRAW, Syntax.FLUSH_DRAW, Syntax.BLOCKER]
+        hands_digits = {0: {}, 1: {}, 2: {}}
+        for (key, value) in Syntax.syntax.items():
+            for digit in value.digits:
+                family_list = hands_digits[digit].setdefault(value.family, [])
+                family_list.append(key)
 
-    for digit in digits:
-        for family in families:
-            if hands_digits[digit].get(family):
-                pp_hand = pp.oneOf(hands_digits[digit][family], caseless=True).setResultsName(family)
-                if digit != 0:
-                    pp_number = pp.Word(pp.nums, min=1, max=2)
-                    if digit == 1:
-                        pp_relative_rank = pp_number.setResultsName(Syntax.RELATIVE_RANK)
+        pp_and_better = pp.Optional(pp.Literal('+')).setResultsName(Syntax.AND_BETTER)
+        pp_kicker = pp.Optional(pp.Literal('K'))
+
+        pp_one_or_more = None
+
+        for digit in digits:
+            for family in families:
+                if hands_digits[digit].get(family):
+                    pp_hand = pp.oneOf(hands_digits[digit][family], caseless=True).setResultsName(family)
+                    if digit != 0:
+                        pp_number = pp.Word(pp.nums, min=1, max=2)
+                        if digit == 1:
+                            pp_relative_rank = pp_number.setResultsName(Syntax.RELATIVE_RANK)
+                        else:
+                            pp_relative_rank = pp.Group(pp_number + '_' + pp_number).setResultsName(Syntax.RELATIVE_RANK)
+                        pp_hand_group = pp.Group(pp_hand + pp_relative_rank + pp_kicker + pp_and_better)
                     else:
-                        pp_relative_rank = pp.Group(pp_number + '_' + pp_number).setResultsName(Syntax.RELATIVE_RANK)
-                    pp_hand_group = pp.Group(pp_hand + pp_relative_rank + pp_kicker + pp_and_better)
-                else:
-                    pp_hand_group = pp.Group(pp_hand + pp_and_better)
-                if pp_one_or_more is None:
-                    pp_one_or_more = pp_hand_group
-                else:
-                    pp_one_or_more = pp_one_or_more ^ pp_hand_group
+                        pp_hand_group = pp.Group(pp_hand + pp_and_better)
+                    if pp_one_or_more is None:
+                        pp_one_or_more = pp_hand_group
+                    else:
+                        pp_one_or_more = pp_one_or_more ^ pp_hand_group
 
-    operator = pp.oneOf(", : ! ( )").setResultsName('operator')
-    parser = pp.OneOrMore(pp_one_or_more ^ operator ^ '*')
-    return parser
+        operator = pp.oneOf(", : ! ( )").setResultsName('operator')
+        parser = pp.OneOrMore(pp_one_or_more ^ operator ^ '*')
+        return parser
 
 
-_parser = _generate_parser()
+_parser = Parser()
 
 
 class EasyRangeValueError(Exception):
@@ -1732,7 +1747,7 @@ def check_range(range_):
         bool: True if no errors was found
     """
     try:
-        _parser.parseString(range_, parseAll=True)
+        _parser.parser.parseString(range_, parseAll=True)
     except pp.ParseException as pe:
         raise EasyRangeValueError.from_pe(pe) from None
     else:
