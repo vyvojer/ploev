@@ -1740,8 +1740,9 @@ def check_range(range_):
 
 
 class PureHand:
-    def __init__(self, include: Union[CardSet, Iterable[CardSet]],
+    def __init__(self, name, include: Union[CardSet, Iterable[CardSet]],
                  exclude: Union[CardSet, Iterable[CardSet]]):
+        self.name = name
         if isinstance(include, CardSet):
             self.include = [include]
         else:
@@ -1751,6 +1752,16 @@ class PureHand:
         else:
             self.exclude = list(exclude)
 
+    def __str__(self):
+        return self.name
+
+    def __add__(self, other):
+        name = self.name + ':' + other.name
+        include = self.include + other.include
+        exclude = [card_set for card_set in self.exclude if card_set not in other.include]
+        exclude += [card_set for card_set in other.exclude if card_set not in self.include and card_set not in exclude]
+        return PureHand(name, include, exclude)
+
     def ppt(self):
         include_ppt = ",".join(str(card_set) for card_set in self.include)
         if len(self.include) > 1:
@@ -1759,9 +1770,6 @@ class PureHand:
         if len(self.exclude) > 1:
             exclude_ppt = "(" + exclude_ppt + ")"
         return "{}!{}".format(include_ppt, exclude_ppt)
-
-    def __add__(self, other):
-        pass
 
 
 class Combinations:

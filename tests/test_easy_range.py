@@ -914,8 +914,8 @@ class BoardExplorerTest(unittest.TestCase):
         all_but_that = be.find_made_hands(MadeHand.TWO_PAIR, MadeHand.NONE, (3, 4),
                                           strictness=BoardExplorer.ALL_BUT_THAT)
         self.assertNotIn(MadeHand(MadeHand.TWO_PAIR, MadeHand.NONE, (8, 7), (3, 4), CardSet.from_str('87'),
-                                           CardSet.from_str('8877')), all_but_that)
-        self.assertEqual(len(be.made_hands) - 1,len(all_but_that))
+                                  CardSet.from_str('8877')), all_but_that)
+        self.assertEqual(len(be.made_hands) - 1, len(all_but_that))
 
     def test_flush_draws(self):
         be = BoardExplorer(Board.from_str('AdKd8s'))
@@ -1416,12 +1416,27 @@ class EasyRangeTest(unittest.TestCase):
 
 class PureHandTest(unittest.TestCase):
     def test_ppt(self):
-        pure_hand = PureHand(CardSet.from_str('T'),
+        pure_hand = PureHand('TP',
+                             CardSet.from_str('T'),
                              CardSet.from_str('AA'))
         self.assertEqual(pure_hand.ppt(), 'T!AA')
-        pure_hand = PureHand(CardSet.from_str('T'),
+        pure_hand = PureHand('TP',
+                             CardSet.from_str('T'),
                              [CardSet.from_str('AA'), CardSet.from_str('KK')])
         self.assertEqual(pure_hand.ppt(), 'T!(AA,KK)')
+
+    def test_add(self):
+        tp = PureHand('TP',
+                      CardSet.from_str('T'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        aa = PureHand(name='AA',
+                      include=CardSet.from_str('AA'),
+                      exclude=[CardSet.from_str('T'),CardSet.from_str('KK'),]
+                      )
+        tp_aa = tp + aa
+        self.assertEqual(tp_aa.include, [CardSet.from_str('T'), CardSet.from_str('AA')])
+        self.assertEqual(tp_aa.exclude, [CardSet.from_str('KK')])
+        self.assertEqual(tp_aa.name, 'TP:AA')
 
 
 class CombinationsTest(unittest.TestCase):
