@@ -1652,7 +1652,7 @@ class BoardExplorer:
                 else:
                     strictness = self.ONLY_THAT
                 hands = self._easy_range2hands(family, easy_range, relative_rank, strictness)
-                if  len(hands) > 1:
+                if len(hands) > 1:
                     ppt_range += '(' + BoardExplorer._hands2ppt(hands) + ')'
                 else:
                     ppt_range += BoardExplorer._hands2ppt(hands)
@@ -1757,7 +1757,7 @@ class PureHand:
 
     def __add__(self, other):
         name = self.name + ':' + other.name
-        include = self.include + other.include
+        include = self.include + [card_set for card_set in other.include if card_set not in self.include]
         exclude = [card_set for card_set in self.exclude if card_set not in other.include]
         exclude += [card_set for card_set in other.exclude if card_set not in self.include and card_set not in exclude]
         return PureHand(name, include, exclude)
@@ -1770,6 +1770,18 @@ class PureHand:
         if len(self.exclude) > 1:
             exclude_ppt = "(" + exclude_ppt + ")"
         return "{}!{}".format(include_ppt, exclude_ppt)
+
+
+Combination = namedtuple('Combination', ['name',
+                                         'ppt',
+                                         'made_hand',
+                                         'flush_blocker',
+                                         'straight_blocker',
+                                         'flush_draw',
+                                         'straight_draw',
+                                         'flush_draw_blocker',
+                                         'straight_draw_blocker',
+                                         ])
 
 
 class Combinations:
