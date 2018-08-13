@@ -1439,8 +1439,31 @@ class PureHandTest(unittest.TestCase):
         self.assertEqual(tp_aa.name, 'TP:AA')
 
 
+class SyntaxTest(unittest.TestCase):
+    def test_get_name_made_hand(self):
+        be = BoardExplorer.from_str('Jh 9h 5c 3c')
+
+        made_hands = be.made_hands
+        names = ['TS', 'MS', 'S3', 'S4',
+                 'T2P', 'TB2P', '2P1_4', '2P2_3', '2P2_4', '2P3_4',
+                 'OP1', 'OP2', 'OP3',
+                 'TP1', 'TP2', 'TP3', 'TP4', 'TP5', 'TP6', 'TP7', 'TP8', 'TP9',
+                 'PP2_1',
+                 'MP1', 'MP2', 'MP3', 'MP4', 'MP5', 'MP6', 'MP7', 'MP8', 'MP9',
+                 'PP3_1', 'PP3_2', 'PP3_3',
+                 'BP1', 'BP2', 'BP3', 'BP4', 'BP5', 'BP6', 'BP7', 'BP8', 'BP9',
+                 'PP4_1',
+                 'PB4_1', 'PB4_2', 'PB4_3', 'PB4_4', 'PB4_5', 'PB4_6', 'PB4_7', 'PB4_8', 'PB4_9',
+                 'PP5_1'
+                 ]
+        self.assertEqual([Syntax.get_name(hand) for hand in made_hands], names)
+
+
 class CombinationsTest(unittest.TestCase):
-    pass
+    def test_pure_made_hands(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+#        combos = Combinations(be)
+#        pure_made_hands = combos.pure_made_hands
 
 
 if __name__ == "__main__":

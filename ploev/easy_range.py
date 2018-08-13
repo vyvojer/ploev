@@ -31,7 +31,23 @@ def _constants_dict(hand_type):
     return constant_dir
 
 
-class MadeHand:
+class HandMixin:
+    MADE_HAND = 'made_hand'
+    STRAIGHT_DRAW = 'straight_draw'
+    FLUSH_DRAW = 'flush_draw'
+    BLOCKER = 'blocker'
+
+    def __init__(self, family: str, type_: int, subtype: int, relative_rank: tuple):
+        self.family = family
+        self.type_ = type_
+        self.subtype = subtype
+        self.relative_rank = relative_rank
+
+    def __str__(self):
+        return Syntax.get_name(self)
+
+
+class MadeHand(HandMixin):
     """ Class representing made hands """
 
     # Hand types
@@ -51,6 +67,8 @@ class MadeHand:
     POCKET_PAIR = 11
     BOARD_PAIR = 12
 
+    family = HandMixin.MADE_HAND
+
     def __init__(self, type_: int, subtype: int, absolute_rank: tuple, relative_rank: tuple,
                  hole: CardSet, hand: CardSet):
         """ Constructor for MadeHand
@@ -64,10 +82,8 @@ class MadeHand:
             hole (CardSet): 2 hole cards for the hand
             hand (CardSet): made 5-cards the hand
         """
-        self.type_ = type_
-        self.subtype = subtype
+        super().__init__(MadeHand.family, type_, subtype, relative_rank)
         self.absolute_rank = absolute_rank
-        self.relative_rank = relative_rank
         self.hole = hole
         self.hand = hand
 
@@ -1049,61 +1065,75 @@ class _MadeHandExplorer:
 
 class Syntax:
     """ Class storing constants for easy_range syntax"""
-    MADE_HAND = 'made_hand'
-    STRAIGHT_DRAW = 'straight_draw'
-    FLUSH_DRAW = 'flush_draw'
-    BLOCKER = 'blocker'
+    MADE_HAND = HandMixin.MADE_HAND
+    STRAIGHT_DRAW = HandMixin.STRAIGHT_DRAW
+    FLUSH_DRAW = HandMixin.FLUSH_DRAW
+    BLOCKER = HandMixin.BLOCKER
 
     RELATIVE_RANK = 'relative_rank'
     AND_BETTER = 'and_better'
 
     EasyRange = namedtuple('EasyRange', ['family', 'type_', 'subtype', 'relative_rank',
-                                         'rank_prefix', 'and_better', 'digits'])
+                                         'rank_prefix', 'prefix_shift', 'and_better', 'digits'])
     syntax = {
-        'WRAP': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (13, 0), None, True, [0]),
-        'OESD': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (8, 0), None, None, [0]),
-        'SD': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, None, None, None, [1, 2]),
-        'GS': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (4, 0), None, None, [0]),
-        'BSD': EasyRange(STRAIGHT_DRAW, StraightDraw.BACKDOOR, None, None, None, None, []),
-        'StrF': EasyRange(MADE_HAND, MadeHand.STRAIGHT_FLUSH, MadeHand.NONE, (0,), None, None, []),
-        'Q': EasyRange(MADE_HAND, MadeHand.QUADS, MadeHand.NONE, (0,), None, None, [1]),
-        'FH': EasyRange(MADE_HAND, MadeHand.FULL_HOUSE, MadeHand.NONE, (0,), None, None, [0, 1]),
-        'F': EasyRange(MADE_HAND, MadeHand.FLUSH, MadeHand.NONE, (0,), None, None, [0, 1]),
-        'Str': EasyRange(MADE_HAND, MadeHand.STRAIGHT, MadeHand.NONE, None, None, None, [1]),
-        'TS': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, (1,), None, [0]),
-        'S': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, None, None, [1]),
-        'BS': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, (5,), None, [0]),
-        'MS': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, (2,), None, [0]),
-        'Tr': EasyRange(MADE_HAND, MadeHand.TRIPS, MadeHand.NONE, (0,), None, None, [0, 2]),
-        '2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, None, None, None, [0, 2]),
-        'T2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, (1, 2), None, None, [0]),
-        'TB2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, (1, 3), None, None, [0]),
-        'MP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, (2,), None, [0, 1]),
-        'PB': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, None, None, [1, 2]),
-        'P': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.NONE, None, None, None, [1]),
-        'PP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.POCKET_PAIR, None, None, None, [1, 2]),
-        'BP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, (3,), None, [0, 1]),
-        'TP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, (1,), None, [0, 1]),
-        'OP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.POCKET_PAIR, None, (1,), None, [0, 1]),
-        'NBFD': EasyRange(FLUSH_DRAW, FlushDraw.BACKDOOR, None, (1,), None, None, [0]),
-        'BFD': EasyRange(FLUSH_DRAW, FlushDraw.BACKDOOR, None, None, None, None, [1]),
-        'FDF': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.FLOPPED, None, None, None, [0, 1]),
-        'NFD': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, None, (1,), None, None, [0]),
-        'FD': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, None, None, None, None, [0, 1]),
-        'FDT': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.TURNED, None, None, None, [0, 1]),
-        'SDB': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.TWO_CARD, None, None, None, [1]),
-        'SDBO': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.ONE_CARD, None, None, None, [1]),
-        'NFDB': EasyRange(BLOCKER, Blocker.FLUSH_DRAW_BLOCKER, None, (1,), None, None, [0]),
-        'FDB': EasyRange(BLOCKER, Blocker.FLUSH_DRAW_BLOCKER, None, None, None, None, [1]),
-        'SB': EasyRange(BLOCKER, Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, None, None, None, [1]),
-        'NSB': EasyRange(BLOCKER, Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, (1,), None, None, [1]),
-        'NFB': EasyRange(BLOCKER, Blocker.FLUSH_BLOCKER, None, (1,), None, None, [0]),
-        'FB': EasyRange(BLOCKER, Blocker.FLUSH_BLOCKER, None, None, None, None, [1]),
+        'WRAP': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (13, 0), None, None, True, [0]),
+        'OESD': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (8, 0), None, None, None, [0]),
+        'GS': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (4, 0), None, None, None, [0]),
+        'SD': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, None, None, None, None, [1, 2]),
+        'BSD': EasyRange(STRAIGHT_DRAW, StraightDraw.BACKDOOR, None, None, None, None, None, []),
+        'StrF': EasyRange(MADE_HAND, MadeHand.STRAIGHT_FLUSH, MadeHand.NONE, (0,), None, None, None, []),
+        'Q': EasyRange(MADE_HAND, MadeHand.QUADS, MadeHand.NONE, (0,), None, None, None, [1]),
+        'FH': EasyRange(MADE_HAND, MadeHand.FULL_HOUSE, MadeHand.NONE, (0,), None, None, None, [0, 1]),
+        'F': EasyRange(MADE_HAND, MadeHand.FLUSH, MadeHand.NONE, (0,), None, None, None, [0, 1]),
+        'Str': EasyRange(MADE_HAND, MadeHand.STRAIGHT, MadeHand.NONE, None, None, None, None, [1]),
+        'TS': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, (1,), 0, None, [0]),
+        'BS': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, (5,), 0, None, [0]),
+        'MS': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, (2,), 0, None, [0]),
+        'S': EasyRange(MADE_HAND, MadeHand.SET, MadeHand.NONE, None, None, None, None, [1]),
+        'Tr': EasyRange(MADE_HAND, MadeHand.TRIPS, MadeHand.NONE, (0,), None, None, None, [0, 2]),
+        'T2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, (1, 2), None, None, None, [0]),
+        'TB2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, (1, 3), None, None, None, [0]),
+        '2P': EasyRange(MADE_HAND, MadeHand.TWO_PAIR, MadeHand.NONE, None, None, None, None, [0, 2]),
+        'MP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, (2,), 1, None, [0, 1]),
+        'BP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, (3,), 1, None, [0, 1]),
+        'TP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, (1,), 1, None, [0, 1]),
+        'PB': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.BOARD_PAIR, None, None, 1, None, [1, 2]),
+        'OP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.POCKET_PAIR, None, (1,), 1, None, [0, 1]),
+        'PP': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.POCKET_PAIR, None, None, 1, None, [1, 2]),
+        'P': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.NONE, None, None, None, None, [1]),
+        'NBFD': EasyRange(FLUSH_DRAW, FlushDraw.BACKDOOR, None, (1,), None, None, None, [0]),
+        'BFD': EasyRange(FLUSH_DRAW, FlushDraw.BACKDOOR, None, None, None, None, None, [1]),
+        'FDF': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.FLOPPED, None, None, None, None, [0, 1]),
+        'NFD': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, None, (1,), None, None, None, [0]),
+        'FD': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, None, None, None, None, None, [0, 1]),
+        'FDT': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.TURNED, None, None, None, None, [0, 1]),
+        'SDB': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.TWO_CARD, None, None, None, None, [1]),
+        'SDBO': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.ONE_CARD, None, None, None, None, [1]),
+        'NFDB': EasyRange(BLOCKER, Blocker.FLUSH_DRAW_BLOCKER, None, (1,), None, None, None, [0]),
+        'FDB': EasyRange(BLOCKER, Blocker.FLUSH_DRAW_BLOCKER, None, None, None, None, None, [1]),
+        'SB': EasyRange(BLOCKER, Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, None, None, None, None, [1]),
+        'NSB': EasyRange(BLOCKER, Blocker.STRAIGHT_BLOCKER, Blocker.TWO_CARD, (1,), None, None, None, [1]),
+        'NFB': EasyRange(BLOCKER, Blocker.FLUSH_BLOCKER, None, (1,), None, None, None, [0]),
+        'FB': EasyRange(BLOCKER, Blocker.FLUSH_BLOCKER, None, None, None, None, None, [1]),
     }
 
     @staticmethod
-    def get_name():
-        pass
+    def get_name(hand: HandMixin):
+        for key, value in Syntax.syntax.items():
+            if value.family == hand.family and value.type_ == hand.type_ and value.subtype == hand.subtype:
+                if value.relative_rank and value.relative_rank == hand.relative_rank:
+                    return key
+                elif value.rank_prefix and value.rank_prefix == hand.relative_rank[value.prefix_shift:len(
+                        value.rank_prefix) + value.prefix_shift]:
+                    if value.digits[-1] != 0:
+                        digits = "_".join(str(rank) for rank in hand.relative_rank[-value.digits[-1]:])
+                    else:
+                        digits = ""
+                    return key + digits
+                elif not value.relative_rank and not value.rank_prefix:
+                    if hand.family == Syntax.MADE_HAND:
+                        return key + "_".join(str(rank) for rank in
+                                              hand.relative_rank[value.prefix_shift:])
 
 
 class BoardExplorer:
@@ -1707,7 +1737,8 @@ class Parser:
                         if digit == 1:
                             pp_relative_rank = pp_number.setResultsName(Syntax.RELATIVE_RANK)
                         else:
-                            pp_relative_rank = pp.Group(pp_number + '_' + pp_number).setResultsName(Syntax.RELATIVE_RANK)
+                            pp_relative_rank = pp.Group(pp_number + '_' + pp_number).setResultsName(
+                                Syntax.RELATIVE_RANK)
                         pp_hand_group = pp.Group(pp_hand + pp_relative_rank + pp_kicker + pp_and_better)
                     else:
                         pp_hand_group = pp.Group(pp_hand + pp_and_better)
