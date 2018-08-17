@@ -1414,31 +1414,6 @@ class EasyRangeTest(unittest.TestCase):
         self.assertEqual(raised.exception.easy_range, 'MS+,YB')
 
 
-class PureHandTest(unittest.TestCase):
-    def test_ppt(self):
-        pure_hand = PureHand('TP',
-                             CardSet.from_str('T'),
-                             CardSet.from_str('AA'))
-        self.assertEqual(pure_hand.ppt(), 'T!AA')
-        pure_hand = PureHand('TP',
-                             CardSet.from_str('T'),
-                             [CardSet.from_str('AA'), CardSet.from_str('KK')])
-        self.assertEqual(pure_hand.ppt(), 'T!(AA,KK)')
-
-    def test_add(self):
-        tp = PureHand('TP',
-                      CardSet.from_str('T'),
-                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
-        aa = PureHand(name='AA',
-                      include=CardSet.from_str('AA'),
-                      exclude=[CardSet.from_str('T'), CardSet.from_str('KK'), ]
-                      )
-        tp_aa = tp + aa
-        self.assertEqual(tp_aa.include, [CardSet.from_str('T'), CardSet.from_str('AA')])
-        self.assertEqual(tp_aa.exclude, [CardSet.from_str('KK')])
-        self.assertEqual(tp_aa.name, 'TP:AA')
-
-
 class SyntaxTest(unittest.TestCase):
     def test_get_name_made_hand(self):
         be = BoardExplorer.from_str('Jh 9h 5c 3c')
@@ -1493,6 +1468,33 @@ class SyntaxTest(unittest.TestCase):
         self.assertEqual([hand.name for hand in straight_draws], names)
         self.assertEqual([hand.str_hole for hand in straight_draws], holes)
         self.assertEqual(str(straight_draws[0]),'SD20_14 (QT87)')
+
+
+class PureHandTest(unittest.TestCase):
+    def test_ppt(self):
+        pure_hand = PureHand('TP',
+                             CardSet.from_str('T'),
+                             CardSet.from_str('AA'))
+        self.assertEqual(pure_hand.ppt(), 'T!AA')
+        self.assertEqual(pure_hand.hole, 'T')
+        self.assertEqual(str(pure_hand), 'TP (T)')
+        pure_hand = PureHand('TP',
+                             CardSet.from_str('T'),
+                             [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        self.assertEqual(pure_hand.ppt(), 'T!(AA,KK)')
+
+    def test_add(self):
+        tp = PureHand('TP',
+                      CardSet.from_str('T'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        aa = PureHand(name='AA',
+                      include=CardSet.from_str('AA'),
+                      exclude=[CardSet.from_str('T'), CardSet.from_str('KK'), ]
+                      )
+        tp_aa = tp + aa
+        self.assertEqual(tp_aa.include, [CardSet.from_str('T'), CardSet.from_str('AA')])
+        self.assertEqual(tp_aa.exclude, [CardSet.from_str('KK')])
+        self.assertEqual(tp_aa.name, 'TP:AA')
 
 
 class CombinationsTest(unittest.TestCase):

@@ -1789,7 +1789,8 @@ def check_range(range_):
 
 
 class PureHand:
-    def __init__(self, name, include: Union[CardSet, Iterable[CardSet]],
+    def __init__(self, name: str,
+                 include: Union[CardSet, Iterable[CardSet]],
                  exclude: Union[CardSet, Iterable[CardSet]]):
         self.name = name
         if isinstance(include, CardSet):
@@ -1801,8 +1802,12 @@ class PureHand:
         else:
             self.exclude = list(exclude)
 
+    @property
+    def hole(self):
+        return ",".join(str(cs) for cs in self.include)
+
     def __str__(self):
-        return self.name
+        return '{} ({})'.format(self.name, self.hole)
 
     def __add__(self, other):
         name = self.name + ':' + other.name
@@ -1822,6 +1827,7 @@ class PureHand:
 
 
 Combination = namedtuple('Combination', ['name',
+                                         'hole',
                                          'ppt',
                                          'made_hand',
                                          'flush_blocker',
