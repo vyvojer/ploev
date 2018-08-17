@@ -37,14 +37,26 @@ class HandMixin:
     FLUSH_DRAW = 'flush_draw'
     BLOCKER = 'blocker'
 
-    def __init__(self, family: str, type_: int, subtype: int, relative_rank: tuple):
+    def __init__(self, family: str, type_: int, subtype: int, relative_rank: tuple, hole: CardSet):
         self.family = family
         self.type_ = type_
         self.subtype = subtype
         self.relative_rank = relative_rank
+        self.hole = hole
+
+    @property
+    def name(self):
+        return Syntax.get_name(self)
+
+    @property
+    def str_hole(self):
+        return str(self.hole)
 
     def __str__(self):
-        return Syntax.get_name(self)
+        if self.family != self.STRAIGHT_DRAW:
+            return Syntax.get_name(self)
+        else:
+            return "{} ({})".format(self.name, self.hole)
 
 
 class MadeHand(HandMixin):
@@ -82,9 +94,8 @@ class MadeHand(HandMixin):
             hole (CardSet): 2 hole cards for the hand
             hand (CardSet): made 5-cards the hand
         """
-        super().__init__(MadeHand.family, type_, subtype, relative_rank)
+        super().__init__(MadeHand.family, type_, subtype, relative_rank, hole)
         self.absolute_rank = absolute_rank
-        self.hole = hole
         self.hand = hand
 
     def __eq__(self, other):
@@ -115,11 +126,13 @@ def _rank_index(rank):
     return 15 - rank
 
 
-class StraightDraw:
+class StraightDraw(HandMixin):
     """Representing a straight draw"""
 
     NORMAL = 1
     BACKDOOR = 0
+
+    family = HandMixin.STRAIGHT_DRAW
 
     def __init__(self, type_, hole_ranks: tuple, outs: tuple, nut_outs: tuple):
         """ Constructor for StraightDraw
@@ -130,15 +143,13 @@ class StraightDraw:
             outs (tuple): ranks of outs
             nut_outs (tuple): ranks of nut outs
         """
-        self.type_ = type_
         self.hole_ranks = tuple(sorted(hole_ranks, reverse=True))
         self.outs = tuple(sorted(outs, reverse=True))
         self.nut_outs = tuple(sorted(nut_outs, reverse=True))
         self._ranks_card_set = None
-
-    @property
-    def hole(self):
-        return CardSet.from_ranks(self.hole_ranks)
+        super().__init__(StraightDraw.family, type_, None,
+                         (self.count_outs(), self.count_nut_outs()),
+                         CardSet.from_ranks(self.hole_ranks))
 
     @property
     def ranks_card_set(self):
@@ -179,13 +190,6 @@ class StraightDraw:
         return msg.format(cls_name, constants_dict[self.type_],
                           self.hole_ranks, self.outs, self.nut_outs)
 
-    def __str__(self):
-        return "Straight draw:{} ({}, {}) outs:{} nut outs:{}".format(CardSet.from_ranks(self.hole_ranks),
-                                                                      CardSet.from_ranks(self.outs),
-                                                                      CardSet.from_ranks(self.nut_outs),
-                                                                      self.count_outs(),
-                                                                      self.count_nut_outs())
-
     def count_outs(self):
         """ Returns total number of outs"""
         return len(self.outs) * 4 - len(set(self.outs) & set(self.hole_ranks))
@@ -202,7 +206,7 @@ class StraightDraw:
         return cls(StraightDraw.NORMAL, ranks, outs, nut_outs)
 
 
-class FlushDraw:
+class FlushDraw(HandMixin):
     """ Class representing a flush draw """
 
     # types
@@ -213,6 +217,8 @@ class FlushDraw:
     FLOPPED = 2
     TURNED = 3
     NONE = 4
+
+    family = HandMixin.FLUSH_DRAW
 
     def __init__(self, type_: int, subtype: int, absolute_rank: tuple, relative_rank: tuple, hole: CardSet):
         """ Constructor for FlushDraw
@@ -226,11 +232,8 @@ class FlushDraw:
                 (0,) for generic draw
             hole (CardSet):  hole cards of draw. CardSet.from_str('Add')
         """
-        self.type_ = type_
-        self.subtype = subtype
+        super().__init__(MadeHand.family, type_, subtype, relative_rank, hole)
         self.absolute_rank = absolute_rank
-        self.relative_rank = relative_rank
-        self.hole = hole
 
     def __eq__(self, other):
         if not isinstance(other, FlushDraw):
@@ -1131,7 +1134,7 @@ class Syntax:
                         digits = ""
                     return key + digits
                 elif not value.relative_rank and not value.rank_prefix:
-                    if hand.family == Syntax.MADE_HAND:
+                    if True or hand.family == Syntax.MADE_HAND:
                         return key + "_".join(str(rank) for rank in
                                               hand.relative_rank[value.prefix_shift:])
 

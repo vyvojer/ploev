@@ -1431,7 +1431,7 @@ class PureHandTest(unittest.TestCase):
                       [CardSet.from_str('AA'), CardSet.from_str('KK')])
         aa = PureHand(name='AA',
                       include=CardSet.from_str('AA'),
-                      exclude=[CardSet.from_str('T'),CardSet.from_str('KK'),]
+                      exclude=[CardSet.from_str('T'), CardSet.from_str('KK'), ]
                       )
         tp_aa = tp + aa
         self.assertEqual(tp_aa.include, [CardSet.from_str('T'), CardSet.from_str('AA')])
@@ -1444,24 +1444,43 @@ class SyntaxTest(unittest.TestCase):
         be = BoardExplorer.from_str('Jh 9h 5c 3c')
 
         made_hands = be.made_hands
-        names = ['TS', 'MS', 'S3', 'S4',
-                 'T2P', 'TB2P', '2P1_4', '2P2_3', '2P2_4', '2P3_4',
-                 'OP1', 'OP2', 'OP3',
-                 'TP1', 'TP2', 'TP3', 'TP4', 'TP5', 'TP6', 'TP7', 'TP8', 'TP9',
-                 'PP2_1',
-                 'MP1', 'MP2', 'MP3', 'MP4', 'MP5', 'MP6', 'MP7', 'MP8', 'MP9',
-                 'PP3_1', 'PP3_2', 'PP3_3',
-                 'BP1', 'BP2', 'BP3', 'BP4', 'BP5', 'BP6', 'BP7', 'BP8', 'BP9',
-                 'PP4_1',
-                 'PB4_1', 'PB4_2', 'PB4_3', 'PB4_4', 'PB4_5', 'PB4_6', 'PB4_7', 'PB4_8', 'PB4_9',
-                 'PP5_1'
-                 ]
-        self.assertEqual([Syntax.get_name(hand) for hand in made_hands], names)
+        names_made = ['TS', 'MS', 'S3', 'S4',
+                      'T2P', 'TB2P', '2P1_4', '2P2_3', '2P2_4', '2P3_4',
+                      'OP1', 'OP2', 'OP3',
+                      'TP1', 'TP2', 'TP3', 'TP4', 'TP5', 'TP6', 'TP7', 'TP8', 'TP9',
+                      'PP2_1',
+                      'MP1', 'MP2', 'MP3', 'MP4', 'MP5', 'MP6', 'MP7', 'MP8', 'MP9',
+                      'PP3_1', 'PP3_2', 'PP3_3',
+                      'BP1', 'BP2', 'BP3', 'BP4', 'BP5', 'BP6', 'BP7', 'BP8', 'BP9',
+                      'PP4_1',
+                      'PB4_1', 'PB4_2', 'PB4_3', 'PB4_4', 'PB4_5', 'PB4_6', 'PB4_7', 'PB4_8', 'PB4_9',
+                      'PP5_1'
+                      ]
+        self.assertEqual([Syntax.get_name(hand) for hand in made_hands], names_made)
+        self.assertEqual([str(hand) for hand in made_hands], names_made)
+
+    def test_get_name_straight_draws(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        straight_draws = be.straight_draws
+        names_and_holes = [
+            ('SD20_14', 'QT87'),
+            ('SD17_11', 'KT87'),
+            ('SD17_11', 'QT8'),
+            ('SD17_7', 'T87'),
+        ]
+        names = [nh[0] for nh in names_and_holes]
+        holes = [nh[1] for nh in names_and_holes]
+        self.assertEqual([Syntax.get_name(hand) for hand in straight_draws[:4]], names)
+        self.assertEqual([hand.name for hand in straight_draws[:4]], names)
+        self.assertEqual([hand.str_hole for hand in straight_draws[:4]], holes)
+        self.assertEqual(str(straight_draws[0]),'SD20_14 (QT87)')
 
 
 class CombinationsTest(unittest.TestCase):
     def test_pure_made_hands(self):
         be = BoardExplorer.from_str('Jh 9h 5c')
+
+
 #        combos = Combinations(be)
 #        pure_made_hands = combos.pure_made_hands
 
