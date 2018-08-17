@@ -1079,10 +1079,10 @@ class Syntax:
     EasyRange = namedtuple('EasyRange', ['family', 'type_', 'subtype', 'relative_rank',
                                          'rank_prefix', 'prefix_shift', 'and_better', 'digits'])
     syntax = {
+        'SD': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, None, None, None, None, [1, 2]),
         'WRAP': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (13, 0), None, None, True, [0]),
         'OESD': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (8, 0), None, None, None, [0]),
         'GS': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, (4, 0), None, None, None, [0]),
-        'SD': EasyRange(STRAIGHT_DRAW, StraightDraw.NORMAL, None, None, None, None, None, [1, 2]),
         'BSD': EasyRange(STRAIGHT_DRAW, StraightDraw.BACKDOOR, None, None, None, None, None, []),
         'StrF': EasyRange(MADE_HAND, MadeHand.STRAIGHT_FLUSH, MadeHand.NONE, (0,), None, None, None, []),
         'Q': EasyRange(MADE_HAND, MadeHand.QUADS, MadeHand.NONE, (0,), None, None, None, [1]),

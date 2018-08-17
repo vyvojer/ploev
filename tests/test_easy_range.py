@@ -1467,12 +1467,31 @@ class SyntaxTest(unittest.TestCase):
             ('SD17_11', 'KT87'),
             ('SD17_11', 'QT8'),
             ('SD17_7', 'T87'),
+            ('SD16_16', 'KQT8'),
+            ('SD13_13', 'KQT'),
+            ('SD13_3', '876'),
+            ('SD8_8', 'KQ87'),
+            ('SD8_8', 'KT8'),
+            ('SD8_8', 'QT76'),
+            ('SD4_4', 'QT'),
+            ('SD8_4', 'KQ86'),
+            ('SD8_4', 'KQ76'),
+            ('SD8_4', 'KT7'),
+            ('SD4_4', 'T8'),
+            ('SD4_4', '87'),
+            ('SD8_0', 'Q86'),
+            ('SD4_4', 'KQ'),
+            ('SD4_4', 'KT'),
+            ('SD4_0', 'Q8'),
+            ('SD4_0', 'T7'),
+            ('SD4_0', '86'),
+            ('SD4_0', '76'),
         ]
         names = [nh[0] for nh in names_and_holes]
         holes = [nh[1] for nh in names_and_holes]
-        self.assertEqual([Syntax.get_name(hand) for hand in straight_draws[:4]], names)
-        self.assertEqual([hand.name for hand in straight_draws[:4]], names)
-        self.assertEqual([hand.str_hole for hand in straight_draws[:4]], holes)
+        self.assertEqual([Syntax.get_name(hand) for hand in straight_draws], names)
+        self.assertEqual([hand.name for hand in straight_draws], names)
+        self.assertEqual([hand.str_hole for hand in straight_draws], holes)
         self.assertEqual(str(straight_draws[0]),'SD20_14 (QT87)')
 
 
