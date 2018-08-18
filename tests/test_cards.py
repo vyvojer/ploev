@@ -218,6 +218,16 @@ class CardSetTest(unittest.TestCase):
         cs = CardSet.from_str('JdKcJs5s')
         self.assertEqual(cs.get_simple_form(),'K(J5)J')
 
+    def test_contains(self):
+        cs = CardSet.from_str('ATT')
+        self.assertTrue(cs.contains(CardSet.from_str('T')))
+        self.assertTrue(cs.contains(CardSet.from_str('TT')))
+        self.assertFalse(cs.contains(CardSet.from_str('K')))
+        cs = CardSet.from_str('AT')
+        self.assertTrue(cs.contains(CardSet.from_str('T')))
+        self.assertFalse(cs.contains(CardSet.from_str('TT')))
+        self.assertFalse(cs.contains(CardSet.from_str('K')))
+
 
 class BoardTest(unittest.TestCase):
 

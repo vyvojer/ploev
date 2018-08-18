@@ -253,6 +253,15 @@ class CardSet:
         """ Returns list of ranks for certain suit"""
         return [card.rank for card in self.cards if card.suit == suit]
 
+    def contains(self, other: 'CardSet') -> bool:
+        contains = True
+        for card in other:
+            if card not in self:
+                return False
+            elif other.cards.count(card) > self.cards.count(card):
+                return False
+        return True
+
     def get_simple_form(self) -> str:
         ranks_by_suit = []
         simple_form = ''
