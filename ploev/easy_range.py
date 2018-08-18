@@ -1790,24 +1790,32 @@ def check_range(range_):
 
 class PureHand:
     def __init__(self, name: str,
-                 include: Union[CardSet, Iterable[CardSet]],
-                 exclude: Union[CardSet, Iterable[CardSet]]):
+                 include: Union[None, CardSet, Iterable[CardSet]],
+                 exclude: Union[None, CardSet, Iterable[CardSet]]):
         self.name = name
-        if isinstance(include, CardSet):
+        if include is None:
+            self.include = []
+        elif isinstance(include, CardSet):
             self.include = [include]
         else:
             self.include = list(include)
-        if isinstance(exclude, CardSet):
+        if exclude is None:
+            self.exclude = []
+        elif isinstance(exclude, CardSet):
             self.exclude = [exclude]
         else:
             self.exclude = list(exclude)
+        self._filter_exclude()
 
     @property
-    def hole(self):
+    def hole(self) -> str:
         return ",".join(str(cs) for cs in self.include)
 
     def __str__(self):
         return '{} ({})'.format(self.name, self.hole)
+
+    def __eq__(self, other):
+        return (self.name, self.include, self.exclude) == (other.name, other.include, other.include)
 
     def __add__(self, other):
         name = self.name + ':' + other.name
@@ -1816,7 +1824,12 @@ class PureHand:
         exclude += [card_set for card_set in other.exclude if card_set not in self.include and card_set not in exclude]
         return PureHand(name, include, exclude)
 
-    def ppt(self):
+    def __repr__(self):
+        cls_repr = self.__class__.__name__
+        repr = "{}(name={}, include={}, exclude={})"
+        return repr.format(cls_repr, self.name, self.include, self.exclude)
+
+    def ppt(self) -> str:
         include_ppt = ",".join(str(card_set) for card_set in self.include)
         if len(self.include) > 1:
             include_ppt = "(" + include_ppt + ")"
@@ -1824,6 +1837,25 @@ class PureHand:
         if len(self.exclude) > 1:
             exclude_ppt = "(" + exclude_ppt + ")"
         return "{}!{}".format(include_ppt, exclude_ppt)
+
+    def _filter_exclude(self):
+        self._filter_exclude_by_include()
+        self._filter_exclude_pruning()
+
+    def _filter_exclude_by_include(self):
+        for include_cs in self.include:
+            self.exclude = [cs for cs in self.exclude if not cs.contains(include_cs)]
+
+    def _filter_exclude_pruning(self):
+        two_cards = [cs for cs in self.exclude if len(cs) == 2]
+        for card in [Card(rank, 0) for rank in range(2, 15)]:
+            two_cards_for_card = [cs for cs in two_cards if card in cs]
+            if len(two_cards_for_card) == 13:
+                for tc in two_cards_for_card:
+                    self.exclude.remove(tc)
+                self.exclude.append(CardSet(cards=[card]))
+
+
 
 
 Combination = namedtuple('Combination', ['name',
@@ -1840,4 +1872,22 @@ Combination = namedtuple('Combination', ['name',
 
 
 class Combinations:
-    pass
+    def __init__(self, board_explorer: BoardExplorer):
+        self.board_explorer = board_explorer
+        self._pure_made_hands = None
+
+    @property
+    def pure_made_hands(self):
+        if self._pure_made_hands is None:
+            self._get_pure_made_hands()
+        return self._pure_made_hands
+
+    def _get_pure_made_hands(self):
+        pure_made_hands = []
+        made_hands = self.board_explorer.made_hands
+        for hand in made_hands:
+            name = hand.name
+            include = hand.hole
+            exclude = [excl_hand.hole for excl_hand in made_hands if excl_hand != hand]
+            pure_made_hands.append(PureHand(name, include, exclude))
+        self._pure_made_hands = pure_made_hands
