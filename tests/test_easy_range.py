@@ -1511,12 +1511,13 @@ class PureHandTest(unittest.TestCase):
                               CardSet.from_str('AT'),
                               CardSet.from_str('T'),
                               CardSet.from_str('KK')])
+
         self.assertEqual(pure_hand.exclude,  [CardSet.from_str('AA'),
                               CardSet.from_str('AT'),
                               CardSet.from_str('T'),
                               CardSet.from_str('KK')])
 
-    def test_filter_exclude_pruning(self):
+    def test_clean(self):
         pure_hand = PureHand('TP',
                              CardSet.from_str('TT'),
                              [CardSet.from_str('AA'),
@@ -1534,6 +1535,7 @@ class PureHandTest(unittest.TestCase):
                               CardSet.from_str('39'),
                               CardSet.from_str('29'),
                               CardSet.from_str('KK')])
+        pure_hand.clean()
         self.assertEqual(pure_hand.exclude, [CardSet.from_str('AA'),
                                              CardSet.from_str('KK'),
                                              CardSet.from_str('9')])

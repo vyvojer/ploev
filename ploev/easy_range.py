@@ -1840,22 +1840,22 @@ class PureHand:
 
     def _filter_exclude(self):
         self._filter_exclude_by_include()
-        self._filter_exclude_pruning()
 
     def _filter_exclude_by_include(self):
         for include_cs in self.include:
             self.exclude = [cs for cs in self.exclude if not cs.contains(include_cs)]
 
-    def _filter_exclude_pruning(self):
+    def clean(self):
         two_cards = [cs for cs in self.exclude if len(cs) == 2]
+        for_remove = []
         for card in [Card(rank, 0) for rank in range(2, 15)]:
             two_cards_for_card = [cs for cs in two_cards if card in cs]
             if len(two_cards_for_card) == 13:
-                for tc in two_cards_for_card:
-                    self.exclude.remove(tc)
-                self.exclude.append(CardSet(cards=[card]))
+                for_remove.append(card)
 
-
+        for card in for_remove:
+            self.exclude = [cs for cs in self.exclude if not (len(cs) == 2 and card in cs)]
+            self.exclude.append(CardSet(cards=[card]))
 
 
 Combination = namedtuple('Combination', ['name',
