@@ -1505,7 +1505,7 @@ class PureHandTest(unittest.TestCase):
                               CardSet.from_str('KK')])
         self.assertEqual(pure_hand.exclude, [CardSet.from_str('AA'), CardSet.from_str('KK')])
 
-        pure_hand = PureHand('TP',
+        pure_hand = PureHand('TS',
                              CardSet.from_str('TT'),
                              [CardSet.from_str('AA'),
                               CardSet.from_str('AT'),
@@ -1513,13 +1513,11 @@ class PureHandTest(unittest.TestCase):
                               CardSet.from_str('KK')])
 
         self.assertEqual(pure_hand.exclude,  [CardSet.from_str('AA'),
-                              CardSet.from_str('AT'),
-                              CardSet.from_str('T'),
                               CardSet.from_str('KK')])
 
     def test_clean(self):
         pure_hand = PureHand('TP',
-                             CardSet.from_str('TT'),
+                             CardSet.from_str('T97'),
                              [CardSet.from_str('AA'),
                               CardSet.from_str('A9'),
                               CardSet.from_str('K9'),
@@ -1527,7 +1525,7 @@ class PureHandTest(unittest.TestCase):
                               CardSet.from_str('J9'),
                               CardSet.from_str('T9'),
                               CardSet.from_str('99'),
-                              CardSet.from_str('89'),
+                               CardSet.from_str('89'),
                               CardSet.from_str('79'),
                               CardSet.from_str('69'),
                               CardSet.from_str('59'),

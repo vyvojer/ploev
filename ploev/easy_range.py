@@ -1843,7 +1843,7 @@ class PureHand:
 
     def _filter_exclude_by_include(self):
         for include_cs in self.include:
-            self.exclude = [cs for cs in self.exclude if not cs.contains(include_cs)]
+            self.exclude = [cs for cs in self.exclude if set(include_cs) - set(cs)]
 
     def clean(self):
         two_cards = [cs for cs in self.exclude if len(cs) == 2]
