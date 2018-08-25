@@ -1496,6 +1496,39 @@ class PureHandTest(unittest.TestCase):
         self.assertEqual(tp_aa.exclude, [CardSet.from_str('KK')])
         self.assertEqual(tp_aa.name, 'TP:AA')
 
+    def test_add_with_exception(self):
+        ts = PureHand('TS',
+                      CardSet.from_str('JJ'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        tp = PureHand('TP',
+                      CardSet.from_str('J'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        tr = PureHand('Tr',
+                      CardSet.from_str('JJJ'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        w = PureHand('SD13_13',
+                      CardSet.from_str('896'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        nfd = PureHand('NFD',
+                      CardSet.from_str('Ass'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+        bfd = PureHand('BFD',
+                      CardSet.from_str('hh'),
+                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+
+        with self.assertRaises(PureHandError) as raised:
+            ts + w
+        ex = raised.exception
+        self.assertEqual(ex.name, 'TS:SD13_13')
+        self.assertEqual(ex.msg, 'Too many ranks')
+
+        with self.assertRaises(PureHandError) as raised:
+            tp + w + nfd
+        ex = raised.exception
+        self.assertEqual(ex.name, 'TP:SD13_13:NFD')
+        self.assertEqual(ex.msg, 'Too many ranks')
+
+
     def test_filter_exclude_by_include(self):
         pure_hand = PureHand('TP',
                              CardSet.from_str('T'),

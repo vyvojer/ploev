@@ -1788,6 +1788,18 @@ def check_range(range_):
         return True
 
 
+class PureHandError(Exception):
+
+    def __init__(self, name, include, exclude, msg=None) -> None:
+        if msg is None:
+            msg = "PureHand error occurred"
+        super().__init__(msg)
+        self.msg = msg
+        self.name = name
+        self.include = include
+        self.exclude = exclude
+
+
 class PureHand:
     def __init__(self, name: str,
                  include: Union[None, CardSet, Iterable[CardSet]],
@@ -1806,6 +1818,7 @@ class PureHand:
         else:
             self.exclude = list(exclude)
         self._filter_exclude()
+        self._check_length()
 
     @property
     def hole(self) -> str:
@@ -1837,6 +1850,18 @@ class PureHand:
         if len(self.exclude) > 1:
             exclude_ppt = "(" + exclude_ppt + ")"
         return "{}!{}".format(include_ppt, exclude_ppt)
+
+    def _check_length(self):
+        ranks = []
+        suits = []
+        msg = None
+        for cs in self.include:
+            ranks.extend([rank for rank in cs.ranks if rank != 0])
+            suits.extend([suit for suit in cs.suits if suit != 0])
+        if len(ranks) > 4:
+            msg = "Too many ranks"
+        if msg is not None:
+            raise PureHandError(self.name, self.include, self.exclude, msg)
 
     def _filter_exclude(self):
         self._filter_exclude_by_include()
