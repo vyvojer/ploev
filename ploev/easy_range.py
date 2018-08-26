@@ -1828,7 +1828,7 @@ class PureHand:
         return '{} ({})'.format(self.name, self.hole)
 
     def __eq__(self, other):
-        return (self.name, self.include, self.exclude) == (other.name, other.include, other.include)
+        return (self.name, self.include, self.exclude) == (other.name, other.include, other.exclude)
 
     def __add__(self, other):
         name = self.name + ':' + other.name
@@ -1897,8 +1897,12 @@ Combination = namedtuple('Combination', ['name',
 
 
 class Combinations:
-    def __init__(self, board_explorer: BoardExplorer):
+    SIMPLE = 0
+    FULL = 1
+
+    def __init__(self, board_explorer: BoardExplorer, kind: int=0):
         self.board_explorer = board_explorer
+        self.kind = kind
         self._pure_made_hands = None
 
     @property
@@ -1908,6 +1912,28 @@ class Combinations:
         return self._pure_made_hands
 
     def _get_pure_made_hands(self):
+        if self.kind == self.FULL:
+            self._get_pure_made_hands_full()
+        elif self.kind == self.SIMPLE:
+            self._get_pure_made_hands_simple()
+        self._pure_made_hands.append(self._generate_not_hand(self.board_explorer.made_hands))
+
+    @staticmethod
+    def _generate_not_hand(hands: Iterable) -> PureHand:
+        exclude = [excl_hand.hole for excl_hand in hands]
+        return PureHand(name='', include=None, exclude=exclude)
+
+    def _get_pure_made_hands_simple(self):
+        pure_made_hands = []
+        made_hands = self.board_explorer.made_hands
+        for index, hand in enumerate(made_hands):
+            name = hand.name
+            include = hand.hole
+            exclude =[excl_hand.hole for excl_hand in made_hands[:index]]
+            pure_made_hands.append(PureHand(name, include, exclude))
+        self._pure_made_hands = pure_made_hands
+
+    def _get_pure_made_hands_full(self):
         pure_made_hands = []
         made_hands = self.board_explorer.made_hands
         for hand in made_hands:

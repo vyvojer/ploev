@@ -1467,7 +1467,7 @@ class SyntaxTest(unittest.TestCase):
         self.assertEqual([Syntax.get_name(hand) for hand in straight_draws], names)
         self.assertEqual([hand.name for hand in straight_draws], names)
         self.assertEqual([hand.str_hole for hand in straight_draws], holes)
-        self.assertEqual(str(straight_draws[0]),'SD20_14 (QT87)')
+        self.assertEqual(str(straight_draws[0]), 'SD20_14 (QT87)')
 
 
 class PureHandTest(unittest.TestCase):
@@ -1507,14 +1507,14 @@ class PureHandTest(unittest.TestCase):
                       CardSet.from_str('JJJ'),
                       [CardSet.from_str('AA'), CardSet.from_str('KK')])
         w = PureHand('SD13_13',
-                      CardSet.from_str('896'),
-                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+                     CardSet.from_str('896'),
+                     [CardSet.from_str('AA'), CardSet.from_str('KK')])
         nfd = PureHand('NFD',
-                      CardSet.from_str('Ass'),
-                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+                       CardSet.from_str('Ass'),
+                       [CardSet.from_str('AA'), CardSet.from_str('KK')])
         bfd = PureHand('BFD',
-                      CardSet.from_str('hh'),
-                      [CardSet.from_str('AA'), CardSet.from_str('KK')])
+                       CardSet.from_str('hh'),
+                       [CardSet.from_str('AA'), CardSet.from_str('KK')])
 
         with self.assertRaises(PureHandError) as raised:
             ts + w
@@ -1527,7 +1527,6 @@ class PureHandTest(unittest.TestCase):
         ex = raised.exception
         self.assertEqual(ex.name, 'TP:SD13_13:NFD')
         self.assertEqual(ex.msg, 'Too many ranks')
-
 
     def test_filter_exclude_by_include(self):
         pure_hand = PureHand('TP',
@@ -1545,8 +1544,8 @@ class PureHandTest(unittest.TestCase):
                               CardSet.from_str('T'),
                               CardSet.from_str('KK')])
 
-        self.assertEqual(pure_hand.exclude,  [CardSet.from_str('AA'),
-                              CardSet.from_str('KK')])
+        self.assertEqual(pure_hand.exclude, [CardSet.from_str('AA'),
+                                             CardSet.from_str('KK')])
 
     def test_clean(self):
         pure_hand = PureHand('TP',
@@ -1558,7 +1557,7 @@ class PureHandTest(unittest.TestCase):
                               CardSet.from_str('J9'),
                               CardSet.from_str('T9'),
                               CardSet.from_str('99'),
-                               CardSet.from_str('89'),
+                              CardSet.from_str('89'),
                               CardSet.from_str('79'),
                               CardSet.from_str('69'),
                               CardSet.from_str('59'),
@@ -1574,13 +1573,31 @@ class PureHandTest(unittest.TestCase):
 
 class CombinationsTest(unittest.TestCase):
 
-    def test_pure_made_hands(self):
+    def test_pure_made_hands_simple(self):
         be = BoardExplorer.from_str('Jh 9h 5c')
-        combos = Combinations(be)
+        combos = Combinations(be, Combinations.SIMPLE)
         pure_made_hands = combos.pure_made_hands
         self.assertEqual(pure_made_hands[0], PureHand('TS',
-                                                      CardSet.from_str('J'),
+                                                      CardSet.from_str('JJ'),
                                                       None))
+        self.assertEqual(pure_made_hands[1], PureHand('MS',
+                                                      CardSet.from_str('99'),
+                                                      [CardSet.from_str('JJ')]))
+        self.assertEqual(pure_made_hands[2], PureHand('S3',
+                                                      CardSet.from_str('55'),
+                                                      [CardSet.from_str('JJ'),
+                                                       CardSet.from_str('99'),
+                                                       ]))
+        not_hand = pure_made_hands[-1]
+        not_hand.clean()
+        self.assertEqual(not_hand, PureHand('',
+                                            None,
+                                            [CardSet.from_str('AA'), CardSet.from_str('KK'), CardSet.from_str('QQ'),
+                                             CardSet.from_str('TT'), CardSet.from_str('88'), CardSet.from_str('77'),
+                                             CardSet.from_str('66'), CardSet.from_str('44'), CardSet.from_str('33'),
+                                             CardSet.from_str('22'), CardSet.from_str('5'), CardSet.from_str('9'),
+                                             CardSet.from_str('J')
+                                             ]))
 
 
 if __name__ == "__main__":
