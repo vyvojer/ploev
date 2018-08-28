@@ -259,7 +259,7 @@ class FlushDraw(HandMixin):
                           self.absolute_rank, self.relative_rank, self.hole)
 
 
-class Blocker:
+class Blocker(HandMixin):
     """ Class representing various blockers """
     # types
     FLUSH_BLOCKER = 0
@@ -274,6 +274,8 @@ class Blocker:
     FLOPPED = 7
     TURNED = 8
 
+    family = HandMixin.BLOCKER
+
     def __init__(self, type_: int, subtype: int, absolute_rank: tuple, relative_rank: tuple, hole: CardSet):
         """ Constructor for Blocker
 
@@ -284,11 +286,8 @@ class Blocker:
             relative_rank (Iterable): rank of the blocker
             hole (CardSet):
         """
-        self.type_ = type_
-        self.subtype = subtype
+        super().__init__(Blocker.family, type_, subtype, relative_rank, hole)
         self.absolute_rank = absolute_rank
-        self.relative_rank = relative_rank
-        self.hole = hole
 
     def __eq__(self, other):
         return (self.type_ == other.type_
@@ -1834,7 +1833,10 @@ class PureHand:
         return (self.name, self.include, self.exclude) == (other.name, other.include, other.exclude)
 
     def __add__(self, other):
-        name = self.name + ':' + other.name
+        if other.name is not None and other.name != '':
+            name = self.name + ':' + other.name
+        else:
+            name = self.name
         include = self.include + [card_set for card_set in other.include if card_set not in self.include]
         exclude = [card_set for card_set in self.exclude if card_set not in other.include]
         exclude += [card_set for card_set in other.exclude if card_set not in self.include and card_set not in exclude]
@@ -1919,9 +1921,20 @@ class Combinations:
         types = [
             (self._pure_made_hands, self.board_explorer.made_hands),
             (self._pure_flush_draws, self.board_explorer.flush_draws),
+            (self._pure_flush_draw_blockers, self.board_explorer.flush_draw_blockers),
         ]
         for type_ in types:
             self._get_pure_hands(*type_)
+        self._correct_flush_draw_blockers()
+
+    def _correct_flush_draw_blockers(self):
+        """ Exclude real flushdraws from flushdraw blockers"""
+        if self._pure_flush_draws:
+            suit = self._pure_flush_draws[0].include[0][0].suit
+            corrector = PureHand('', None, CardSet([Card(0, suit), Card(0, suit)]))
+            corrected = [blocker + corrector for blocker in self._pure_flush_draw_blockers]
+            corrected.append(PureHand('', None, CardSet([Card(0, suit),])))
+            self._pure_flush_draw_blockers = corrected
 
     def _get_pure_hands(self, pure_hands: List, hands: List):
         if self.kind == self.FULL:

@@ -1640,6 +1640,23 @@ class CombinationsTest(unittest.TestCase):
                                                   CardSet.from_str('4hh'), CardSet.from_str('3hh')]
                                                   ))
 
+    def test_pure_flush_draw_blockers_simple(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        combos = Combinations(be, Combinations.SIMPLE)
+        pure_hands = combos._pure_flush_draw_blockers
+        self.assertEqual(pure_hands[0], PureHand('NFDB',
+                                                 CardSet.from_str('Ah'),
+                                                 CardSet.from_str('hh')))
+        self.assertEqual(pure_hands[1], PureHand('FDB2',
+                                                 CardSet.from_str('Kh'),
+                                                 [CardSet.from_str('Ah'),
+                                                  CardSet.from_str('hh')
+                                                  ]))
+        self.assertEqual(pure_hands[-1], PureHand('',
+                                                 None,
+                                                 [CardSet.from_str('h'),]
+                                                  ))
+
 
 if __name__ == "__main__":
     unittest.main()
