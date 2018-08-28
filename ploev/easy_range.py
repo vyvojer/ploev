@@ -1914,6 +1914,7 @@ class Combinations:
         self._pure_made_hands = []
         self._pure_flush_draws = []
         self._pure_flush_draw_blockers = []
+        self._pure_flush_draws_and_blockers = []
         self.all = []
         self._generate_all()
 
@@ -1926,15 +1927,21 @@ class Combinations:
         for type_ in types:
             self._get_pure_hands(*type_)
         self._correct_flush_draw_blockers()
+        self._connect_flush_draws()
 
     def _correct_flush_draw_blockers(self):
         """ Exclude real flushdraws from flushdraw blockers"""
         if self._pure_flush_draws:
             suit = self._pure_flush_draws[0].include[0][0].suit
             corrector = PureHand('', None, CardSet([Card(0, suit), Card(0, suit)]))
-            corrected = [blocker + corrector for blocker in self._pure_flush_draw_blockers]
+            corrected = [blocker + corrector for blocker in self._pure_flush_draw_blockers[:-1]]
             corrected.append(PureHand('', None, CardSet([Card(0, suit),])))
             self._pure_flush_draw_blockers = corrected
+
+    def _connect_flush_draws(self):
+        if self._pure_flush_draws:
+            self._pure_flush_draws_and_blockers.extend(self._pure_flush_draws[:-1])
+            self._pure_flush_draws_and_blockers.extend(self._pure_flush_draw_blockers)
 
     def _get_pure_hands(self, pure_hands: List, hands: List):
         if self.kind == self.FULL:

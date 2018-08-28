@@ -1592,6 +1592,7 @@ class PureHandTest(unittest.TestCase):
                                              CardSet.from_str('KK'),
                                              CardSet.from_str('9')])
 
+
 class CombinationsTest(unittest.TestCase):
 
     def test_pure_made_hands_simple(self):
@@ -1632,12 +1633,12 @@ class CombinationsTest(unittest.TestCase):
                                                  [CardSet.from_str('Ahh'),
                                                   ]))
         self.assertEqual(pure_hands[-1], PureHand('',
-                                                 None,
-                                                 [CardSet.from_str('Ahh'), CardSet.from_str('Khh'),
-                                                  CardSet.from_str('Qhh'), CardSet.from_str('Thh'),
-                                                  CardSet.from_str('8hh'), CardSet.from_str('7hh'),
-                                                  CardSet.from_str('6hh'), CardSet.from_str('5hh'),
-                                                  CardSet.from_str('4hh'), CardSet.from_str('3hh')]
+                                                  None,
+                                                  [CardSet.from_str('Ahh'), CardSet.from_str('Khh'),
+                                                   CardSet.from_str('Qhh'), CardSet.from_str('Thh'),
+                                                   CardSet.from_str('8hh'), CardSet.from_str('7hh'),
+                                                   CardSet.from_str('6hh'), CardSet.from_str('5hh'),
+                                                   CardSet.from_str('4hh'), CardSet.from_str('3hh')]
                                                   ))
 
     def test_pure_flush_draw_blockers_simple(self):
@@ -1652,9 +1653,54 @@ class CombinationsTest(unittest.TestCase):
                                                  [CardSet.from_str('Ah'),
                                                   CardSet.from_str('hh')
                                                   ]))
+        self.assertEqual(pure_hands[-2], PureHand('FDB11',
+                                                  CardSet.from_str('2h'),
+                                                  [CardSet.from_str('Ah'), CardSet.from_str('Kh'),
+                                                   CardSet.from_str('Qh'), CardSet.from_str('Th'),
+                                                   CardSet.from_str('8h'), CardSet.from_str('7h'),
+                                                   CardSet.from_str('6h'), CardSet.from_str('5h'),
+                                                   CardSet.from_str('4h'), CardSet.from_str('3h'),
+                                                   CardSet.from_str('hh')]
+                                                  ))
         self.assertEqual(pure_hands[-1], PureHand('',
-                                                 None,
-                                                 [CardSet.from_str('h'),]
+                                                  None,
+                                                  [CardSet.from_str('h'), ]
+                                                  ))
+
+    def test_pure_flush_draws_and_blockers_simple(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        combos = Combinations(be, Combinations.SIMPLE)
+        pure_hands = combos._pure_flush_draws_and_blockers
+        self.assertEqual(pure_hands[0], PureHand('NFD',
+                                                 CardSet.from_str('Ahh'),
+                                                 None))
+        self.assertEqual(pure_hands[1], PureHand('FD2',
+                                                 CardSet.from_str('Khh'),
+                                                 [CardSet.from_str('Ahh'),
+                                                  ]))
+        self.assertEqual(pure_hands[9], PureHand('FD10',
+                                                 CardSet.from_str('3hh'),
+                                                 [CardSet.from_str('Ahh'), CardSet.from_str('Khh'),
+                                                  CardSet.from_str('Qhh'), CardSet.from_str('Thh'),
+                                                  CardSet.from_str('8hh'), CardSet.from_str('7hh'),
+                                                  CardSet.from_str('6hh'), CardSet.from_str('5hh'),
+                                                  CardSet.from_str('4hh'), ]
+                                                 ))
+        self.assertEqual(pure_hands[10], PureHand('NFDB',
+                                                  CardSet.from_str('Ah'),
+                                                  CardSet.from_str('hh')))
+        self.assertEqual(pure_hands[-2], PureHand('FDB11',
+                                                  CardSet.from_str('2h'),
+                                                  [CardSet.from_str('Ah'), CardSet.from_str('Kh'),
+                                                   CardSet.from_str('Qh'), CardSet.from_str('Th'),
+                                                   CardSet.from_str('8h'), CardSet.from_str('7h'),
+                                                   CardSet.from_str('6h'), CardSet.from_str('5h'),
+                                                   CardSet.from_str('4h'), CardSet.from_str('3h'),
+                                                   CardSet.from_str('hh')]
+                                                  ))
+        self.assertEqual(pure_hands[-1], PureHand('',
+                                                  None,
+                                                  [CardSet.from_str('h'), ]
                                                   ))
 
 
