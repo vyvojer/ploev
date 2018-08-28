@@ -16,7 +16,7 @@
 
 """ Classes implementing 'easy' (traditional) ranges for a board. """
 
-from typing import Iterable, Union
+from typing import Iterable, Union, List
 from collections import Counter, namedtuple
 import itertools
 import copy
@@ -232,7 +232,7 @@ class FlushDraw(HandMixin):
                 (0,) for generic draw
             hole (CardSet):  hole cards of draw. CardSet.from_str('Add')
         """
-        super().__init__(MadeHand.family, type_, subtype, relative_rank, hole)
+        super().__init__(FlushDraw.family, type_, subtype, relative_rank, hole)
         self.absolute_rank = absolute_rank
 
     def __eq__(self, other):
@@ -1106,9 +1106,9 @@ class Syntax:
         'P': EasyRange(MADE_HAND, MadeHand.PAIR, MadeHand.NONE, None, None, None, None, [1]),
         'NBFD': EasyRange(FLUSH_DRAW, FlushDraw.BACKDOOR, None, (1,), None, None, None, [0]),
         'BFD': EasyRange(FLUSH_DRAW, FlushDraw.BACKDOOR, None, None, None, None, None, [1]),
-        'FDF': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.FLOPPED, None, None, None, None, [0, 1]),
         'NFD': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, None, (1,), None, None, None, [0]),
         'FD': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, None, None, None, None, None, [0, 1]),
+        'FDF': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.FLOPPED, None, None, None, None, [0, 1]),
         'FDT': EasyRange(FLUSH_DRAW, FlushDraw.NORMAL, FlushDraw.TURNED, None, None, None, None, [0, 1]),
         'SDB': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.TWO_CARD, None, None, None, None, [1]),
         'SDBO': EasyRange(BLOCKER, Blocker.STRAIGHT_DRAW_BLOCKER, Blocker.ONE_CARD, None, None, None, None, [1]),
@@ -1123,7 +1123,8 @@ class Syntax:
     @staticmethod
     def get_name(hand: HandMixin):
         for key, value in Syntax.syntax.items():
-            if value.family == hand.family and value.type_ == hand.type_ and value.subtype == hand.subtype:
+            if value.family == hand.family and value.type_ == hand.type_ \
+                    and (value.subtype == hand.subtype or value.subtype is None):
                 if value.relative_rank and value.relative_rank == hand.relative_rank:
                     return key
                 elif value.rank_prefix and value.rank_prefix == hand.relative_rank[value.prefix_shift:len(
@@ -1903,35 +1904,41 @@ class Combinations:
     def __init__(self, board_explorer: BoardExplorer, kind: int=0):
         self.board_explorer = board_explorer
         self.kind = kind
-        self._pure_made_hands = None
+        self._pure_made_hands = []
+        self._pure_flush_draws = []
+        self._pure_flush_draw_blockers = []
+        self.all = []
+        self._generate_all()
 
-    @property
-    def pure_made_hands(self):
-        if self._pure_made_hands is None:
-            self._get_pure_made_hands()
-        return self._pure_made_hands
+    def _generate_all(self):
+        types = [
+            (self._pure_made_hands, self.board_explorer.made_hands),
+            (self._pure_flush_draws, self.board_explorer.flush_draws),
+        ]
+        for type_ in types:
+            self._get_pure_hands(*type_)
 
-    def _get_pure_made_hands(self):
+    def _get_pure_hands(self, pure_hands: List, hands: List):
         if self.kind == self.FULL:
             self._get_pure_made_hands_full()
         elif self.kind == self.SIMPLE:
-            self._get_pure_made_hands_simple()
-        self._pure_made_hands.append(self._generate_not_hand(self.board_explorer.made_hands))
+            pure_hands.extend(self._get_pure_hands_simple(hands))
+            pure_hands.append(self._generate_not_hand(hands))
 
     @staticmethod
     def _generate_not_hand(hands: Iterable) -> PureHand:
         exclude = [excl_hand.hole for excl_hand in hands]
         return PureHand(name='', include=None, exclude=exclude)
 
-    def _get_pure_made_hands_simple(self):
-        pure_made_hands = []
-        made_hands = self.board_explorer.made_hands
-        for index, hand in enumerate(made_hands):
+    @staticmethod
+    def _get_pure_hands_simple(hands: Iterable) -> List[PureHand]:
+        pure_hands = []
+        for index, hand in enumerate(hands):
             name = hand.name
             include = hand.hole
-            exclude =[excl_hand.hole for excl_hand in made_hands[:index]]
-            pure_made_hands.append(PureHand(name, include, exclude))
-        self._pure_made_hands = pure_made_hands
+            exclude = [excl_hand.hole for excl_hand in hands[:index]]
+            pure_hands.append(PureHand(name, include, exclude))
+        return pure_hands
 
     def _get_pure_made_hands_full(self):
         pure_made_hands = []

@@ -1469,6 +1469,28 @@ class SyntaxTest(unittest.TestCase):
         self.assertEqual([hand.str_hole for hand in straight_draws], holes)
         self.assertEqual(str(straight_draws[0]), 'SD20_14 (QT87)')
 
+    def test_get_name_flush_draws(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        hands = be.flush_draws
+        names_and_holes = [
+            ('NFD', 'Ahh'),
+            ('FD2', 'Khh'),
+            ('FD3', 'Qhh'),
+            ('FD4', 'Thh'),
+            ('FD5', '8hh'),
+            ('FD6', '7hh'),
+            ('FD7', '6hh'),
+            ('FD8', '5hh'),
+            ('FD9', '4hh'),
+            ('FD10', '3hh'),
+        ]
+        names = [nh[0] for nh in names_and_holes]
+        holes = [nh[1] for nh in names_and_holes]
+        self.assertEqual([Syntax.get_name(hand) for hand in hands], names)
+        self.assertEqual([hand.name for hand in hands], names)
+        self.assertEqual([hand.str_hole for hand in hands], holes)
+        self.assertEqual(str(hands[0]), 'NFD')
+
 
 class PureHandTest(unittest.TestCase):
     def test_ppt(self):
@@ -1576,7 +1598,7 @@ class CombinationsTest(unittest.TestCase):
     def test_pure_made_hands_simple(self):
         be = BoardExplorer.from_str('Jh 9h 5c')
         combos = Combinations(be, Combinations.SIMPLE)
-        pure_made_hands = combos.pure_made_hands
+        pure_made_hands = combos._pure_made_hands
         self.assertEqual(pure_made_hands[0], PureHand('TS',
                                                       CardSet.from_str('JJ'),
                                                       None))
@@ -1599,6 +1621,13 @@ class CombinationsTest(unittest.TestCase):
                                              CardSet.from_str('J')
                                              ]))
 
+    def test_pure_flush_draws_simple(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        combos = Combinations(be, Combinations.SIMPLE)
+        pure_hands = combos._pure_flush_draws
+        self.assertEqual(pure_hands[0], PureHand('NFD',
+                                                      CardSet.from_str('Ahh'),
+                                                      None))
 
 if __name__ == "__main__":
     unittest.main()
