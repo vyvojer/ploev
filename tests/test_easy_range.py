@@ -1569,7 +1569,7 @@ class PureHandTest(unittest.TestCase):
         self.assertEqual(pure_hand.exclude, [CardSet.from_str('AA'),
                                              CardSet.from_str('KK')])
 
-    def test_clean(self):
+    def test_clean_two_ranks(self):
         pure_hand = PureHand('TP',
                              CardSet.from_str('T97'),
                              [CardSet.from_str('AA'),
@@ -1591,7 +1591,6 @@ class PureHandTest(unittest.TestCase):
         self.assertEqual(pure_hand.exclude, [CardSet.from_str('AA'),
                                              CardSet.from_str('KK'),
                                              CardSet.from_str('9')])
-
 
 class CombinationsTest(unittest.TestCase):
 
@@ -1626,8 +1625,21 @@ class CombinationsTest(unittest.TestCase):
         combos = Combinations(be, Combinations.SIMPLE)
         pure_hands = combos._pure_flush_draws
         self.assertEqual(pure_hands[0], PureHand('NFD',
-                                                      CardSet.from_str('Ahh'),
-                                                      None))
+                                                 CardSet.from_str('Ahh'),
+                                                 None))
+        self.assertEqual(pure_hands[1], PureHand('FD2',
+                                                 CardSet.from_str('Khh'),
+                                                 [CardSet.from_str('Ahh'),
+                                                  ]))
+        self.assertEqual(pure_hands[-1], PureHand('',
+                                                 None,
+                                                 [CardSet.from_str('Ahh'), CardSet.from_str('Khh'),
+                                                  CardSet.from_str('Qhh'), CardSet.from_str('Thh'),
+                                                  CardSet.from_str('8hh'), CardSet.from_str('7hh'),
+                                                  CardSet.from_str('6hh'), CardSet.from_str('5hh'),
+                                                  CardSet.from_str('4hh'), CardSet.from_str('3hh')]
+                                                  ))
+
 
 if __name__ == "__main__":
     unittest.main()

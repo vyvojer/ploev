@@ -1804,8 +1804,10 @@ class PureHandError(Exception):
 class PureHand:
     def __init__(self, name: str,
                  include: Union[None, CardSet, Iterable[CardSet]],
-                 exclude: Union[None, CardSet, Iterable[CardSet]]):
+                 exclude: Union[None, CardSet, Iterable[CardSet]],
+                 board_explorer=None):
         self.name = name
+        self.board_explorer = board_explorer
         if include is None:
             self.include = []
         elif isinstance(include, CardSet):
@@ -1872,6 +1874,9 @@ class PureHand:
             self.exclude = [cs for cs in self.exclude if set(include_cs) - set(cs)]
 
     def clean(self):
+        self._clean_two_ranks()
+
+    def _clean_two_ranks(self):
         two_cards = [cs for cs in self.exclude if len(cs) == 2]
         for_remove = []
         for card in [Card(rank, 0) for rank in range(2, 15)]:
@@ -1901,7 +1906,7 @@ class Combinations:
     SIMPLE = 0
     FULL = 1
 
-    def __init__(self, board_explorer: BoardExplorer, kind: int=0):
+    def __init__(self, board_explorer: BoardExplorer, kind: int = 0):
         self.board_explorer = board_explorer
         self.kind = kind
         self._pure_made_hands = []
