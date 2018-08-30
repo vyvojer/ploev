@@ -1735,13 +1735,12 @@ class CombinationsTest(unittest.TestCase):
                                                  CardSet.from_str('KT87'),
                                                  [CardSet.from_str('QT87'),
                                                   ]))
-        self.assertEqual(pure_hands[-1], PureHand('',
-                                                  None,
+        self.assertEqual(pure_hands[-1], PureHand('SD4_0',
+                                                  CardSet.from_str('76'),
                                                   [CardSet.from_str('QT'), CardSet.from_str('T8'),
                                                    CardSet.from_str('87'), CardSet.from_str('KQ'),
                                                    CardSet.from_str('KT'), CardSet.from_str('Q8'),
-                                                   CardSet.from_str('T7'), CardSet.from_str('86'),
-                                                   CardSet.from_str('76')]
+                                                   CardSet.from_str('T7'), CardSet.from_str('86')]
                                                   ))
 
     def test_pure_straight_draw_blockers_simple(self):
@@ -1752,6 +1751,42 @@ class CombinationsTest(unittest.TestCase):
                                                  CardSet.from_str('KK'),
                                                  None))
         self.assertEqual(pure_hands[1], PureHand('SDB2',
+                                                 CardSet.from_str('QQ'),
+                                                 CardSet.from_str('KK')))
+        self.assertEqual(pure_hands[-2], PureHand('SDBO6',
+                                                  CardSet.from_str('6'),
+                                                  [CardSet.from_str('K'), CardSet.from_str('Q'), CardSet.from_str('T'),
+                                                   CardSet.from_str('8'), CardSet.from_str('7')]
+                                                  ))
+        self.assertEqual(pure_hands[-1], PureHand('',
+                                                  None,
+                                                  [CardSet.from_str('K'), CardSet.from_str('Q'), CardSet.from_str('T'),
+                                                   CardSet.from_str('8'), CardSet.from_str('7'), CardSet.from_str('6')]
+                                                  ))
+
+    def test_pure_straight_draws_and_blockers_simple(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        combos = Combinations(be, Combinations.SIMPLE)
+        pure_hands = combos._pure_straight_draws_and_blockers
+        self.assertEqual(pure_hands[0], PureHand('SD20_14',
+                                                 CardSet.from_str('QT87'),
+                                                 None))
+        self.assertEqual(pure_hands[1], PureHand('SD17_11',
+                                                 CardSet.from_str('KT87'),
+                                                 [CardSet.from_str('QT87'),
+                                                  ]))
+        self.assertEqual(pure_hands[22], PureHand('SD4_0',
+                                                  CardSet.from_str('76'),
+                                                  [CardSet.from_str('QT'), CardSet.from_str('T8'),
+                                                   CardSet.from_str('87'), CardSet.from_str('KQ'),
+                                                   CardSet.from_str('KT'), CardSet.from_str('Q8'),
+                                                   CardSet.from_str('T7'), CardSet.from_str('86')]
+                                                  ))
+
+        self.assertEqual(pure_hands[23], PureHand('SDB1',
+                                                 CardSet.from_str('KK'),
+                                                 None))
+        self.assertEqual(pure_hands[24], PureHand('SDB2',
                                                  CardSet.from_str('QQ'),
                                                  CardSet.from_str('KK')))
         self.assertEqual(pure_hands[-2], PureHand('SDBO6',

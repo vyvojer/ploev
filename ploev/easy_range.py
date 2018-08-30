@@ -1935,13 +1935,14 @@ class Combinations:
             (self._pure_made_hands, self.board_explorer.made_hands),
             (self._pure_flush_draws, self.board_explorer.flush_draws),
             (self._pure_flush_draw_blockers, self.board_explorer.flush_draw_blockers),
-            (self._pure_straight_draws, self.board_explorer.straight_draws),
+            (self._pure_straight_draws, self.board_explorer.straight_draws, False),
             (self._pure_straight_draw_blockers, self.board_explorer.straight_draw_blockers),
         ]
         for type_ in types:
             self._get_pure_hands(*type_)
         self._correct_flush_draw_blockers()
         self._connect_flush_draws()
+        self._connect_straight_draws()
 
     def _correct_flush_draw_blockers(self):
         """ Exclude real flushdraws from flushdraw blockers"""
@@ -1957,12 +1958,18 @@ class Combinations:
             self._pure_flush_draws_and_blockers.extend(self._pure_flush_draws[:-1])
             self._pure_flush_draws_and_blockers.extend(self._pure_flush_draw_blockers)
 
-    def _get_pure_hands(self, pure_hands: List, hands: List):
+    def _connect_straight_draws(self):
+        if self._pure_straight_draws:
+            self._pure_straight_draws_and_blockers.extend(self._pure_straight_draws)
+            self._pure_straight_draws_and_blockers.extend(self._pure_straight_draw_blockers)
+
+    def _get_pure_hands(self, pure_hands: List, hands: List, generate_not_hand=True):
         if self.kind == self.FULL:
             self._get_pure_made_hands_full()
         elif self.kind == self.SIMPLE:
             pure_hands.extend(self._get_pure_hands_simple(hands))
-            pure_hands.append(self._generate_not_hand(hands))
+            if generate_not_hand:
+                pure_hands.append(self._generate_not_hand(hands))
 
     @staticmethod
     def _generate_not_hand(hands: Iterable) -> PureHand:
