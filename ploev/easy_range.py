@@ -1870,10 +1870,20 @@ class PureHand:
 
     def _filter_exclude(self):
         self._filter_exclude_by_include()
+        self._filter_exclude_by_exclude()
 
     def _filter_exclude_by_include(self):
         for include_cs in self.include:
             self.exclude = [cs for cs in self.exclude if set(include_cs) - set(cs)]
+
+    def _filter_exclude_by_exclude(self):
+        redundant = []
+        for (cs, another_cs) in itertools.permutations(self.exclude, 2):
+            if cs.contains(another_cs) and cs not in redundant:
+                redundant.append(cs)
+        for cs in redundant:
+            self.exclude.remove(cs)
+
 
     def clean(self):
         self._clean_two_ranks()
@@ -1915,6 +1925,9 @@ class Combinations:
         self._pure_flush_draws = []
         self._pure_flush_draw_blockers = []
         self._pure_flush_draws_and_blockers = []
+        self._pure_straight_draws = []
+        self._pure_straight_draw_blockers = []
+        self._pure_straight_draws_and_blockers = []
         self.all = []
         self._generate_all()
 
@@ -1923,6 +1936,7 @@ class Combinations:
             (self._pure_made_hands, self.board_explorer.made_hands),
             (self._pure_flush_draws, self.board_explorer.flush_draws),
             (self._pure_flush_draw_blockers, self.board_explorer.flush_draw_blockers),
+            (self._pure_straight_draws, self.board_explorer.straight_draws),
         ]
         for type_ in types:
             self._get_pure_hands(*type_)
@@ -1935,7 +1949,7 @@ class Combinations:
             suit = self._pure_flush_draws[0].include[0][0].suit
             corrector = PureHand('', None, CardSet([Card(0, suit), Card(0, suit)]))
             corrected = [blocker + corrector for blocker in self._pure_flush_draw_blockers[:-1]]
-            corrected.append(PureHand('', None, CardSet([Card(0, suit),])))
+            corrected.append(PureHand('', None, CardSet([Card(0, suit), ])))
             self._pure_flush_draw_blockers = corrected
 
     def _connect_flush_draws(self):
