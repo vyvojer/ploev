@@ -1884,7 +1884,6 @@ class PureHand:
         for cs in redundant:
             self.exclude.remove(cs)
 
-
     def clean(self):
         self._clean_two_ranks()
 
@@ -1937,6 +1936,7 @@ class Combinations:
             (self._pure_flush_draws, self.board_explorer.flush_draws),
             (self._pure_flush_draw_blockers, self.board_explorer.flush_draw_blockers),
             (self._pure_straight_draws, self.board_explorer.straight_draws),
+            (self._pure_straight_draw_blockers, self.board_explorer.straight_draw_blockers),
         ]
         for type_ in types:
             self._get_pure_hands(*type_)

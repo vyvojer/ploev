@@ -1737,11 +1737,32 @@ class CombinationsTest(unittest.TestCase):
                                                   ]))
         self.assertEqual(pure_hands[-1], PureHand('',
                                                   None,
-                                                  [CardSet.from_str('Ahh'), CardSet.from_str('Khh'),
-                                                   CardSet.from_str('Qhh'), CardSet.from_str('Thh'),
-                                                   CardSet.from_str('8hh'), CardSet.from_str('7hh'),
-                                                   CardSet.from_str('6hh'), CardSet.from_str('5hh'),
-                                                   CardSet.from_str('4hh'), CardSet.from_str('3hh')]
+                                                  [CardSet.from_str('QT'), CardSet.from_str('T8'),
+                                                   CardSet.from_str('87'), CardSet.from_str('KQ'),
+                                                   CardSet.from_str('KT'), CardSet.from_str('Q8'),
+                                                   CardSet.from_str('T7'), CardSet.from_str('86'),
+                                                   CardSet.from_str('76')]
+                                                  ))
+
+    def test_pure_straight_draw_blockers_simple(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        combos = Combinations(be, Combinations.SIMPLE)
+        pure_hands = combos._pure_straight_draw_blockers
+        self.assertEqual(pure_hands[0], PureHand('SDB1',
+                                                 CardSet.from_str('KK'),
+                                                 None))
+        self.assertEqual(pure_hands[1], PureHand('SDB2',
+                                                 CardSet.from_str('QQ'),
+                                                 CardSet.from_str('KK')))
+        self.assertEqual(pure_hands[-2], PureHand('SDBO6',
+                                                  CardSet.from_str('6'),
+                                                  [CardSet.from_str('K'), CardSet.from_str('Q'), CardSet.from_str('T'),
+                                                   CardSet.from_str('8'), CardSet.from_str('7')]
+                                                  ))
+        self.assertEqual(pure_hands[-1], PureHand('',
+                                                  None,
+                                                  [CardSet.from_str('K'), CardSet.from_str('Q'), CardSet.from_str('T'),
+                                                   CardSet.from_str('8'), CardSet.from_str('7'), CardSet.from_str('6')]
                                                   ))
 
 
