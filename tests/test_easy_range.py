@@ -1653,13 +1653,13 @@ class CombinationsTest(unittest.TestCase):
                                                  CardSet.from_str('Khh'),
                                                  [CardSet.from_str('Ahh'),
                                                   ]))
-        self.assertEqual(pure_hands[-1], PureHand('',
-                                                  None,
+        self.assertEqual(pure_hands[-1], PureHand('FD10',
+                                                  CardSet.from_str('3hh'),
                                                   [CardSet.from_str('Ahh'), CardSet.from_str('Khh'),
                                                    CardSet.from_str('Qhh'), CardSet.from_str('Thh'),
                                                    CardSet.from_str('8hh'), CardSet.from_str('7hh'),
                                                    CardSet.from_str('6hh'), CardSet.from_str('5hh'),
-                                                   CardSet.from_str('4hh'), CardSet.from_str('3hh')]
+                                                   CardSet.from_str('4hh')]
                                                   ))
 
     def test_pure_flush_draw_blockers_simple(self):

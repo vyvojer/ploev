@@ -1933,7 +1933,7 @@ class Combinations:
     def _generate_all(self):
         types = [
             (self._pure_made_hands, self.board_explorer.made_hands),
-            (self._pure_flush_draws, self.board_explorer.flush_draws),
+            (self._pure_flush_draws, self.board_explorer.flush_draws, False),
             (self._pure_flush_draw_blockers, self.board_explorer.flush_draw_blockers),
             (self._pure_straight_draws, self.board_explorer.straight_draws, False),
             (self._pure_straight_draw_blockers, self.board_explorer.straight_draw_blockers),
@@ -1955,7 +1955,7 @@ class Combinations:
 
     def _connect_flush_draws(self):
         if self._pure_flush_draws:
-            self._pure_flush_draws_and_blockers.extend(self._pure_flush_draws[:-1])
+            self._pure_flush_draws_and_blockers.extend(self._pure_flush_draws)
             self._pure_flush_draws_and_blockers.extend(self._pure_flush_draw_blockers)
 
     def _connect_straight_draws(self):
