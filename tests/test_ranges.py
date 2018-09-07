@@ -19,3 +19,11 @@ class TagTest(unittest.TestCase):
         self.assertEqual(child1.parent, parent)
         self.assertEqual(child2.parent, parent)
         self.assertEqual(parent.children, [child1, child2])
+
+    def test_is_leaf(self):
+        parent = Tag('parent')
+        child = Tag('child')
+        parent.add_tag(child)
+        self.assertFalse(parent.is_leaf())
+        self.assertTrue(child.is_leaf())
+

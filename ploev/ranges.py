@@ -38,6 +38,9 @@ class Tag:
             tag.parent = self
         self.children.extend(tags)
 
+    def is_leaf(self) -> bool:
+        return not bool(self.children)
+
 
 class SubRanges:
 
