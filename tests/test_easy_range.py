@@ -1619,19 +1619,19 @@ class CombinationsTest(unittest.TestCase):
     def test_pure_made_hands_simple(self):
         be = BoardExplorer.from_str('Jh 9h 5c')
         combos = Combinations(be, Combinations.SIMPLE)
-        pure_made_hands = combos._pure_made_hands
-        self.assertEqual(pure_made_hands[0], PureHand('TS',
+        pure_hands = combos._pure_made_hands
+        self.assertEqual(pure_hands[0], PureHand('TS',
                                                       CardSet.from_str('JJ'),
                                                       None))
-        self.assertEqual(pure_made_hands[1], PureHand('MS',
+        self.assertEqual(pure_hands[1], PureHand('MS',
                                                       CardSet.from_str('99'),
                                                       [CardSet.from_str('JJ')]))
-        self.assertEqual(pure_made_hands[2], PureHand('S3',
+        self.assertEqual(pure_hands[2], PureHand('S3',
                                                       CardSet.from_str('55'),
                                                       [CardSet.from_str('JJ'),
                                                        CardSet.from_str('99'),
                                                        ]))
-        not_hand = pure_made_hands[-1]
+        not_hand = pure_hands[-1]
         not_hand.clean()
         self.assertEqual(not_hand, PureHand('',
                                             None,
@@ -1641,6 +1641,37 @@ class CombinationsTest(unittest.TestCase):
                                              CardSet.from_str('22'), CardSet.from_str('5'), CardSet.from_str('9'),
                                              CardSet.from_str('J')
                                              ]))
+
+        self.assertEqual(len(pure_hands), 47)
+
+    def test_pure_made_hands_lite(self):
+        be = BoardExplorer.from_str('Jh 9h 5c')
+        combos = Combinations(be, Combinations.LITE)
+        pure_hands = combos._pure_made_hands
+        self.assertEqual(pure_hands[0], PureHand('TS',
+                                                      CardSet.from_str('JJ'),
+                                                      None))
+        self.assertEqual(pure_hands[1], PureHand('MS',
+                                                      CardSet.from_str('99'),
+                                                      [CardSet.from_str('JJ')]))
+        self.assertEqual(pure_hands[2], PureHand('S3',
+                                                      CardSet.from_str('55'),
+                                                      [CardSet.from_str('JJ'),
+                                                       CardSet.from_str('99'),
+                                                       ]))
+        not_hand = pure_hands[-1]
+        not_hand.clean()
+        self.assertEqual(not_hand, PureHand('',
+                                            None,
+                                            [CardSet.from_str('AA'), CardSet.from_str('KK'), CardSet.from_str('QQ'),
+                                             CardSet.from_str('J'), CardSet.from_str('TT'), CardSet.from_str('9'),
+                                             CardSet.from_str('88'), CardSet.from_str('77'), CardSet.from_str('66'),
+                                             CardSet.from_str('5'), CardSet.from_str('44'), CardSet.from_str('33'),
+                                             CardSet.from_str('22')]))
+
+        self.assertEqual(len(pure_hands), 20)
+
+
 
     def test_pure_flush_draws_simple(self):
         be = BoardExplorer.from_str('Jh 9h 5c')
@@ -1723,6 +1754,7 @@ class CombinationsTest(unittest.TestCase):
                                                   None,
                                                   [CardSet.from_str('h'), ]
                                                   ))
+        self.assertEqual(len(pure_hands), 22)
 
     def test_pure_straight_draws_simple(self):
         be = BoardExplorer.from_str('Jh 9h 5c')
@@ -1799,6 +1831,7 @@ class CombinationsTest(unittest.TestCase):
                                                   [CardSet.from_str('K'), CardSet.from_str('Q'), CardSet.from_str('T'),
                                                    CardSet.from_str('8'), CardSet.from_str('7'), CardSet.from_str('6')]
                                                   ))
+        self.assertEqual(len(pure_hands), 36)
 
 
 if __name__ == "__main__":

@@ -1915,7 +1915,8 @@ Combination = namedtuple('Combination', ['name',
 
 class Combinations:
     SIMPLE = 0
-    FULL = 1
+    LITE = 1
+    FULL = 2
 
     def __init__(self, board_explorer: BoardExplorer, kind: int = 0):
         self.board_explorer = board_explorer
@@ -1931,18 +1932,62 @@ class Combinations:
         self._generate_all()
 
     def _generate_all(self):
-        types = [
-            (self._pure_made_hands, self.board_explorer.made_hands),
-            (self._pure_flush_draws, self.board_explorer.flush_draws, False),
-            (self._pure_flush_draw_blockers, self.board_explorer.flush_draw_blockers),
-            (self._pure_straight_draws, self.board_explorer.straight_draws, False),
-            (self._pure_straight_draw_blockers, self.board_explorer.straight_draw_blockers),
-        ]
-        for type_ in types:
+        self._generate_families()
+#        self._combine_all()
+
+    def _combine_all(self):
+        hands = []
+        for mh, sd, fd in itertools.product(self._pure_made_hands,
+                                            self._pure_straight_draws_and_blockers,
+                                            self._pure_flush_draws_and_blockers):
+            try:
+                hand = mh + sd + fd
+            except PureHandError:
+                pass
+            else:
+                hands.append(hand)
+                print(len(hands))
+
+    def _generate_families(self):
+        families = self._get_families()
+        for type_ in families:
             self._get_pure_hands(*type_)
         self._correct_flush_draw_blockers()
         self._connect_flush_draws()
         self._connect_straight_draws()
+
+    def _get_families(self) -> List:
+        made_hands = self.board_explorer.made_hands
+        flush_draws = self.board_explorer.flush_draws
+        flush_draw_blockers = self.board_explorer.flush_draw_blockers
+        straight_draws = self.board_explorer.straight_draws
+        straight_draw_blockers = self.board_explorer.straight_draw_blockers
+        if self.kind == self.LITE:
+            made_hands = self._get_lite_made_hands()
+        families = [
+            (self._pure_made_hands, made_hands),
+            (self._pure_flush_draws, flush_draws, False),
+            (self._pure_flush_draw_blockers, flush_draw_blockers),
+            (self._pure_straight_draws, straight_draws, False),
+            (self._pure_straight_draw_blockers, straight_draw_blockers),
+        ]
+        return families
+
+    def _get_lite_made_hands(self) -> List[MadeHand]:
+        lite_made_hands = []
+        to_append = set()
+        for hand in self.board_explorer.made_hands:
+            if hand.type_ == MadeHand.PAIR and hand.subtype == MadeHand.BOARD_PAIR:
+                hand.absolute_rank = hand.absolute_rank[:1]
+                hand.relative_rank = hand.relative_rank[:2]
+                hand.hole.pop()
+                hand.hand.pop()
+                to_append.add(hand)
+            else:
+                lite_made_hands.append(hand)
+        for hand in to_append:
+            lite_made_hands.append(hand)
+        return sorted(lite_made_hands, reverse=True)
 
     def _correct_flush_draw_blockers(self):
         """ Exclude real flushdraws from flushdraw blockers"""
@@ -1966,7 +2011,7 @@ class Combinations:
     def _get_pure_hands(self, pure_hands: List, hands: List, generate_not_hand=True):
         if self.kind == self.FULL:
             self._get_pure_made_hands_full()
-        elif self.kind == self.SIMPLE:
+        elif self.kind == self.SIMPLE or self.kind == self.LITE:
             pure_hands.extend(self._get_pure_hands_simple(hands))
             if generate_not_hand:
                 pure_hands.append(self._generate_not_hand(hands))
