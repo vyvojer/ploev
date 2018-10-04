@@ -21,6 +21,7 @@ from collections import Counter, namedtuple
 import itertools
 import copy
 import pyparsing as pp
+import re
 
 from ploev.cards import CardSet, Board, STRING_TO_RANK, Card
 
@@ -1693,6 +1694,8 @@ class BoardExplorer:
                     ppt_range += '(' + BoardExplorer._hands2ppt(hands) + ')'
                 else:
                     ppt_range += BoardExplorer._hands2ppt(hands)
+
+        ppt_range = re.sub(',{2,}', ',', ppt_range)
 
         return ppt_range
 

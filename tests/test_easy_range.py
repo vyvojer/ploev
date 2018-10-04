@@ -1401,6 +1401,11 @@ class BoardExplorerTest(unittest.TestCase):
         ppt = be.ppt('(T2P+,NFD,SD9+)')
         self.assertEqual(ppt, '((AA,KK,22,AK),Qss,(QJT,543))')
 
+    def test_ppt_empty_range(self):
+        be = BoardExplorer(Board.from_str('Ks 3d 8s'))
+        ppt = be.ppt('(T2P+,SD9+,NFD)')
+        self.assertEqual(ppt, '((KK,88,33,K8),Ass)')
+
 
 class EasyRangeTest(unittest.TestCase):
 
@@ -1670,8 +1675,6 @@ class CombinationsTest(unittest.TestCase):
                                              CardSet.from_str('22')]))
 
         self.assertEqual(len(pure_hands), 20)
-
-
 
     def test_pure_flush_draws_simple(self):
         be = BoardExplorer.from_str('Jh 9h 5c')

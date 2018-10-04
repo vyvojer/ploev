@@ -16,16 +16,20 @@
 
 """ Classes implementing ranges. """
 
-from typing import Iterable, Union
+from typing import Iterable
 from ploev.easy_range import check_range, EasyRangeValueError
+from ploev.game import SubRange
 import pickle
 import os
 
 
 class Tag:
 
-    def __init__(self, name, parent: 'Tag'=None):
-        self.name = name
+    def __init__(self, name=None, parent: 'Tag' = None):
+        if name is not None:
+            self.name = name
+        else:
+            self.name = ''
         self.parent = parent
         self.children = []
 
@@ -41,8 +45,34 @@ class Tag:
     def is_leaf(self) -> bool:
         return not bool(self.children)
 
+    def is_root(self) -> bool:
+        return self.parent is None
+
 
 class SubRanges:
 
-    def __init__(self, name):
+    def __init__(self, name,
+                 sub_ranges: Iterable[SubRange] = None,
+                 tags: Iterable[Tag] = None):
         self.name = name
+        if sub_ranges is not None:
+            self.sub_ranges = list(sub_ranges)
+        else:
+            self.sub_ranges = []
+        if tags is not None:
+            self.tags = list(tags)
+        else:
+            self.tags = []
+
+    def add_sub_range(self, sub_range: SubRange):
+        self.sub_ranges.append(sub_range)
+
+
+class RangesList:
+
+    def __init__(self, root_tag: Tag):
+        self.root_tag = root_tag
+        self.sub_ranges = []
+
+    def add_sub_ranges(self, sub_ranges: SubRanges):
+        self.sub_ranges.append(sub_ranges)
